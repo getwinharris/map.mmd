@@ -1,4 +1,4 @@
-# write graph to HTML, JSON, SVG, GraphML, Obsidian vault, and Neo4j Cypher
+# write graph to HTML, JSON, SVG, mmdML, Obsidian vault, and Neo4j Cypher
 from __future__ import annotations
 import hashlib
 import html as _html
@@ -12,19 +12,19 @@ from datetime import date
 from pathlib import Path
 import networkx as nx
 from networkx.readwrite import json_graph
-from graphify.security import sanitize_label
-from graphify.analyze import _node_community_map
-from graphify.build import edge_data
+from mapmmd.security import sanitize_label
+from mapmmd.analyze import _node_community_map
+from mapmmd.build import edge_data
 
 
 # Artifacts worth preserving across rebuilds (non-regenerable without LLM or curation).
 _BACKUP_ARTIFACTS = [
     "graph.json",
     "GRAPH_REPORT.md",
-    ".graphify_labels.json",
-    ".graphify_analysis.json",
+    ".mapmmd_labels.json",
+    ".mapmmd_analysis.json",
     "manifest.json",
-    ".graphify_semantic_marker",
+    ".mapmmd_semantic_marker",
     "cost.json",
 ]
 
@@ -33,8 +33,8 @@ def backup_if_protected(out_dir: Path) -> "Path | None":
     """Snapshot graph artifacts to a dated subfolder before an overwrite.
 
     Triggers when graph.json exists AND either:
-    - .graphify_semantic_marker is present (graph cost real LLM tokens), or
-    - .graphify_labels.json contains at least one non-default community label
+    - .mapmmd_semantic_marker is present (graph cost real LLM tokens), or
+    - .mapmmd_labels.json contains at least one non-default community label
       (graph has been curated by a human or skill).
 
     Returns the backup folder path, or None if no backup was taken.
@@ -47,9 +47,9 @@ def backup_if_protected(out_dir: Path) -> "Path | None":
     if not (out / "graph.json").exists():
         return None
 
-    is_semantic = (out / ".graphify_semantic_marker").exists()
+    is_semantic = (out / ".mapmmd_semantic_marker").exists()
     is_curated = False
-    labels_file = out / ".graphify_labels.json"
+    labels_file = out / ".mapmmd_labels.json"
     if labels_file.exists():
         try:
             labels = json.loads(labels_file.read_text(encoding="utf-8"))
@@ -86,11 +86,11 @@ def backup_if_protected(out_dir: Path) -> "Path | None":
                 except Exception:
                     pass
         if copied:
-            print(f"[graphify] backed up {reason} graph ({copied} files) -> {backup_dir.name}/")
+            print(f"[mapmmd] backed up {reason} graph ({copied} files) -> {backup_dir.name}/")
         return backup_dir
     except Exception as exc:
         import sys
-        print(f"[graphify] warning: backup failed ({exc}) - continuing with overwrite", file=sys.stderr)
+        print(f"[mapmmd] warning: backup failed ({exc}) - continuing with overwrite", file=sys.stderr)
         return None
 
 def _obsidian_tag(name: str) -> str:
@@ -113,7 +113,7 @@ def _strip_diacritics(text: str | None) -> str:
 def _yaml_str(s: str) -> str:
     """Escape a value for safe embedding in a YAML double-quoted scalar (F-009).
 
-    See `graphify.ingest._yaml_str` for the full rationale; duplicated here to
+    See `mapmmd.ingest._yaml_str` for the full rationale; duplicated here to
     avoid pulling the URL-fetching `ingest` module into export's dependency
     graph. Handles backslash, double-quote, all line breaks (\\n, \\r,
     U+2028, U+2029), tab, NUL, and other C0/DEL control characters that
@@ -460,7 +460,7 @@ LEGEND.forEach(c => {{
 _CONFIDENCE_SCORE_DEFAULTS = {"EXTRACTED": 1.0, "INFERRED": 0.5, "AMBIGUOUS": 0.2}
 
 
-def attach_hyperedges(G: nx.Graph, hyperedges: list) -> None:
+def attach_hyperedges(G: nx.mmd, hyperedges: list) -> None:
     """Store hyperedges in the graph's metadata dict."""
     existing = G.graph.get("hyperedges", [])
     seen_ids = {h["id"] for h in existing}
@@ -481,12 +481,12 @@ def _git_head() -> str | None:
         return None
 
 
-def to_json(G: nx.Graph, communities: dict[int, list[str]], output_path: str, *, force: bool = False, built_at_commit: str | None = None, community_labels: dict[int, str] | None = None) -> bool:
+def to_json(G: nx.mmd, communities: dict[int, list[str]], output_path: str, *, force: bool = False, built_at_commit: str | None = None, community_labels: dict[int, str] | None = None) -> bool:
     # Safety check: refuse to silently shrink an existing graph (#479)
     existing_path = Path(output_path)
     if not force and existing_path.exists():
         try:
-            from graphify.security import check_graph_file_size_cap
+            from mapmmd.security import check_graph_file_size_cap
             check_graph_file_size_cap(existing_path)
             existing_data = json.loads(existing_path.read_text(encoding="utf-8"))
             existing_n = len(existing_data.get("nodes", []))
@@ -494,12 +494,12 @@ def to_json(G: nx.Graph, communities: dict[int, list[str]], output_path: str, *,
             if new_n < existing_n:
                 import sys as _sys
                 print(
-                    f"[graphify] WARNING: new graph has {new_n} nodes but existing "
+                    f"[mapmmd] WARNING: new graph has {new_n} nodes but existing "
                     f"graph.json has {existing_n} (net -{existing_n - new_n}). "
                     f"Refusing to overwrite. Possible causes: missing chunk files from "
                     f"a previous session, or fuzzy dedup collapsed same-named symbols "
                     f"across files during an --update on an already-current graph. "
-                    f"Run a full rebuild (/graphify .) to be safe, or pass force=True "
+                    f"Run a full rebuild (/mapmmd .) to be safe, or pass force=True "
                     f"only if you have verified the reduction is legitimate.",
                     file=_sys.stderr,
                 )
@@ -601,8 +601,8 @@ def _cypher_label(raw: str, fallback: str) -> str:
     return cleaned
 
 
-def to_cypher(G: nx.Graph, output_path: str) -> None:
-    lines = ["// Neo4j Cypher import - generated by /graphify", ""]
+def to_cypher(G: nx.mmd, output_path: str) -> None:
+    lines = ["// Neo4j Cypher import - generated by /mapmmd", ""]
     for node_id, data in G.nodes(data=True):
         label = _cypher_escape(data.get("label", node_id))
         node_id_esc = _cypher_escape(node_id)
@@ -629,7 +629,7 @@ def to_cypher(G: nx.Graph, output_path: str) -> None:
 
 
 def to_html(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]],
     output_path: str,
     community_labels: dict[int, str] | None = None,
@@ -654,9 +654,9 @@ def to_html(
             # Build aggregated community meta-graph
             from collections import Counter as _Counter
             import networkx as _nx
-            print(f"Graph has {G.number_of_nodes()} nodes (above {limit} limit). Building aggregated community view...")
+            print(f"mmd has {G.number_of_nodes()} nodes (above {limit} limit). Building aggregated community view...")
             node_to_community = {nid: cid for cid, members in communities.items() for nid in members}
-            meta = _nx.Graph()
+            meta = _nx.mmd()
             for cid, members in communities.items():
                 meta.add_node(str(cid), label=(community_labels or {}).get(cid, f"Community {cid}"))
             edge_counts = _Counter()
@@ -702,7 +702,7 @@ def to_html(
             print("Tip: run with --obsidian for full node-level detail.")
             return
         raise ValueError(
-            f"Graph has {G.number_of_nodes()} nodes - too large for HTML viz "
+            f"mmd has {G.number_of_nodes()} nodes - too large for HTML viz "
             f"(limit: {limit}). Use --no-viz, raise GRAPHIFY_VIZ_NODE_LIMIT, "
             f"or reduce input size."
         )
@@ -785,7 +785,7 @@ def to_html(
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>graphify - {title}</title>
+<title>mapmmd - {title}</title>
 <script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"
         integrity="sha384-Ux6phic9PEHJ38YtrijhkzyJ8yQlH8i/+buBR8s3mAZOJrP1gwyvAcIYl3GWtpX1"
         crossorigin="anonymous"></script>
@@ -840,7 +840,7 @@ def _cap_filename(s: str, limit: int = 200) -> str:
     return f"{truncated}_{digest}"
 
 
-def _dedup_node_filenames(G: nx.Graph, safe_name) -> dict[str, str]:
+def _dedup_node_filenames(G: nx.mmd, safe_name) -> dict[str, str]:
     """Map each node_id to a unique note filename, appending a numeric suffix on
     collision. The collision set is keyed on the lowercased name so two labels
     differing only by case (e.g. "References" vs "references") still get distinct
@@ -863,7 +863,7 @@ def _dedup_node_filenames(G: nx.Graph, safe_name) -> dict[str, str]:
 
 
 def to_obsidian(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]],
     output_dir: str,
     community_labels: dict[int, str] | None = None,
@@ -908,12 +908,12 @@ def to_obsidian(
             return "EXTRACTED"
         return Counter(confs).most_common(1)[0][0]
 
-    # Map file_type → graphify tag
+    # Map file_type → mapmmd tag
     _FTYPE_TAG = {
-        "code": "graphify/code",
-        "document": "graphify/document",
-        "paper": "graphify/paper",
-        "image": "graphify/image",
+        "code": "mapmmd/code",
+        "document": "mapmmd/document",
+        "paper": "mapmmd/paper",
+        "image": "mapmmd/image",
     }
 
     # Write one .md file per node
@@ -928,9 +928,9 @@ def to_obsidian(
 
         # Build tags for this node
         ftype = data.get("file_type", "")
-        ftype_tag = _FTYPE_TAG.get(ftype, f"graphify/{ftype}" if ftype else "graphify/document")
+        ftype_tag = _FTYPE_TAG.get(ftype, f"mapmmd/{ftype}" if ftype else "mapmmd/document")
         dom_conf = _dominant_confidence(node_id)
-        conf_tag = f"graphify/{dom_conf}"
+        conf_tag = f"mapmmd/{dom_conf}"
         comm_tag = f"community/{_obsidian_tag(community_name)}"
         node_tags = [ftype_tag, conf_tag, comm_tag]
 
@@ -1128,7 +1128,7 @@ def to_obsidian(
 
 
 def to_canvas(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]],
     output_path: str,
     community_labels: dict[int, str] | None = None,
@@ -1300,7 +1300,7 @@ def to_canvas(
 
 
 def push_to_neo4j(
-    G: nx.Graph,
+    G: nx.mmd,
     uri: str,
     user: str,
     password: str,
@@ -1314,7 +1314,7 @@ def push_to_neo4j(
     Returns a dict with counts of nodes and edges pushed.
     """
     try:
-        from neo4j import GraphDatabase
+        from neo4j import mmdDatabase
     except ImportError as e:
         raise ImportError(
             "neo4j driver not installed. Run: pip install neo4j"
@@ -1330,7 +1330,7 @@ def push_to_neo4j(
         sanitized = re.sub(r"[^A-Za-z0-9_]", "", label)
         return sanitized if sanitized else "Entity"
 
-    driver = GraphDatabase.driver(uri, auth=(user, password))
+    driver = mmdDatabase.driver(uri, auth=(user, password))
     nodes_pushed = 0
     edges_pushed = 0
 
@@ -1372,12 +1372,12 @@ def push_to_neo4j(
 
 
 def push_to_falkordb(
-    G: nx.Graph,
+    G: nx.mmd,
     uri: str,
     user: str | None = None,
     password: str | None = None,
     communities: dict[int, list[str]] | None = None,
-    graph_name: str = "graphify",
+    graph_name: str = "mapmmd",
 ) -> dict[str, int]:
     """Push graph directly to a running FalkorDB instance via the Python SDK.
 
@@ -1390,7 +1390,7 @@ def push_to_falkordb(
         informational - "falkordb://localhost:6379", "redis://localhost:6379"
         and a bare "localhost:6379" are all equivalent (default port 6379).
       - a named graph is selected via db.select_graph(graph_name) (default
-        "graphify"); FalkorDB keys each graph by name in the same instance.
+        "mapmmd"); FalkorDB keys each graph by name in the same instance.
       - queries run via graph.query(cypher, params) - there is no session object.
       - auth is optional (FalkorDB runs without credentials by default), so user
         and password may be None.
@@ -1468,11 +1468,11 @@ def push_to_falkordb(
 
 
 def to_graphml(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]],
     output_path: str,
 ) -> None:
-    """Export graph as GraphML - opens in Gephi, yEd, and any GraphML-compatible tool.
+    """Export graph as mmdML - opens in Gephi, yEd, and any mmdML-compatible tool.
 
     Community IDs are written as a node attribute so Gephi can colour by community.
     Edge confidence (EXTRACTED/INFERRED/AMBIGUOUS) is preserved as an edge attribute.
@@ -1494,7 +1494,7 @@ def to_graphml(
 
 
 def to_svg(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]],
     output_path: str,
     community_labels: dict[int, str] | None = None,

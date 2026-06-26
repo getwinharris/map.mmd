@@ -1,15 +1,18 @@
-# Graph Report - /home/safi/graphify-benchmark  (2026-04-04)
+# mmd Report - /home/safi/mapmmd-benchmark  (2026-04-04)
 
 ## Corpus Check
+
 - 49 files · ~92,616 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
+
 - 285 nodes · 340 edges · 53 communities detected
 - Extraction: 81% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS
 - Token cost: 6,000 input · 3,500 output
 
 ## God Nodes (most connected - your core abstractions)
+
 1. `Value` - 15 edges
 2. `Training Script` - 11 edges
 3. `GPT` - 9 edges
@@ -22,10 +25,11 @@
 10. `FlashAttention Algorithm` - 7 edges
 
 ## Surprising Connections (you probably didn't know these)
+
 - `from_pretrained()` --calls--> `get_default_config()`  [INFERRED]
-  /home/safi/graphify-benchmark/repos/nanoGPT/model.py → /home/safi/graphify-benchmark/repos/minGPT/mingpt/model.py
+  /home/safi/mapmmd-benchmark/repos/nanoGPT/model.py → /home/safi/mapmmd-benchmark/repos/minGPT/mingpt/model.py
 - `get_batch()` --conceptually_related_to--> `get_batch()`  [INFERRED]
-  /home/safi/graphify-benchmark/repos/nanoGPT/train.py → /home/safi/graphify-benchmark/repos/nanoGPT/bench.py
+  /home/safi/mapmmd-benchmark/repos/nanoGPT/train.py → /home/safi/mapmmd-benchmark/repos/nanoGPT/bench.py
 - `Training Script` --produces--> `GPTConfig Dataclass`  [INFERRED]
   repos/nanoGPT/train.py → repos/nanoGPT/model.py
 - `GPT Language Model (minGPT)` --conceptually_related_to--> `GPT Model Class`  [INFERRED]
@@ -36,218 +40,272 @@
 ## Communities
 
 ### Community 0 - "nanoGPT Model Architecture"
+
 Cohesion: 0.11
 Nodes (12): dataclasses, inspect, Block, CausalSelfAttention, from_pretrained(), get_default_config(), GPT, GPTConfig (+4 more)
 
 ### Community 1 - "minGPT Training + Datasets"
+
 Cohesion: 0.12
 Nodes (17): batch_end_callback(), eval_split(), get_config(), get_default_config(), get_config(), get_default_config(), collections, mingpt_bpe (+9 more)
 
 ### Community 2 - "nanoGPT Training Pipeline"
+
 Cohesion: 0.13
 Nodes (15): get_batch(), contextlib, datasets, math, numpy, os, pickle, tiktoken (+7 more)
 
 ### Community 3 - "nanoGPT Config + Data Prep"
+
 Cohesion: 0.1
 Nodes (22): Benchmarking Script, Config: Finetune GPT-2-XL on Shakespeare, Config: Train GPT-2 (124M), Config: Train Character-Level Shakespeare, Configurator (exec-based Override System), OpenWebText Data Preparation, Shakespeare Char-Level Data Preparation, Shakespeare (BPE) Data Preparation (+14 more)
 
 ### Community 4 - "micrograd NN Layer"
+
 Cohesion: 0.13
 Nodes (6): micrograd_engine, Layer, MLP, Module, Neuron, random
 
 ### Community 5 - "FlashAttention Paper"
+
 Cohesion: 0.12
 Nodes (21): FlashAttention Algorithm, GPU HBM vs On-Chip SRAM Memory Hierarchy, FlashAttention: Fast Memory-Efficient Attention, Selective Gradient Checkpointing (Recomputation), Result: 15% faster BERT-large vs MLPerf, Result: 3x GPT-2 training speedup, Tiling for Attention Computation, Self-Attention Mechanism (Q, K, V) (+13 more)
 
 ### Community 6 - "BPE Tokenizer"
+
 Cohesion: 0.19
 Nodes (8): BPETokenizer, bytes_to_unicode(), Encoder, get_encoder(), get_file(), get_pairs(), regex, requests
 
 ### Community 7 - "micrograd Autograd Engine"
+
 Cohesion: 0.12
 Nodes (1): Value
 
 ### Community 8 - "Stdlib + Config Utilities"
+
 Cohesion: 0.18
 Nodes (5): ast, json, sys, CfgNode, setup_logging()
 
 ### Community 9 - "Addition Dataset"
+
 Cohesion: 0.15
 Nodes (3): AdditionDataset, CharDataset, Dataset
 
 ### Community 10 - "micrograd README + Backprop"
+
 Cohesion: 0.21
-Nodes (11): Value (autograd scalar), Value.backward, Micrograd Computation Graph (operations + gradients), Backpropagation / Reverse-Mode Autodiff, Dynamically Built DAG (computation graph), micrograd, GPT.configure_optimizers, GPT.forward (minGPT) (+3 more)
+Nodes (11): Value (autograd scalar), Value.backward, Micrograd Computation mmd (operations + gradients), Backpropagation / Reverse-Mode Autodiff, Dynamically Built DAG (computation graph), micrograd, GPT.configure_optimizers, GPT.forward (minGPT) (+3 more)
 
 ### Community 11 - "Attention Residuals Paper"
+
 Cohesion: 0.33
 Nodes (7): Block Attention Residuals, Full Attention Residuals, Attention Residuals (AttnRes) - Kimi Team, PreNorm Dilution Problem, Result: AttnRes improves MMLU 73.5→74.6, BBH 76.3→78.0, Result: Block AttnRes matches 1.25x more compute baseline, Residual Connections in Deep Networks
 
 ### Community 12 - "Continual LoRA Paper"
+
 Cohesion: 0.33
 Nodes (6): Catastrophic Forgetting Problem, CoLoR Method, Low Rank Adaptation (LoRA), CoLoR: Continual Learning with Low Rank Adaptation, Vision Transformer (ViT-B-16) Backbone, Multi-Head Attention
 
 ### Community 13 - "minGPT Trainer Class"
+
 Cohesion: 0.4
 Nodes (1): Trainer
 
 ### Community 14 - "NeuralWalker Paper"
+
 Cohesion: 0.4
-Nodes (5): Mamba State Space Model, NeuralWalker Architecture, NeuralWalker: Learning Long Range Dependencies on Graphs, Result: NeuralWalker is strictly more expressive than 1-WL, Result: NeuralWalker +10% PascalVOC-SP, +13% COCO-SP over SOTA
+Nodes (5): Mamba State Space Model, NeuralWalker Architecture, NeuralWalker: Learning Long Range Dependencies on mmds, Result: NeuralWalker is strictly more expressive than 1-WL, Result: NeuralWalker +10% PascalVOC-SP, +13% COCO-SP over SOTA
 
 ### Community 15 - "Dataset Abstractions"
+
 Cohesion: 0.67
 Nodes (3): AdditionDataset, CharDataset, GPT.generate (minGPT)
 
 ### Community 16 - "BPETokenizer (minGPT)"
+
 Cohesion: 1.0
 Nodes (2): BPETokenizer, BPE Encoder
 
 ### Community 17 - "OpenWebText Dataset"
+
 Cohesion: 1.0
 Nodes (2): OpenWebText Dataset, OpenWebText Dataset (~9B tokens, 17GB, 8M documents)
 
 ### Community 18 - "torch.compile Performance"
+
 Cohesion: 1.0
 Nodes (2): Performance: torch.compile reduces iter time from 250ms to 135ms, torch.compile (PyTorch 2.0)
 
 ### Community 19 - "Behavior Token Paper"
+
 Cohesion: 1.0
 Nodes (2): Behavior Tokens Concept, LCBM: Large Content and Behavior Model
 
 ### Community 20 - "Setup"
+
 Cohesion: 1.0
 Nodes (1): setuptools
 
 ### Community 21 - "Nanogpt Complexity Metaphor"
+
 Cohesion: 1.0
 Nodes (2): GPT Complexity Metaphor: Battleship vs Speedboat, nanogpt_readme_design_simplicity
 
 ### Community 22 - "Mingpt Readme Design Education"
+
 Cohesion: 1.0
 Nodes (2): Design Decision: minGPT prioritizes education (~300 lines), Design Decision: nanoGPT prioritizes speed over education
 
 ### Community 23 - "Mingpt Readme Mingpt"
+
 Cohesion: 1.0
 Nodes (2): mingpt_readme_mingpt, Attention Is All You Need (Transformer Paper)
 
 ### Community 24 - "Init"
+
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 25 - "Train Gpt2"
+
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 26 - "Eval Gpt2 Xl"
+
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 27 - "Eval Gpt2"
+
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 28 - "Eval Gpt2 Large"
+
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 29 - "Train Shakespeare Char"
+
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 30 - "Eval Gpt2 Medium"
+
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 31 - "Model Layernorm"
+
 Cohesion: 1.0
 Nodes (1): LayerNorm with Optional Bias
 
 ### Community 32 - "Model Meta Pkl Schema"
+
 Cohesion: 1.0
 Nodes (1): meta.pkl Vocabulary Schema
 
 ### Community 33 - "Config Eval Gpt2"
+
 Cohesion: 1.0
 Nodes (1): Config: Eval GPT-2 (124M)
 
 ### Community 34 - "Config Eval Gpt2 Medium"
+
 Cohesion: 1.0
 Nodes (1): Config: Eval GPT-2 Medium
 
 ### Community 35 - "Config Eval Gpt2 Large"
+
 Cohesion: 1.0
 Nodes (1): Config: Eval GPT-2 Large
 
 ### Community 36 - "Config Eval Gpt2 Xl"
+
 Cohesion: 1.0
 Nodes (1): Config: Eval GPT-2 XL
 
 ### Community 37 - "Mingpt Model Newgelu"
+
 Cohesion: 1.0
 Nodes (1): NewGELU Activation
 
 ### Community 38 - "Mingpt Model Gpt From Pretrained"
+
 Cohesion: 1.0
 Nodes (1): GPT.from_pretrained (minGPT)
 
 ### Community 39 - "Mingpt Trainer Trainer"
+
 Cohesion: 1.0
 Nodes (1): Trainer (minGPT)
 
 ### Community 40 - "Mingpt Utils Cfgnode"
+
 Cohesion: 1.0
 Nodes (1): CfgNode Configuration Class
 
 ### Community 41 - "Mingpt Utils Set Seed"
+
 Cohesion: 1.0
 Nodes (1): set_seed
 
 ### Community 42 - "Mingpt Utils Setup Logging"
+
 Cohesion: 1.0
 Nodes (1): setup_logging
 
 ### Community 43 - "Mingpt Bpe Get Encoder"
+
 Cohesion: 1.0
 Nodes (1): get_encoder
 
 ### Community 44 - "Mingpt Readme Gpt2 Arch Changes"
+
 Cohesion: 1.0
 Nodes (1): GPT-2 Architectural Changes: pre-norm LayerNorm, scaled residual init
 
 ### Community 45 - "Shakespeare Char Readme Char Dataset"
+
 Cohesion: 1.0
 Nodes (1): Tiny Shakespeare Char Dataset (1M train tokens)
 
 ### Community 46 - "Mingpt Readme Adder Project"
+
 Cohesion: 1.0
 Nodes (1): minGPT Adder Project (GPT trained to add numbers)
 
 ### Community 47 - "Chargpt Readme Tiny Shakespeare"
+
 Cohesion: 1.0
 Nodes (1): Tiny Shakespeare Dataset
 
 ### Community 48 - "2205 14135 Io Awareness"
+
 Cohesion: 1.0
 Nodes (1): IO-Aware Attention Computation
 
 ### Community 49 - "2205 14135 Result Memory Linear"
+
 Cohesion: 1.0
 Nodes (1): Result: FlashAttention memory scales linearly
 
 ### Community 50 - "2311 17601 Result Domainnet"
+
 Cohesion: 1.0
 Nodes (1): Result: CoLoR 69.7% on DomainNet (+19% over S-Prompts)
 
 ### Community 51 - "2309 00359 Result Behavior Sim"
+
 Cohesion: 1.0
 Nodes (1): Result: LCBM outperforms GPT-3.5/4 on behavior simulation (10x smaller)
 
 ### Community 52 - "Concept Positional Encoding"
+
 Cohesion: 1.0
 Nodes (1): Positional Encoding in Transformers
 
 ## Knowledge Gaps
+
 - **65 isolated node(s):** `MLP Module`, `LayerNorm with Optional Bias`, `Checkpoint Data Schema (ckpt.pt)`, `meta.pkl Vocabulary Schema`, `Sampling/Inference Script` (+60 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `BPETokenizer (minGPT)`** (2 nodes): `BPETokenizer`, `BPE Encoder`
@@ -326,6 +384,7 @@ Nodes (1): Positional Encoding in Transformers
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
+
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Training Script` connect `nanoGPT Config + Data Prep` to `nanoGPT Training Pipeline`?**

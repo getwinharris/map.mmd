@@ -1,10 +1,10 @@
-"""Elixir extractor. Moved verbatim from graphify/extract.py."""
+"""Elixir extractor. Moved verbatim from mapmmd/extract.py."""
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-from graphify.extractors.base import _LANGUAGE_BUILTIN_GLOBALS, _file_stem, _make_id
+from mapmmd.extractors.base import _LANGUAGE_BUILTIN_GLOBALS, _file_stem, _make_id
 
 
 def extract_elixir(path: Path) -> dict:

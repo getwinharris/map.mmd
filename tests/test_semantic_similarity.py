@@ -1,9 +1,9 @@
 """Tests for semantically_similar_to edge support."""
 import networkx as nx
 import pytest
-from graphify.build import build_from_json
-from graphify.analyze import surprising_connections, _surprise_score
-from graphify.report import generate
+from mapmmd.build import build_from_json
+from mapmmd.analyze import surprising_connections, _surprise_score
+from mapmmd.report import generate
 
 
 # ---------------------------------------------------------------------------
@@ -41,8 +41,8 @@ def _make_graph_with_semantic_edge():
 
 
 def _make_two_edge_graph():
-    """Graph with one semantically_similar_to edge and one references edge, both cross-file."""
-    G = nx.Graph()
+    """mmd with one semantically_similar_to edge and one references edge, both cross-file."""
+    G = nx.mmd()
     for nid, label, src in [
         ("a", "ValidateInput", "auth/validators.py"),
         ("b", "CheckInput", "api/checks.py"),
@@ -165,7 +165,7 @@ def test_report_semantic_tag_on_correct_line():
 
 def test_report_no_semantic_tag_for_other_relations():
     """Non-semantic edges must not get the [semantically similar] tag."""
-    G = nx.Graph()
+    G = nx.mmd()
     for nid, label, src in [
         ("x", "Alpha", "repo1/a.py"),
         ("y", "Beta", "repo2/b.py"),

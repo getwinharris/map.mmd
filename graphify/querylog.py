@@ -1,4 +1,4 @@
-"""Query logging for graphify — append-only JSONL, fail-silent."""
+"""Query logging for mapmmd — append-only JSONL, fail-silent."""
 from __future__ import annotations
 
 import json
@@ -18,7 +18,7 @@ def _log_path() -> Path | None:
     override = os.environ.get("GRAPHIFY_QUERY_LOG", "").strip()
     if override:
         return Path(override).expanduser()
-    return Path.home() / ".cache" / "graphify-queries.log"
+    return Path.home() / ".cache" / "mapmmd-queries.log"
 
 
 def _log_responses() -> bool:

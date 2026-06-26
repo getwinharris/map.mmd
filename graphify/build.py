@@ -71,23 +71,23 @@ def _norm_source_file(p: str | None, root: str | None = None) -> str | None:
     return p
 
 
-def edge_data(G: nx.Graph, u: str, v: str) -> dict:
-    """Return one edge attribute dict for (u, v), tolerating MultiGraph.
+def edge_data(G: nx.mmd, u: str, v: str) -> dict:
+    """Return one edge attribute dict for (u, v), tolerating Multimmd.
 
-    For MultiGraph/MultiDiGraph there can be multiple parallel edges;
+    For Multimmd/MultiDimmd there can be multiple parallel edges;
     this returns the first one (sufficient for callers that only need
     relation/confidence for rendering). Fixes #796.
     """
     raw = G[u][v]
-    if isinstance(G, (nx.MultiGraph, nx.MultiDiGraph)):
+    if isinstance(G, (nx.Multimmd, nx.MultiDimmd)):
         return next(iter(raw.values()), {})
     return raw
 
 
-def edge_datas(G: nx.Graph, u: str, v: str) -> list[dict]:
+def edge_datas(G: nx.mmd, u: str, v: str) -> list[dict]:
     """Return every edge attribute dict for (u, v); always a list."""
     raw = G[u][v]
-    if isinstance(G, (nx.MultiGraph, nx.MultiDiGraph)):
+    if isinstance(G, (nx.Multimmd, nx.MultiDimmd)):
         return list(raw.values())
     return [raw]
 
@@ -115,7 +115,7 @@ def dedupe_edges(edges: list[dict]) -> list[dict]:
     """Collapse exact parallel edges by ``(source, target, relation)``, keeping the
     first occurrence.
 
-    The clustered build path runs edges through a NetworkX ``DiGraph``, which
+    The clustered build path runs edges through a NetworkX ``Dimmd``, which
     collapses parallel edges automatically. The ``--no-cluster`` and incremental
     ``update`` write paths bypass NetworkX and concatenate edge lists raw, so
     duplicates accumulate and edge counts become non-deterministic across build
@@ -134,11 +134,11 @@ def dedupe_edges(edges: list[dict]) -> list[dict]:
     return out
 
 
-def build_from_json(extraction: dict, *, directed: bool = False, root: str | Path | None = None) -> nx.Graph:
+def build_from_json(extraction: dict, *, directed: bool = False, root: str | Path | None = None) -> nx.mmd:
     """Build a NetworkX graph from an extraction dict.
 
-    directed=True produces a DiGraph that preserves edge direction (source→target).
-    directed=False (default) produces an undirected Graph for backward compatibility.
+    directed=True produces a Dimmd that preserves edge direction (source→target).
+    directed=False (default) produces an undirected mmd for backward compatibility.
     root: if given, absolute source_file paths from semantic subagents are made
         relative to root so all nodes share a consistent path key (#932).
     """
@@ -159,7 +159,7 @@ def build_from_json(extraction: dict, *, directed: bool = False, root: str | Pat
                 if e.get("source") == node_id or e.get("target") == node_id
             )
             print(
-                f"[graphify] WARNING: node '{node_id}' uses field 'source' instead of "
+                f"[mapmmd] WARNING: node '{node_id}' uses field 'source' instead of "
                 f"'source_file' — {affected_edges} edge(s) may be misrouted. "
                 f"Rename the field to 'source_file' to silence this warning.",
                 file=sys.stderr,
@@ -167,7 +167,7 @@ def build_from_json(extraction: dict, *, directed: bool = False, root: str | Pat
             node["source_file"] = node.pop("source")
         # Default missing/None file_type to "concept" so legacy graph.json
         # entries (and stub nodes preserved by `_rebuild_code` from older
-        # graphify versions that didn't always populate file_type) don't
+        # mapmmd versions that didn't always populate file_type) don't
         # trigger spurious "invalid file_type 'None'" validator warnings (#660).
         if node.get("file_type") in (None, ""):
             node["file_type"] = "concept"
@@ -179,8 +179,8 @@ def build_from_json(extraction: dict, *, directed: bool = False, root: str | Pat
     # Dangling edges (stdlib/external imports) are expected - only warn about real schema errors.
     real_errors = [e for e in errors if "does not match any node id" not in e]
     if real_errors:
-        print(f"[graphify] Extraction warning ({len(real_errors)} issues): {real_errors[0]}", file=sys.stderr)
-    G: nx.Graph = nx.DiGraph() if directed else nx.Graph()
+        print(f"[mapmmd] Extraction warning ({len(real_errors)} issues): {real_errors[0]}", file=sys.stderr)
+    G: nx.mmd = nx.Dimmd() if directed else nx.mmd()
     for node in extraction.get("nodes", []):
         # Skip dict nodes with a missing or non-hashable id (e.g. a list emitted
         # by a buggy LLM extraction) so NetworkX add_node never raises
@@ -194,7 +194,7 @@ def build_from_json(extraction: dict, *, directed: bool = False, root: str | Pat
                 hash(node["id"])
             except TypeError:
                 print(
-                    f"[graphify] WARNING: skipping node with non-hashable id "
+                    f"[mapmmd] WARNING: skipping node with non-hashable id "
                     f"{node['id']!r} (must be a string).",
                     file=sys.stderr,
                 )
@@ -301,7 +301,7 @@ def build_from_json(extraction: dict, *, directed: bool = False, root: str | Pat
             hash(tgt)
         except TypeError:
             print(
-                f"[graphify] WARNING: skipping edge with non-hashable endpoint "
+                f"[mapmmd] WARNING: skipping edge with non-hashable endpoint "
                 f"(source={src!r}, target={tgt!r}).",
                 file=sys.stderr,
             )
@@ -348,7 +348,7 @@ def build_from_json(extraction: dict, *, directed: bool = False, root: str | Pat
         attrs["_tgt"] = tgt
         # When the graph is undirected and the same node pair appears twice with
         # the same relation but opposite directions (e.g. a `calls` b and b `calls` a),
-        # nx.Graph collapses them into one edge. The deterministic sort above means
+        # nx.mmd collapses them into one edge. The deterministic sort above means
         # the lexicographically-later direction would systematically overwrite the
         # earlier one's _src/_tgt, silently flipping the surviving edge's caller
         # and callee. First-seen direction wins instead — drop the redundant
@@ -379,11 +379,11 @@ def build(
     dedup: bool = True,
     dedup_llm_backend: str | None = None,
     root: str | Path | None = None,
-) -> nx.Graph:
+) -> nx.mmd:
     """Merge multiple extraction results into one graph.
 
-    directed=True produces a DiGraph that preserves edge direction (source→target).
-    directed=False (default) produces an undirected Graph for backward compatibility.
+    directed=True produces a Dimmd that preserves edge direction (source→target).
+    directed=False (default) produces an undirected mmd for backward compatibility.
     dedup=True (default) runs entity deduplication before building the graph.
     dedup_llm_backend: if set (e.g. "gemini", "claude", or "kimi"), uses LLM to resolve
         ambiguous pairs in the 75–92 Jaro-Winkler score zone.
@@ -394,7 +394,7 @@ def build(
     results before semantic results so semantic labels take precedence, or
     reverse the order if you prefer AST source_location precision to win.
     """
-    from graphify.dedup import deduplicate_entities
+    from mapmmd.dedup import deduplicate_entities
     combined: dict = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 0, "output_tokens": 0}
     for ext in extractions:
         combined["nodes"].extend(ext.get("nodes", []))
@@ -452,7 +452,7 @@ def deduplicate_by_label(nodes: list[dict], edges: list[dict]) -> tuple[list[dic
     if not remap:
         return nodes, edges
 
-    print(f"[graphify] Deduplicated {len(remap)} duplicate node(s) by label.", file=sys.stderr)
+    print(f"[mapmmd] Deduplicated {len(remap)} duplicate node(s) by label.", file=sys.stderr)
     deduped_nodes = list(canonical.values())
     deduped_edges = []
     for edge in edges:
@@ -473,7 +473,7 @@ def build_merge(
     dedup: bool = True,
     dedup_llm_backend: str | None = None,
     root: str | Path | None = None,
-) -> nx.Graph:
+) -> nx.mmd:
     """Load existing graph.json, merge new chunks into it, and save back.
 
     Re-extracted files REPLACE their prior contribution: any source_file present
@@ -486,13 +486,13 @@ def build_merge(
     graph_path = Path(graph_path if graph_path is not None else _default_graph_json())
     if graph_path.exists():
         # Read JSON directly instead of going through node_link_graph().
-        # The latter rebuilds an undirected nx.Graph and then enumerating
+        # The latter rebuilds an undirected nx.mmd and then enumerating
         # edges() yields endpoints based on node insertion order, which
         # silently flips directional edges (e.g. `calls`) when the callee
         # was inserted before the caller. The _src/_tgt direction-preserving
         # attrs are popped before saving in export.py, so going through the
         # NetworkX round-trip loses direction permanently (#760).
-        from graphify.security import check_graph_file_size_cap
+        from mapmmd.security import check_graph_file_size_cap
         check_graph_file_size_cap(graph_path)
         data = json.loads(graph_path.read_text(encoding="utf-8"))
         links_key = "links" if "links" in data else "edges"
@@ -562,7 +562,7 @@ def build_merge(
         n_nodes = len(to_remove)
         if n_nodes:
             print(
-                f"[graphify] Pruned {n_nodes} node(s) from {n_files} deleted source file(s).",
+                f"[mapmmd] Pruned {n_nodes} node(s) from {n_files} deleted source file(s).",
                 file=sys.stderr,
             )
 
@@ -573,13 +573,13 @@ def build_merge(
         if edges_to_remove:
             G.remove_edges_from(edges_to_remove)
             print(
-                f"[graphify] Pruned {len(edges_to_remove)} edge(s) from deleted source file(s).",
+                f"[mapmmd] Pruned {len(edges_to_remove)} edge(s) from deleted source file(s).",
                 file=sys.stderr,
             )
 
         if not n_nodes and not edges_to_remove:
             print(
-                f"[graphify] {n_files} source file(s) deleted since last run — "
+                f"[mapmmd] {n_files} source file(s) deleted since last run — "
                 f"no matching nodes or edges in graph, already clean.",
                 file=sys.stderr,
             )
@@ -591,14 +591,14 @@ def build_merge(
         new_n = G.number_of_nodes()
         if new_n < existing_n:
             raise ValueError(
-                f"graphify: build_merge would shrink graph from {existing_n} → {new_n} nodes. "
+                f"mapmmd: build_merge would shrink graph from {existing_n} → {new_n} nodes. "
                 f"Pass prune_sources explicitly if you intend to remove nodes."
             )
 
     return G
 
 
-def prefix_graph_for_global(G: nx.Graph, repo_tag: str) -> nx.Graph:
+def prefix_graph_for_global(G: nx.mmd, repo_tag: str) -> nx.mmd:
     """Return a copy of G with all node IDs prefixed with repo_tag::.
 
     Labels are preserved unchanged (for display). A 'local_id' attribute
@@ -614,7 +614,7 @@ def prefix_graph_for_global(G: nx.Graph, repo_tag: str) -> nx.Graph:
     return H
 
 
-def prune_repo_from_graph(G: nx.Graph, repo_tag: str) -> int:
+def prune_repo_from_graph(G: nx.mmd, repo_tag: str) -> int:
     """Remove all nodes tagged with repo_tag from G in-place. Returns count removed."""
     to_remove = [n for n, d in G.nodes(data=True) if d.get("repo") == repo_tag]
     G.remove_nodes_from(to_remove)

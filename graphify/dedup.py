@@ -1,4 +1,4 @@
-"""Entity deduplication pipeline for graphify knowledge graphs.
+"""Entity deduplication pipeline for mapmmd knowledge graphs.
 
 Pipeline: exact normalization → entropy gate → MinHash/LSH blocking →
 Jaro-Winkler verification → same-community boost → union-find merge.
@@ -9,7 +9,7 @@ import re
 import unicodedata
 from collections import defaultdict
 
-from graphify._minhash import MinHash, MinHashLSH
+from mapmmd._minhash import MinHash, MinHashLSH
 from rapidfuzz.distance import Jaro, JaroWinkler
 
 
@@ -398,7 +398,7 @@ def deduplicate_entities(
         return unique_nodes, edges
 
     total = len(remap)
-    msg = f"[graphify] Deduplicated {total} node(s)"
+    msg = f"[mapmmd] Deduplicated {total} node(s)"
     if exact_merges:
         msg += f" ({exact_merges} exact"
         if fuzzy_merges:
@@ -454,13 +454,13 @@ def _llm_tiebreak(
 ) -> None:
     """Batch-resolve ambiguous pairs (score in [low, high)) via LLM."""
     try:
-        from graphify.llm import BACKENDS, _format_backend_env_keys, _get_backend_api_key
+        from mapmmd.llm import BACKENDS, _format_backend_env_keys, _get_backend_api_key
         if backend not in BACKENDS:
-            print(f"[graphify] --dedup-llm: unknown backend {backend!r}, skipping LLM tiebreaker.", flush=True)
+            print(f"[mapmmd] --dedup-llm: unknown backend {backend!r}, skipping LLM tiebreaker.", flush=True)
             return
         if not _get_backend_api_key(backend):
             env_keys = _format_backend_env_keys(backend)
-            print(f"[graphify] --dedup-llm: {env_keys} not set, skipping LLM tiebreaker.", flush=True)
+            print(f"[mapmmd] --dedup-llm: {env_keys} not set, skipping LLM tiebreaker.", flush=True)
             return
     except ImportError:
         return
@@ -503,13 +503,13 @@ def _llm_tiebreak(
         return
 
     try:
-        from graphify.llm import _call_llm
+        from mapmmd.llm import _call_llm
     except ImportError as exc:
         # F-038: previously this silent fallback hid the fact that `_call_llm`
-        # didn't exist in `graphify.llm` at all, so `--dedup-llm` was a no-op.
+        # didn't exist in `mapmmd.llm` at all, so `--dedup-llm` was a no-op.
         # Surface the import failure so future regressions are visible.
         print(
-            f"[graphify] --dedup-llm: cannot import _call_llm ({exc}); skipping LLM tiebreaker.",
+            f"[mapmmd] --dedup-llm: cannot import _call_llm ({exc}); skipping LLM tiebreaker.",
             flush=True,
         )
         return
@@ -547,4 +547,4 @@ def _llm_tiebreak(
                         uf.union(winner["id"], a["id"])
                         uf.union(winner["id"], b["id"])
         except Exception as exc:
-            print(f"[graphify] --dedup-llm batch failed: {exc}", flush=True)
+            print(f"[mapmmd] --dedup-llm batch failed: {exc}", flush=True)

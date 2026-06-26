@@ -1,7 +1,7 @@
-"""Tests for graphify/dedup.py entity deduplication pipeline."""
+"""Tests for mapmmd/dedup.py entity deduplication pipeline."""
 from __future__ import annotations
 import pytest
-from graphify.dedup import deduplicate_entities, _entropy, _shingles
+from mapmmd.dedup import deduplicate_entities, _entropy, _shingles
 
 
 # ── entropy gate ─────────────────────────────────────────────────────────────
@@ -47,8 +47,8 @@ def test_exact_duplicates_merged():
 
 
 def test_typo_merged():
-    # "GraphExtractor" vs "Graph Extractor" — Jaro-Winkler >= 0.92
-    nodes = _make_nodes("GraphExtractor", "Graph Extractor")
+    # "mmdExtractor" vs "mmd Extractor" — Jaro-Winkler >= 0.92
+    nodes = _make_nodes("mmdExtractor", "mmd Extractor")
     edges = []
     result_nodes, _ = deduplicate_entities(nodes, edges, communities={})
     assert len(result_nodes) == 1
@@ -70,7 +70,7 @@ def test_short_low_entropy_not_merged():
 
 
 def test_edges_rewired_after_merge():
-    nodes = _make_nodes("GraphExtractor", "Graph Extractor", "Parser")
+    nodes = _make_nodes("mmdExtractor", "mmd Extractor", "Parser")
     # edge from loser to Parser should be rewired to winner
     edges = [{"source": "graph_extractor", "target": "parser", "relation": "uses"}]
     result_nodes, result_edges = deduplicate_entities(nodes, edges, communities={})
@@ -81,7 +81,7 @@ def test_edges_rewired_after_merge():
 
 def test_self_loops_dropped_after_merge():
     # If both endpoints of an edge get merged into same node, drop the edge
-    nodes = _make_nodes("GraphExtractor", "Graph Extractor")
+    nodes = _make_nodes("mmdExtractor", "mmd Extractor")
     edges = [{"source": "graphextractor", "target": "graph_extractor", "relation": "same"}]
     _, result_edges = deduplicate_entities(nodes, edges, communities={})
     assert result_edges == []
@@ -124,13 +124,13 @@ def test_dedup_llm_flag_accepted():
 
 def test_build_calls_dedup():
     """build() should deduplicate near-identical nodes across extractions."""
-    from graphify.build import build
+    from mapmmd.build import build
     chunk1 = {
-        "nodes": [{"id": "graphextractor", "label": "GraphExtractor", "source_file": "a.py"}],
+        "nodes": [{"id": "graphextractor", "label": "mmdExtractor", "source_file": "a.py"}],
         "edges": [],
     }
     chunk2 = {
-        "nodes": [{"id": "graph_extractor", "label": "Graph Extractor", "source_file": "b.py"}],
+        "nodes": [{"id": "graph_extractor", "label": "mmd Extractor", "source_file": "b.py"}],
         "edges": [],
     }
     G = build([chunk1, chunk2])
@@ -162,7 +162,7 @@ def test_dedup_does_not_merge_model_with_suffix(tmp_path):
 
 def test_dedup_still_merges_real_typos():
     """Genuine same-length single-char typos should still merge (#878 non-regression)."""
-    from graphify.dedup import _is_variant_pair, _short_label_blocked
+    from mapmmd.dedup import _is_variant_pair, _short_label_blocked
     from rapidfuzz.distance import JaroWinkler
     a, b = "graphextractor", "graphextractar"
     score = JaroWinkler.normalized_similarity(a, b) * 100
@@ -172,7 +172,7 @@ def test_dedup_still_merges_real_typos():
 
 def test_variant_pair_helper():
     """_is_variant_pair correctly identifies chip-model variant pairs (#878)."""
-    from graphify.dedup import _is_variant_pair
+    from mapmmd.dedup import _is_variant_pair
     assert _is_variant_pair("asr1603", "asr1605")
     assert _is_variant_pair("cortex a55", "cortex a55x")
     assert not _is_variant_pair("graphextractor", "graphextracter")
@@ -184,7 +184,7 @@ def test_prefix_extension_symbols_not_merged():
     be merged (#1201). getActiveSession / getActiveSessions score ~98.82 JW but are
     different functions; parseConfig / parseConfigFile likewise."""
     import networkx as nx
-    from graphify.dedup import deduplicate_entities
+    from mapmmd.dedup import deduplicate_entities
 
     pairs = [
         ("getActiveSession", "getActiveSessions"),
@@ -243,9 +243,9 @@ def test_prefix_guard_does_not_block_same_length_typos():
     prefix-extensions (one is a substring of the other) should be blocked (#1201).
     graphextractor / graphextractar have the same length, so neither starts-with the
     other, and the guard must not fire."""
-    from graphify.dedup import _norm
-    a = _norm("GraphExtractor")   # "graphextractor" — 14 chars
-    b = _norm("GraphExtractar")   # "graphextractar" — 14 chars
+    from mapmmd.dedup import _norm
+    a = _norm("mmdExtractor")   # "graphextractor" — 14 chars
+    b = _norm("mmdExtractar")   # "graphextractar" — 14 chars
     lo, hi = sorted((a, b), key=len)
     # Same-length pair: startswith only holds when strings are identical
     assert not (hi.startswith(lo) and hi != lo), (
@@ -256,7 +256,7 @@ def test_prefix_guard_does_not_block_same_length_typos():
 def test_prefix_guard_fires_for_extension_pairs():
     """The prefix-extension guard must fire for pairs where one is a strict prefix
     of the other, preventing false merges (#1201)."""
-    from graphify.dedup import _norm
+    from mapmmd.dedup import _norm
     pairs = [
         ("getActiveSession", "getActiveSessions"),
         ("parseConfig", "parseConfigFile"),
@@ -275,7 +275,7 @@ def test_prefix_guard_fires_for_extension_pairs():
 def test_numeric_tokens_differ_helper():
     """_numeric_tokens_differ compares digit runs as zero-padding-insensitive
     multisets (#1284)."""
-    from graphify.dedup import _numeric_tokens_differ
+    from mapmmd.dedup import _numeric_tokens_differ
     assert _numeric_tokens_differ("adr 0011 d5 pipeline placement", "adr 0013 d4 pipeline placement")
     assert _numeric_tokens_differ("3 1 product goals", "1 1 product goals")
     assert _numeric_tokens_differ("code block3", "code block13")
@@ -359,8 +359,8 @@ def test_dedup_still_merges_crossfile_true_duplicates():
     """The #1243 guard only drops the prefix bonus — a genuine cross-file
     duplicate (high similarity on Jaro alone) must still merge."""
     nodes = [
-        {"id": "g1", "label": "GraphExtractor", "file_type": "concept", "source_file": "a.md"},
-        {"id": "g2", "label": "Graph Extractor", "file_type": "concept", "source_file": "b.md"},
+        {"id": "g1", "label": "mmdExtractor", "file_type": "concept", "source_file": "a.md"},
+        {"id": "g2", "label": "mmd Extractor", "file_type": "concept", "source_file": "b.md"},
     ]
     result_nodes, _ = deduplicate_entities(nodes, [], communities={})
     assert len(result_nodes) == 1

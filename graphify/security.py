@@ -15,13 +15,13 @@ from typing import Any
 import ipaddress
 import socket
 
-from graphify.paths import GRAPHIFY_OUT, GRAPHIFY_OUT_NAME
+from mapmmd.paths import GRAPHIFY_OUT, GRAPHIFY_OUT_NAME
 
 _ALLOWED_SCHEMES = {"http", "https"}
 _MAX_FETCH_BYTES = 52_428_800   # 50 MB hard cap for binary downloads
 _MAX_TEXT_BYTES  = 10_485_760   # 10 MB hard cap for HTML / text
 
-# Graph-load memory-bomb cap: reject .json files larger than this before
+# mmd-load memory-bomb cap: reject .json files larger than this before
 # JSON-parsing them into a dict. Without this, a multi-gigabyte (or
 # specifically crafted) graph.json can exhaust process memory during
 # json.loads + node_link_graph rehydration.
@@ -272,7 +272,7 @@ def safe_fetch(url: str, max_bytes: int = _MAX_FETCH_BYTES, timeout: int = 30) -
     """
     validate_url(url)
     opener = _build_opener()
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 graphify/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 mapmmd/1.0"})
 
     with opener.open(req, timeout=timeout) as resp:
         # urllib raises HTTPError for non-2xx when using urlopen directly;
@@ -314,9 +314,9 @@ def safe_fetch_text(url: str, max_bytes: int = _MAX_TEXT_BYTES, timeout: int = 1
 def validate_graph_path(path: str | Path, base: Path | None = None) -> Path:
     """Resolve *path* and verify it stays inside *base*.
 
-    *base* defaults to the `graphify-out` directory relative to CWD.
+    *base* defaults to the `mapmmd-out` directory relative to CWD.
     Also requires the base directory to exist, so a caller cannot
-    trick graphify into reading files before any graph has been built.
+    trick mapmmd into reading files before any graph has been built.
 
     Raises:
         ValueError  - path escapes base, or base does not exist
@@ -334,8 +334,8 @@ def validate_graph_path(path: str | Path, base: Path | None = None) -> Path:
     base = base.resolve()
     if not base.exists():
         raise ValueError(
-            f"Graph base directory does not exist: {base}. "
-            "Run /graphify first to build the graph."
+            f"mmd base directory does not exist: {base}. "
+            "Run /mapmmd first to build the graph."
         )
 
     resolved = Path(path).resolve()
@@ -344,11 +344,11 @@ def validate_graph_path(path: str | Path, base: Path | None = None) -> Path:
     except ValueError:
         raise ValueError(
             f"Path {path!r} escapes the allowed directory {base}. "
-            "Only paths inside graphify-out/ are permitted."
+            "Only paths inside mapmmd-out/ are permitted."
         )
 
     if not resolved.exists():
-        raise FileNotFoundError(f"Graph file not found: {resolved}")
+        raise FileNotFoundError(f"mmd file not found: {resolved}")
 
     return resolved
 

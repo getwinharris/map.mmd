@@ -2,7 +2,7 @@ import json
 import os
 from collections import Counter
 from pathlib import Path
-from graphify.extract import extract_python, extract, collect_files, _make_id, extract_bash, extract_json, _DISPATCH
+from mapmmd.extract import extract_python, extract, collect_files, _make_id, extract_bash, extract_json, _DISPATCH
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -236,7 +236,7 @@ def test_extract_does_not_rewire_constructor_method_to_same_named_class(tmp_path
 
 
 def test_collect_files_from_dir():
-    from graphify.extract import _DISPATCH
+    from mapmmd.extract import _DISPATCH
     files = collect_files(FIXTURES)
     supported = set(_DISPATCH.keys())
     assert all(f.suffix in supported for f in files)
@@ -274,10 +274,10 @@ def test_collect_files_handles_circular_symlinks(tmp_path):
 
 def _legacy_collect_files(target, *, root=None):
     """The pre-#1261 rglob-per-extension implementation, kept as a parity oracle."""
-    from graphify.detect import _is_ignored, _is_noise_dir, _load_graphifyignore
+    from mapmmd.detect import _is_ignored, _is_noise_dir, _load_mapmmdignore
     extensions = set(_DISPATCH.keys())
     ignore_root = root if root is not None else target
-    patterns = _load_graphifyignore(ignore_root)
+    patterns = _load_mapmmdignore(ignore_root)
     results = []
     for ext in sorted(extensions):
         results.extend(
@@ -465,7 +465,7 @@ def test_extract_generic_surfaces_tree_sitter_version_mismatch_hint(monkeypatch)
     """
     import sys
     import types
-    from graphify.extract import _extract_generic, LanguageConfig
+    from mapmmd.extract import _extract_generic, LanguageConfig
 
     # Build a fake tree_sitter module whose Language() raises TypeError -
     # this is exactly what users see when an older tree-sitter is paired
@@ -492,7 +492,7 @@ def test_extract_generic_surfaces_tree_sitter_version_mismatch_hint(monkeypatch)
 
 def test_extract_js_destructured_require_imports_from():
     """`const { foo } = require('./mod')` must emit imports_from to the resolved module path."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     result = extract_js(FIXTURES / "cjs_require.js")
     imports_from = [e for e in result["edges"] if e["relation"] == "imports_from"]
     targets = [e["target"] for e in imports_from]
@@ -506,7 +506,7 @@ def test_extract_js_destructured_require_imports_from():
 
 def test_extract_js_destructured_require_named_symbols():
     """Destructured CJS requires must emit symbol-level `imports` edges per binder."""
-    from graphify.extract import extract_js, _make_id, _file_stem
+    from mapmmd.extract import extract_js, _make_id, _file_stem
     result = extract_js(FIXTURES / "cjs_require.js")
     sym_targets = [e["target"] for e in result["edges"] if e["relation"] == "imports"]
     foundation_stem = _file_stem(FIXTURES / "foundation.js")
@@ -516,7 +516,7 @@ def test_extract_js_destructured_require_named_symbols():
 
 def test_extract_js_member_require_emits_property_symbol():
     """`const x = require('./m').y` must emit symbol edge for `y`."""
-    from graphify.extract import extract_js, _make_id, _file_stem
+    from mapmmd.extract import extract_js, _make_id, _file_stem
     result = extract_js(FIXTURES / "cjs_require.js")
     sym_targets = [e["target"] for e in result["edges"] if e["relation"] == "imports"]
     helpers_stem = _file_stem(FIXTURES / "helpers.js")
@@ -525,7 +525,7 @@ def test_extract_js_member_require_emits_property_symbol():
 
 def test_extract_js_arrow_function_still_extracted():
     """Regression: arrow functions in lexical_declaration must still produce nodes."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     arrow_fixture = FIXTURES / "_arrow_only.js"
     arrow_fixture.write_text("const greet = () => console.log('hi');\n")
     try:
@@ -544,7 +544,7 @@ def test_extract_js_this_assigned_methods(tmp_path):
     methods live in the function body, which is otherwise only walked for
     calls, so before this they were entirely invisible as symbols.
     """
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     f = tmp_path / "dao.js"
     f.write_text(
         "function UserDAO(db) {\n"
@@ -570,7 +570,7 @@ def test_extract_js_this_assigned_methods(tmp_path):
 
 def test_extract_js_commonjs_exports_assignment(tmp_path):
     """`exports.X = fn` and `module.exports.X = fn` must produce function nodes."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     f = tmp_path / "mod.js"
     f.write_text(
         "exports.alpha = (x) => x;\n"
@@ -583,7 +583,7 @@ def test_extract_js_commonjs_exports_assignment(tmp_path):
 
 def test_extract_js_prototype_method_assignment(tmp_path):
     """`Foo.prototype.bar = fn` must be captured as a method owned by Foo."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     f = tmp_path / "proto.js"
     f.write_text(
         "function Foo() {}\n"
@@ -596,7 +596,7 @@ def test_extract_js_prototype_method_assignment(tmp_path):
 
 def test_extract_js_const_function_expression(tmp_path):
     """`const f = function(){}` (function expression, not arrow) must be captured."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     f = tmp_path / "fnexpr.js"
     f.write_text("const handler = function(req, res) { return res; };\n")
     labels = [n["label"] for n in extract_js(f)["nodes"]]
@@ -606,7 +606,7 @@ def test_extract_js_const_function_expression(tmp_path):
 def test_extract_ts_class_arrow_field(tmp_path):
     """A class field initialised with an arrow function (`x = () => {}`) must be
     captured as a method of the class — common in React/TS component classes."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     f = tmp_path / "comp.ts"
     f.write_text(
         "class Widget {\n"
@@ -624,7 +624,7 @@ def test_extract_js_arbitrary_member_assignment_not_captured(tmp_path):
     """Guard against the phantom-god-node class (#1077): an arbitrary
     `obj.x = fn` (obj is neither this/exports/module.exports/<X>.prototype)
     must NOT produce a node."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     f = tmp_path / "noise.js"
     f.write_text(
         "const obj = {};\n"
@@ -811,7 +811,7 @@ def test_python_qualified_call_ambiguous_class_bails(tmp_path):
 
 def test_extract_tsx_finds_helpers_and_component():
     """Functions defined alongside a JSX-returning component must be captured."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     result = extract_js(FIXTURES / "sample.tsx")
     labels = [n["label"] for n in result["nodes"]]
     assert any("fmtDate" in l for l in labels), f"fmtDate missing from {labels}"
@@ -825,7 +825,7 @@ def test_extract_tsx_jsx_expression_calls_resolve():
     Regression guard for the TSX language fix: with `language_typescript`,
     JSX is parsed as ERROR nodes and these call_expressions disappear.
     """
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     result = extract_js(FIXTURES / "sample.tsx")
     nodes_by_id = {n["id"]: n for n in result["nodes"]}
     call_targets = {
@@ -843,7 +843,7 @@ def test_extract_tsx_jsx_expression_calls_resolve():
 
 def test_extract_tsx_uses_tsx_grammar():
     """Wiring check: the .tsx config must use tree-sitter's `language_tsx`."""
-    from graphify.extract import _TSX_CONFIG, _TS_CONFIG
+    from mapmmd.extract import _TSX_CONFIG, _TS_CONFIG
     assert _TSX_CONFIG.ts_language_fn == "language_tsx"
     assert _TS_CONFIG.ts_language_fn == "language_typescript"
 
@@ -856,7 +856,7 @@ def test_extract_tsx_uses_tsx_grammar():
 
 def test_extract_falls_back_to_sequential_when_parallel_returns_false(tmp_path, monkeypatch):
     """extract() must run sequential when _extract_parallel signals failure (returns False)."""
-    from graphify import extract as extract_mod
+    from mapmmd import extract as extract_mod
 
     files = [FIXTURES / "sample.py"] * 25  # >= _PARALLEL_THRESHOLD triggers parallel branch
     cache_root = tmp_path / "cache"
@@ -886,7 +886,7 @@ def test_extract_parallel_returns_false_on_broken_pool(tmp_path, monkeypatch, ca
     """_extract_parallel must catch BrokenProcessPool internally and return False."""
     from concurrent.futures.process import BrokenProcessPool
     import concurrent.futures
-    from graphify import extract as extract_mod
+    from mapmmd import extract as extract_mod
 
     class FakePool:
         def __init__(self, *a, **kw): pass
@@ -1280,13 +1280,13 @@ def test_extract_json_config_by_key_probe(tmp_path):
 
 
 def test_extract_bash_via_dispatch():
-    from graphify.extract import _get_extractor
+    from mapmmd.extract import _get_extractor
     assert _get_extractor(Path("foo.sh")) is extract_bash
     assert _get_extractor(Path("foo.bash")) is extract_bash
 
 
 def test_extract_json_via_dispatch():
-    from graphify.extract import _get_extractor
+    from mapmmd.extract import _get_extractor
     assert _get_extractor(Path("foo.json")) is extract_json
 
 
@@ -1311,7 +1311,7 @@ def test_extract_bash_node_metadata_is_sanitized():
 
 def test_barrel_reexport_emits_re_exports_edges():
     """export { X } from './mod' must emit re_exports edges for each named specifier."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     result = extract_js(FIXTURES / "barrel_reexport.ts")
     reexports = [e for e in result["edges"] if e["relation"] == "re_exports"]
     targets = [e["target"] for e in reexports]
@@ -1325,7 +1325,7 @@ def test_barrel_reexport_emits_re_exports_edges():
 
 def test_barrel_reexport_emits_imports_from():
     """Barrel file must emit file-level imports_from edges to source modules."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     result = extract_js(FIXTURES / "barrel_reexport.ts")
     imports_from = [e for e in result["edges"] if e["relation"] == "imports_from"]
     targets = [e["target"] for e in imports_from]
@@ -1336,7 +1336,7 @@ def test_barrel_reexport_emits_imports_from():
 
 def test_barrel_reexport_context_tagged():
     """re_exports edges should have context='re-export'."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     result = extract_js(FIXTURES / "barrel_reexport.ts")
     reexports = [e for e in result["edges"] if e["relation"] == "re_exports"]
     for e in reexports:
@@ -1345,7 +1345,7 @@ def test_barrel_reexport_context_tagged():
 
 def test_barrel_local_exports_still_extracted():
     """export function/const in a barrel file must still create nodes."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     result = extract_js(FIXTURES / "barrel_reexport.ts")
     labels = [n["label"] for n in result["nodes"]]
     assert "localHelper()" in labels or "localHelper" in labels
@@ -1355,7 +1355,7 @@ def test_barrel_local_exports_still_extracted():
 
 def test_barrel_reexport_confidence_extracted():
     """All re_exports edges should have confidence=EXTRACTED."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     result = extract_js(FIXTURES / "barrel_reexport.ts")
     reexports = [e for e in result["edges"] if e["relation"] == "re_exports"]
     for e in reexports:
@@ -1363,7 +1363,7 @@ def test_barrel_reexport_confidence_extracted():
 
 
 def test_semantic_reference_edges_carry_context_and_source():
-    from graphify.extract import _semantic_reference_edge
+    from mapmmd.extract import _semantic_reference_edge
 
     edge = _semantic_reference_edge(
         "source_node",
@@ -1387,7 +1387,7 @@ def test_semantic_reference_edges_carry_context_and_source():
 
 def test_pure_export_no_from_not_treated_as_reexport():
     """export { localVar } without 'from' should NOT create re_exports edges."""
-    from graphify.extract import extract_js
+    from mapmmd.extract import extract_js
     import tempfile
     code = b"const x = 1;\nexport { x };\n"
     with tempfile.NamedTemporaryFile(suffix=".ts", delete=False) as f:
@@ -1400,7 +1400,7 @@ def test_pure_export_no_from_not_treated_as_reexport():
 
 def test_dart_child_node_ids_are_stem_based(tmp_path):
     """Dart child node IDs must be built from _file_stem rather than absolute path."""
-    from graphify.extract import extract_dart, _file_stem, _make_id
+    from mapmmd.extract import extract_dart, _file_stem, _make_id
 
     src_file = tmp_path / "mydir" / "sample.dart"
     src_file.parent.mkdir(parents=True, exist_ok=True)
@@ -1432,5 +1432,3 @@ def test_dart_child_node_ids_are_stem_based(tmp_path):
             f"Child node ID '{node['id']}' does not start with the expected stem prefix '{stem}'. "
             "This suggests an absolute path is still leaking into the ID."
         )
-
-

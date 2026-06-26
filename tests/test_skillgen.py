@@ -1,6 +1,6 @@
 """Tests for the tools/skillgen generator and the claude lean-core split.
 
-skillgen renders graphify's committed skill artifacts from human-edited
+skillgen renders mapmmd's committed skill artifacts from human-edited
 fragments. These tests lock in the anti-drift guards (``--check``,
 ``--audit-coverage``), the render idempotency, and the lean-core invariant: the
 core runs a default extraction with zero reference reads, on-demand content
@@ -60,7 +60,7 @@ def test_render_output_is_lf_only():
 
 def test_no_version_or_timestamp_in_output():
     """No generated artifact carries the package version string."""
-    from graphify.__main__ import __version__
+    from mapmmd.__main__ import __version__
 
     platforms = gen.load_platforms()
     for art in gen.render_all(platforms, only="claude"):
@@ -70,8 +70,8 @@ def test_no_version_or_timestamp_in_output():
 def _claude_artifacts():
     platforms = gen.load_platforms()
     arts = gen.render_all(platforms, only="claude")
-    core = next(a for a in arts if a.path == "graphify/skill.md")
-    refs = {a.path.rsplit("/", 1)[-1]: a.content for a in arts if a.path != "graphify/skill.md"}
+    core = next(a for a in arts if a.path == "mapmmd/skill.md")
+    refs = {a.path.rsplit("/", 1)[-1]: a.content for a in arts if a.path != "mapmmd/skill.md"}
     return core.content, refs
 
 
@@ -86,18 +86,18 @@ def test_lean_core_has_no_reference_only_content():
     # The full embedded subagent prompt lives only in extraction-spec.md.
     assert '"file_type":"code|document|paper|image|rationale|concept"' not in core
     # The incremental-update merge machinery lives only in update.md.
-    assert "from graphify.build import build_merge" not in core
-    assert "graphify cluster-only ." not in core
+    assert "from mapmmd.build import build_merge" not in core
+    assert "mapmmd cluster-only ." not in core
     # The vocab-expansion query flow lives only in query.md.
     assert "Constrained query expansion" not in core
     assert "save-result --question" not in core
     # The export commands live only in exports.md.
-    assert "graphify export wiki" not in core
-    assert "graphify export neo4j" not in core
+    assert "mapmmd export wiki" not in core
+    assert "mapmmd export neo4j" not in core
     # The add / watch / hook flows live only in their references.
-    assert "from graphify.ingest import ingest" not in core
-    assert "graphify hook install" not in core
-    assert "python3 -m graphify.watch" not in core
+    assert "from mapmmd.ingest import ingest" not in core
+    assert "mapmmd hook install" not in core
+    assert "python3 -m mapmmd.watch" not in core
 
 
 def test_lean_core_runs_default_pipeline_with_zero_references():
@@ -106,7 +106,7 @@ def test_lean_core_runs_default_pipeline_with_zero_references():
     # The whole default pipeline (detect -> AST -> build -> label -> HTML ->
     # report) must be present in the core so a plain run reads no reference.
     for needed in (
-        "### Step 1 - Ensure graphify is installed",
+        "### Step 1 - Ensure mapmmd is installed",
         "### Step 2 - Detect files",
         "### Step 3 - Extract entities and relationships",
         "#### Part A - Structural extraction for code files",
@@ -116,7 +116,7 @@ def test_lean_core_runs_default_pipeline_with_zero_references():
         "### Step 6 - Generate Obsidian vault (opt-in) + HTML",
         "### Step 9 - Save manifest, update cost tracker, clean up, and report",
         "## Honesty Rules",
-        "graphify export html",
+        "mapmmd export html",
     ):
         assert needed in core, f"lean core is missing default-pipeline content: {needed!r}"
 
@@ -136,7 +136,7 @@ def test_extraction_states_no_api_key_required_for_every_host():
               if "### Step 3 - Extract entities and relationships" in a.content]
     assert bodies, "no rendered skill body contains the Step 3 extraction section"
     for a in bodies:
-        assert "graphify needs no API key" in a.content, a.path
+        assert "mapmmd needs no API key" in a.content, a.path
         assert "Never ask the user for one, and never block on one." in a.content, a.path
         # the no-key fallback must not be framed *only* around subagent dispatch
         assert "cannot dispatch subagents" in a.content, a.path
@@ -145,7 +145,7 @@ def test_extraction_states_no_api_key_required_for_every_host():
         # tip — they are the model themselves — so the check only applies if present)
         tip = "Tip: set `GEMINI_API_KEY`"
         if tip in a.content:
-            assert a.content.index("graphify needs no API key") < a.content.index(tip), \
+            assert a.content.index("mapmmd needs no API key") < a.content.index(tip), \
                 f"{a.path}: no-key clarity is not hoisted above the GEMINI tip"
 
 
@@ -155,7 +155,7 @@ def test_references_contain_no_core_pipeline_content():
     # Distinctive lines from the core build/label steps must not appear in any
     # reference, or the same content would be double-homed.
     core_only_markers = (
-        "from graphify.cluster import cluster, score_all",
+        "from mapmmd.cluster import cluster, score_all",
         "### Step 4 - Build graph, cluster, analyze, generate outputs",
         "### Step 5 - Label communities",
         "## Honesty Rules",
@@ -181,12 +181,12 @@ def test_query_heading_is_homed_in_core_stub_only():
     core, refs = _claude_artifacts()
     core_headings = set(gen.headings(core))
     query_headings = set(gen.headings(refs["query.md"]))
-    assert "## For /graphify query" in core_headings
-    assert "## For /graphify query" not in query_headings
+    assert "## For /mapmmd query" in core_headings
+    assert "## For /mapmmd query" not in query_headings
     # The deeper query content moved into the reference.
-    assert "## For /graphify path" in query_headings
-    assert "## For /graphify explain" in query_headings
-    assert "## For /graphify path" not in core_headings
+    assert "## For /mapmmd path" in query_headings
+    assert "## For /mapmmd explain" in query_headings
+    assert "## For /mapmmd path" not in core_headings
 
 
 def test_eight_references_render_for_claude():
@@ -258,8 +258,8 @@ def test_audit_coverage_passes_for_codex_and_windows():
 
 UNIFIED_DESCRIPTION = (
     "Use for any question about a codebase, its architecture, file relationships, "
-    "or project content — especially when graphify-out/ exists, where the question "
-    "should be treated as a graphify query first. Turns any input (code, docs, "
+    "or project content — especially when mapmmd-out/ exists, where the question "
+    "should be treated as a mapmmd query first. Turns any input (code, docs, "
     "papers, images, videos) into a persistent knowledge graph with god nodes, "
     "community detection, and query/path/explain tools."
 )
@@ -280,16 +280,16 @@ def test_descriptions_are_unified():
         assert expected_line in body, f"[{key}] missing the unified description line"
         # None of the drifted v8 wording may survive on any platform.
         assert "Provides persistent graph with god nodes" not in body, f"[{key}] kept old wording"
-        assert "treat the question as a /graphify query." not in body, f"[{key}] kept old wording"
+        assert "treat the question as a /mapmmd query." not in body, f"[{key}] kept old wording"
         assert "clustered communities" not in body, f"[{key}] kept old wording"
 
 
 def test_windows_frontmatter_name_and_shell_and_extra():
-    """windows: graphify-windows name, powershell install, troubleshooting tail."""
+    """windows: mapmmd-windows name, powershell install, troubleshooting tail."""
     core, _ = _platform_artifacts("windows")
-    assert core.startswith("---\nname: graphify-windows\n")
+    assert core.startswith("---\nname: mapmmd-windows\n")
     assert "```powershell" in core
-    assert "function Find-GraphifyPython" in core
+    assert "function Find-map.mmdPython" in core
     assert "## Troubleshooting" in core
     assert "### PowerShell 5.1: Vertical scrolling stops working" in core
     # The troubleshooting section sits before Honesty Rules, single separator.
@@ -346,8 +346,8 @@ def test_every_platform_query_has_expansion_and_fallback():
         q = refs["query.md"]
         assert "Constrained query expansion" in q
         assert "If the CLI is unavailable" in q
-        assert "## For /graphify path" in q
-        assert "## For /graphify explain" in q
+        assert "## For /mapmmd path" in q
+        assert "## For /mapmmd explain" in q
 
 
 def test_schema_singleton_passes_across_all_platforms():
@@ -466,7 +466,7 @@ def test_monoliths_render_inline_single_file_no_references():
         assert platforms[key].bucket == "monolith"
         arts = gen.render(platforms[key])
         assert len(arts) == 1, f"[{key}] monolith should render exactly one file"
-        assert arts[0].path == f"graphify/skill-{key}.md"
+        assert arts[0].path == f"mapmmd/skill-{key}.md"
         assert "references/" not in arts[0].content or "see `references/" not in arts[0].content.lower()
 
 
@@ -517,7 +517,7 @@ def test_monoliths_carry_the_1392_runbook_fixes():
         assert "detect['files'].values()" not in body
 
         # #12 stale-cache unlink on a miss.
-        assert ".graphify_cached.json').unlink(missing_ok=True)" in body
+        assert ".mapmmd_cached.json').unlink(missing_ok=True)" in body
 
         # #18/#20 zero-node guard before any write, report/analysis gated on
         # to_json's return.
@@ -541,11 +541,11 @@ def test_generated_runbooks_pass_root_to_save_manifest():
     shipped artifacts; --check keeps them in sync with the fragments.
     """
     targets = [
-        REPO_ROOT / "graphify" / "skill.md",
-        REPO_ROOT / "graphify" / "skill-aider.md",
-        REPO_ROOT / "graphify" / "skill-devin.md",
+        REPO_ROOT / "mapmmd" / "skill.md",
+        REPO_ROOT / "mapmmd" / "skill-aider.md",
+        REPO_ROOT / "mapmmd" / "skill-devin.md",
     ]
-    targets += sorted((REPO_ROOT / "graphify" / "skills").glob("*/references/update.md"))
+    targets += sorted((REPO_ROOT / "mapmmd" / "skills").glob("*/references/update.md"))
     checked = 0
     for path in targets:
         for ln in path.read_text(encoding="utf-8").splitlines():
@@ -575,12 +575,12 @@ def test_always_on_renders_six_blocks():
     arts = gen.render_always_on()
     paths = sorted(a.path for a in arts)
     assert paths == [
-        "graphify/always_on/agents-md.md",
-        "graphify/always_on/antigravity-rules.md",
-        "graphify/always_on/claude-md.md",
-        "graphify/always_on/gemini-md.md",
-        "graphify/always_on/kiro-steering.md",
-        "graphify/always_on/vscode-instructions.md",
+        "mapmmd/always_on/agents-md.md",
+        "mapmmd/always_on/antigravity-rules.md",
+        "mapmmd/always_on/claude-md.md",
+        "mapmmd/always_on/gemini-md.md",
+        "mapmmd/always_on/kiro-steering.md",
+        "mapmmd/always_on/vscode-instructions.md",
     ]
 
 
@@ -589,8 +589,8 @@ def test_always_on_included_in_full_render_not_per_platform():
     platforms = gen.load_platforms()
     full = {a.path for a in gen.render_all(platforms)}
     claude_only = {a.path for a in gen.render_all(platforms, only="claude")}
-    assert "graphify/always_on/claude-md.md" in full
-    assert "graphify/always_on/claude-md.md" not in claude_only
+    assert "mapmmd/always_on/claude-md.md" in full
+    assert "mapmmd/always_on/claude-md.md" not in claude_only
 
 
 def test_always_on_roundtrip_is_byte_faithful():
@@ -598,7 +598,7 @@ def test_always_on_roundtrip_is_byte_faithful():
 
     This is the load-bearing fidelity check behind the D2-a extraction: the
     install-string / issue-#580 tests still import the constants from
-    graphify.__main__, so the packaged markdown must round-trip exactly or those
+    mapmmd.__main__, so the packaged markdown must round-trip exactly or those
     contracts silently change.
     """
     problems = gen.always_on_roundtrip()
@@ -607,7 +607,7 @@ def test_always_on_roundtrip_is_byte_faithful():
 
 def test_extracted_constants_equal_the_packaged_always_on_files():
     """The live module constants now equal the packaged files they read at load."""
-    from graphify import __main__ as mainmod
+    from mapmmd import __main__ as mainmod
 
     pairs = {
         "_CLAUDE_MD_SECTION": "claude-md",
@@ -632,7 +632,7 @@ def test_always_on_files_are_guarded_by_check(tmp_path):
     # A mutated artifact is flagged.
     mutated = [
         gen.RenderedArtifact(a.path, a.content + "drift\n")
-        if a.path == "graphify/always_on/claude-md.md"
+        if a.path == "mapmmd/always_on/claude-md.md"
         else a
         for a in arts
     ]
@@ -658,9 +658,9 @@ def test_audit_reads_each_host_against_its_own_v8_body():
 
     This is the structural fix: a per-host body, so a drop on one host surfaces.
     """
-    assert gen._v8_baseline_ref("claude") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:graphify/skill.md"
-    assert gen._v8_baseline_ref("trae") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:graphify/skill-trae.md"
-    assert gen._v8_baseline_ref("vscode") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:graphify/skill-vscode.md"
+    assert gen._v8_baseline_ref("claude") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:mapmmd/skill.md"
+    assert gen._v8_baseline_ref("trae") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:mapmmd/skill-trae.md"
+    assert gen._v8_baseline_ref("vscode") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:mapmmd/skill-vscode.md"
 
 
 def test_audit_catches_an_induced_per_host_drop():
@@ -740,20 +740,20 @@ def test_audit_allowlist_documents_only_consolidations():
 
 
 def test_trae_renders_native_agents_md_integration_not_claude():
-    """trae wires `graphify trae install` -> AGENTS.md, never `graphify claude install`."""
+    """trae wires `mapmmd trae install` -> AGENTS.md, never `mapmmd claude install`."""
     core, refs = _platform_artifacts("trae")
     hooks = refs["hooks.md"]
     # The hooks reference carries the v8 native AGENTS.md integration section.
     assert "## For native AGENTS.md integration (Trae)" in hooks
-    assert "graphify trae install" in hooks
-    assert "graphify trae-cn install" in hooks
-    assert "writes a `## graphify` section to the local `AGENTS.md`" in hooks
+    assert "mapmmd trae install" in hooks
+    assert "mapmmd trae-cn install" in hooks
+    assert "writes a `## mapmmd` section to the local `AGENTS.md`" in hooks
     # The claude-flavored install command must NOT appear for trae.
-    assert "graphify claude install" not in hooks
+    assert "mapmmd claude install" not in hooks
     assert "native CLAUDE.md integration" not in hooks
     # The lean-core pointer names AGENTS.md, not CLAUDE.md.
     assert "## For the commit hook and native AGENTS.md integration" in core
-    assert "wire graphify into a project's AGENTS.md" in core
+    assert "wire mapmmd into a project's AGENTS.md" in core
     assert "native CLAUDE.md integration" not in core
 
 
@@ -770,7 +770,7 @@ def test_trae_hooks_reference_includes_the_pretooluse_note():
     _, refs = _platform_artifacts("trae")
     hooks = refs["hooks.md"]
     assert "Unlike Claude Code, Trae does NOT support PreToolUse hooks" in hooks
-    assert "Run `/graphify --update` manually after code changes" in hooks
+    assert "Run `/mapmmd --update` manually after code changes" in hooks
 
 
 def test_claude_flavored_hosts_keep_their_hooks_text_unchanged():
@@ -782,7 +782,7 @@ def test_claude_flavored_hosts_keep_their_hooks_text_unchanged():
     for key in ("claude", "droid", "codex", "windows", "kilo", "vscode"):
         core, refs = _platform_artifacts(key)
         hooks = refs["hooks.md"]
-        assert "graphify claude install" in hooks, f"[{key}] lost the claude install command"
+        assert "mapmmd claude install" in hooks, f"[{key}] lost the claude install command"
         assert "native CLAUDE.md integration" in hooks, f"[{key}] lost the CLAUDE.md heading"
         assert "Trae does NOT support PreToolUse hooks" not in core, f"[{key}] leaked the trae caveat"
         assert "Trae does NOT support PreToolUse hooks" not in hooks, f"[{key}] leaked the trae caveat"
@@ -793,7 +793,7 @@ def test_claude_flavored_hosts_keep_their_hooks_text_unchanged():
 
 
 def test_amp_renders_native_agents_md_integration_v8_faithfully():
-    """amp wires `graphify amp install` -> AGENTS.md exactly as its v8 body had it.
+    """amp wires `mapmmd amp install` -> AGENTS.md exactly as its v8 body had it.
 
     amp shares the agents-md hooks variant with trae but renders its OWN wording:
     a bare "## For native AGENTS.md integration" heading (no "(Trae)" suffix),
@@ -805,20 +805,20 @@ def test_amp_renders_native_agents_md_integration_v8_faithfully():
     # amp's bare v8 heading and Amp-worded prose.
     assert "## For native AGENTS.md integration" in hooks
     assert "## For native AGENTS.md integration (Trae)" not in hooks
-    assert "make graphify always-on in Amp sessions" in hooks
+    assert "make mapmmd always-on in Amp sessions" in hooks
     assert "instructs Amp to check the graph" in hooks
     # amp's single-line install/uninstall, no trae-cn alt comments.
-    assert "graphify amp install" in hooks
-    assert "graphify amp uninstall  # remove the section" in hooks
-    assert "graphify trae install" not in hooks
-    assert "graphify trae-cn" not in hooks
-    assert "or: graphify" not in hooks
+    assert "mapmmd amp install" in hooks
+    assert "mapmmd amp uninstall  # remove the section" in hooks
+    assert "mapmmd trae install" not in hooks
+    assert "mapmmd trae-cn" not in hooks
+    assert "or: mapmmd" not in hooks
     # No claude flavoring on amp.
-    assert "graphify claude install" not in hooks
+    assert "mapmmd claude install" not in hooks
     assert "native CLAUDE.md integration" not in hooks
     # The lean-core pointer names AGENTS.md, not CLAUDE.md.
     assert "## For the commit hook and native AGENTS.md integration" in core
-    assert "wire graphify into a project's AGENTS.md" in core
+    assert "wire mapmmd into a project's AGENTS.md" in core
     assert "native CLAUDE.md integration" not in core
 
 
@@ -844,11 +844,11 @@ def test_amp_audit_coverage_passes_against_its_own_v8():
     """The per-host audit (the guard amp is the exact case for) passes for amp.
 
     amp was omitted from wave 3's render list, so its v8 body was never audited
-    against a lean split. The audit reads origin/v8:graphify/skill-amp.md and
+    against a lean split. The audit reads origin/v8:mapmmd/skill-amp.md and
     confirms every heading single-homes in amp's core + references.
     """
     platforms = gen.load_platforms()
-    assert gen._v8_baseline_ref("amp") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:graphify/skill-amp.md"
+    assert gen._v8_baseline_ref("amp") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:mapmmd/skill-amp.md"
     problems = gen.audit_coverage(platforms["amp"])
     assert problems == [], "\n".join(problems)
 
@@ -861,19 +861,19 @@ def test_agents_renders_its_own_agents_md_hooks_wording():
 
     It shares amp's bare, caveat-free `## For native AGENTS.md integration`
     section (no `(Trae)` suffix, no PreToolUse note) but points at
-    `graphify agents install` and is worded for an unspecified host.
+    `mapmmd agents install` and is worded for an unspecified host.
     """
     core, refs = _platform_artifacts("agents")
     hooks = refs["hooks.md"]
     assert "## For native AGENTS.md integration" in hooks
     assert "## For native AGENTS.md integration (Trae)" not in hooks
-    assert "make graphify always-on in your agent sessions" in hooks
-    assert "graphify agents install" in hooks
-    assert "graphify agents uninstall  # remove the section" in hooks
+    assert "make mapmmd always-on in your agent sessions" in hooks
+    assert "mapmmd agents install" in hooks
+    assert "mapmmd agents uninstall  # remove the section" in hooks
     # No amp/trae/claude wording leaks into the agents render.
-    assert "graphify amp install" not in hooks
-    assert "graphify trae" not in hooks
-    assert "graphify claude install" not in hooks
+    assert "mapmmd amp install" not in hooks
+    assert "mapmmd trae" not in hooks
+    assert "mapmmd claude install" not in hooks
     assert "PreToolUse" not in hooks and "PreToolUse" not in core
     # The lean-core pointer names AGENTS.md, not CLAUDE.md.
     assert "## For the commit hook and native AGENTS.md integration" in core
@@ -904,6 +904,6 @@ def test_agents_body_matches_amp_modulo_hooks_wording():
 def test_agents_audit_baseline_is_amps_v8_body():
     """`agents` is a post-v8 platform, so its audit baseline is amp's v8 body."""
     platforms = gen.load_platforms()
-    assert gen._v8_baseline_ref("agents") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:graphify/skill-amp.md"
+    assert gen._v8_baseline_ref("agents") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:mapmmd/skill-amp.md"
     problems = gen.audit_coverage(platforms["agents"])
     assert problems == [], "\n".join(problems)

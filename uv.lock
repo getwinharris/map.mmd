@@ -1149,7 +1149,7 @@ wheels = [
 ]
 
 [[package]]
-name = "graphifyy"
+name = "mapmmdy"
 version = "0.8.49"
 source = { editable = "." }
 dependencies = [

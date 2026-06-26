@@ -1,17 +1,17 @@
-# git hook integration - install/uninstall graphify post-commit and post-checkout hooks
+# git hook integration - install/uninstall mapmmd post-commit and post-checkout hooks
 from __future__ import annotations
 import configparser
 import re
 import sys
 from pathlib import Path
 
-_HOOK_MARKER = "# graphify-hook-start"
-_HOOK_MARKER_END = "# graphify-hook-end"
-_CHECKOUT_MARKER = "# graphify-checkout-hook-start"
-_CHECKOUT_MARKER_END = "# graphify-checkout-hook-end"
+_HOOK_MARKER = "# mapmmd-hook-start"
+_HOOK_MARKER_END = "# mapmmd-hook-end"
+_CHECKOUT_MARKER = "# mapmmd-checkout-hook-start"
+_CHECKOUT_MARKER_END = "# mapmmd-checkout-hook-end"
 
 # __PINNED_PYTHON__ is replaced at install time with the absolute path of the
-# Python interpreter that ran `graphify hook install`.  For uv-tool and pipx
+# Python interpreter that ran `mapmmd hook install`.  For uv-tool and pipx
 # installs the interpreter lives inside an isolated venv, so the launcher on
 # PATH is the only entry point — and GUI git clients / CI runners often have a
 # minimal PATH that omits ~/.local/bin.  Pinning sys.executable at install time
@@ -19,29 +19,29 @@ _CHECKOUT_MARKER_END = "# graphify-checkout-hook-end"
 _PYTHON_DETECT = """\
 # Detect the correct Python interpreter (handles uv tool, pipx, venv, system installs).
 # _PINNED was recorded at hook-install time; tried first so the hook works even
-# when the graphify launcher is not on PATH (common in GUI clients and CI).
+# when the mapmmd launcher is not on PATH (common in GUI clients and CI).
 GRAPHIFY_PYTHON=""
 _PINNED='__PINNED_PYTHON__'
-if [ -n "$_PINNED" ] && [ -x "$_PINNED" ] && "$_PINNED" -c "import graphify" 2>/dev/null; then
+if [ -n "$_PINNED" ] && [ -x "$_PINNED" ] && "$_PINNED" -c "import mapmmd" 2>/dev/null; then
     GRAPHIFY_PYTHON="$_PINNED"
 fi
-# Second probe: read graphify-out/.graphify_python (written by the skill and
+# Second probe: read mapmmd-out/.mapmmd_python (written by the skill and
 # CLI; survives uv-tool reinstalls and is the same source the README documents).
 if [ -z "$GRAPHIFY_PYTHON" ]; then
-    _GFY_PYTHON_FILE="graphify-out/.graphify_python"
+    _GFY_PYTHON_FILE="mapmmd-out/.mapmmd_python"
     if [ -f "$_GFY_PYTHON_FILE" ]; then
         _FROM_FILE=$(cat "$_GFY_PYTHON_FILE" 2>/dev/null | tr -d '[:space:]')
         case "$_FROM_FILE" in
             *[!a-zA-Z0-9/_.@:\\-]*) _FROM_FILE="" ;;  # allowlist (covers Windows paths)
         esac
-        if [ -n "$_FROM_FILE" ] && [ -x "$_FROM_FILE" ] && "$_FROM_FILE" -c "import graphify" 2>/dev/null; then
+        if [ -n "$_FROM_FILE" ] && [ -x "$_FROM_FILE" ] && "$_FROM_FILE" -c "import mapmmd" 2>/dev/null; then
             GRAPHIFY_PYTHON="$_FROM_FILE"
         fi
     fi
 fi
-# Third probe: resolve via the graphify launcher on PATH (shebang probe).
+# Third probe: resolve via the mapmmd launcher on PATH (shebang probe).
 if [ -z "$GRAPHIFY_PYTHON" ]; then
-    GRAPHIFY_BIN=$(command -v graphify 2>/dev/null)
+    GRAPHIFY_BIN=$(command -v mapmmd 2>/dev/null)
     if [ -n "$GRAPHIFY_BIN" ]; then
         case "$GRAPHIFY_BIN" in
             *.exe) _SHEBANG="" ;;
@@ -56,19 +56,19 @@ if [ -z "$GRAPHIFY_PYTHON" ]; then
         case "$GRAPHIFY_PYTHON" in
             *[!a-zA-Z0-9/_.@-]*) GRAPHIFY_PYTHON="" ;;
         esac
-        if [ -n "$GRAPHIFY_PYTHON" ] && ! "$GRAPHIFY_PYTHON" -c "import graphify" 2>/dev/null; then
+        if [ -n "$GRAPHIFY_PYTHON" ] && ! "$GRAPHIFY_PYTHON" -c "import mapmmd" 2>/dev/null; then
             GRAPHIFY_PYTHON=""
         fi
     fi
 fi
 # Last resort: try python3 / python (works for system/venv installs on PATH).
 if [ -z "$GRAPHIFY_PYTHON" ]; then
-    if command -v python3 >/dev/null 2>&1 && python3 -c "import graphify" 2>/dev/null; then
+    if command -v python3 >/dev/null 2>&1 && python3 -c "import mapmmd" 2>/dev/null; then
         GRAPHIFY_PYTHON="python3"
-    elif command -v python >/dev/null 2>&1 && python -c "import graphify" 2>/dev/null; then
+    elif command -v python >/dev/null 2>&1 && python -c "import mapmmd" 2>/dev/null; then
         GRAPHIFY_PYTHON="python"
     else
-        echo "[graphify hook] could not locate a Python with graphify installed. Add the graphify bin dir to PATH or re-run 'graphify hook install' from the env where graphify lives." >&2
+        echo "[mapmmd hook] could not locate a Python with mapmmd installed. Add the mapmmd bin dir to PATH or re-run 'mapmmd hook install' from the env where mapmmd lives." >&2
         exit 0
     fi
 fi
@@ -88,19 +88,19 @@ changed = [Path(f.strip()) for f in changed_raw.strip().splitlines() if f.strip(
 if not changed:
     sys.exit(0)
 
-print(f'[graphify hook] {len(changed)} file(s) changed - rebuilding graph...')
+print(f'[mapmmd hook] {len(changed)} file(s) changed - rebuilding graph...')
 
 try:
-    from graphify.watch import _rebuild_code, _apply_resource_limits
+    from mapmmd.watch import _rebuild_code, _apply_resource_limits
     _apply_resource_limits()
     _timeout = int(os.environ.get('GRAPHIFY_REBUILD_TIMEOUT', '600'))
     if _timeout > 0 and hasattr(signal, 'SIGALRM'):
-        signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError(f'graphify rebuild exceeded {_timeout}s')))
+        signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError(f'mapmmd rebuild exceeded {_timeout}s')))
         signal.alarm(_timeout)
     _force = os.environ.get('GRAPHIFY_FORCE', '').lower() in ('1', 'true', 'yes')
     _root = Path('.')
-    _out = os.environ.get('GRAPHIFY_OUT', 'graphify-out')
-    _saved = Path(_out) / '.graphify_root'
+    _out = os.environ.get('GRAPHIFY_OUT', 'mapmmd-out')
+    _saved = Path(_out) / '.mapmmd_root'
     if _saved.exists():
         _txt = _saved.read_text(encoding='utf-8').strip()
         if _txt:
@@ -111,37 +111,37 @@ try:
     try:
         _md = (_root / _out) / 'memory'
         if _md.is_dir() and any(_md.glob('*.md')):
-            from graphify.reflect import reflect as _reflect
+            from mapmmd.reflect import reflect as _reflect
             _gj = (_root / _out) / 'graph.json'
             _reflect(memory_dir=_md, out_path=(_root / _out) / 'reflections' / 'LESSONS.md',
                      graph_path=_gj if _gj.exists() else None)
     except Exception:
         pass
 except TimeoutError as exc:
-    print(f'[graphify hook] {exc}')
+    print(f'[mapmmd hook] {exc}')
     sys.exit(1)
 except Exception as exc:
-    print(f'[graphify hook] Rebuild failed: {exc}')
+    print(f'[mapmmd hook] Rebuild failed: {exc}')
     sys.exit(1)
 """
 
 _REBUILD_BODY_CHECKOUT = """\
-from graphify.watch import _rebuild_code, _apply_resource_limits
+from mapmmd.watch import _rebuild_code, _apply_resource_limits
 from pathlib import Path
 import os, signal, sys
 try:
     _apply_resource_limits()
     _timeout = int(os.environ.get('GRAPHIFY_REBUILD_TIMEOUT', '600'))
     if _timeout > 0 and hasattr(signal, 'SIGALRM'):
-        signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError(f'graphify rebuild exceeded {_timeout}s')))
+        signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError(f'mapmmd rebuild exceeded {_timeout}s')))
         signal.alarm(_timeout)
     _force = os.environ.get('GRAPHIFY_FORCE', '').lower() in ('1', 'true', 'yes')
     # post-checkout: branch switch can touch arbitrary files; full rebuild path
     # (no changed_paths) is correct here. The flock inside _rebuild_code still
     # prevents pile-ups when commit + checkout fire back-to-back.
     _root = Path('.')
-    _out = os.environ.get('GRAPHIFY_OUT', 'graphify-out')
-    _saved = Path(_out) / '.graphify_root'
+    _out = os.environ.get('GRAPHIFY_OUT', 'mapmmd-out')
+    _saved = Path(_out) / '.mapmmd_root'
     if _saved.exists():
         _txt = _saved.read_text(encoding='utf-8').strip()
         if _txt:
@@ -152,17 +152,17 @@ try:
     try:
         _md = (_root / _out) / 'memory'
         if _md.is_dir() and any(_md.glob('*.md')):
-            from graphify.reflect import reflect as _reflect
+            from mapmmd.reflect import reflect as _reflect
             _gj = (_root / _out) / 'graph.json'
             _reflect(memory_dir=_md, out_path=(_root / _out) / 'reflections' / 'LESSONS.md',
                      graph_path=_gj if _gj.exists() else None)
     except Exception:
         pass
 except TimeoutError as exc:
-    print(f'[graphify] {exc}')
+    print(f'[mapmmd] {exc}')
     sys.exit(1)
 except Exception as exc:
-    print(f'[graphify] Rebuild failed: {exc}')
+    print(f'[mapmmd] Rebuild failed: {exc}')
     sys.exit(1)
 """
 
@@ -170,7 +170,7 @@ except Exception as exc:
 # rebuild with `nohup "$GRAPHIFY_PYTHON" -c "..." &`, but Git for Windows' bundled
 # MSYS shell ships no nohup (nor setsid), so that line died with
 # 'nohup: command not found' and the rebuild silently never ran — git commit/pull
-# still returned 0, so the graph just went stale with no signal. graphify already
+# still returned 0, so the graph just went stale with no signal. mapmmd already
 # requires Python, so we let Python do the detaching: a tiny outer process spawns
 # the real rebuild fully detached and returns immediately, so the hook never
 # blocks. POSIX uses start_new_session (the setsid equivalent); Windows uses
@@ -182,7 +182,7 @@ import os, subprocess, sys
 _src = '''
 __REBUILD_BODY__
 '''
-_log = os.environ.get('GRAPHIFY_REBUILD_LOG') or os.path.join(os.path.expanduser('~'), '.cache', 'graphify-rebuild.log')
+_log = os.environ.get('GRAPHIFY_REBUILD_LOG') or os.path.join(os.path.expanduser('~'), '.cache', 'mapmmd-rebuild.log')
 try:
     os.makedirs(os.path.dirname(_log), exist_ok=True)
     _out = open(_log, 'a', buffering=1, encoding='utf-8', errors='replace')
@@ -215,13 +215,13 @@ def _detached_launch(rebuild_body: str) -> str:
 
 
 _HOOK_SCRIPT = """\
-# graphify-hook-start
+# mapmmd-hook-start
 # Auto-rebuilds the knowledge graph after each commit (code files only, no LLM needed).
-# Installed by: graphify hook install
+# Installed by: mapmmd hook install
 
 # Deterministic clustering: networkx louvain iterates string-keyed sets whose
 # order is randomized per-process by PYTHONHASHSEED, so community assignments
-# churn run-to-run. Pinning it makes graphify-out reproducible.
+# churn run-to-run. Pinning it makes mapmmd-out reproducible.
 export PYTHONHASHSEED=0
 
 # Skip during rebase/merge/cherry-pick to avoid blocking --continue with unstaged changes
@@ -238,8 +238,8 @@ if [ -z "$CHANGED" ]; then
     exit 0
 fi
 
-# Skip when only graphify-out/ artifacts changed (avoids rebuild loop when graph outputs are tracked in git)
-_NON_GRAPH=$(echo "$CHANGED" | grep -v '^graphify-out/' || true)
+# Skip when only mapmmd-out/ artifacts changed (avoids rebuild loop when graph outputs are tracked in git)
+_NON_GRAPH=$(echo "$CHANGED" | grep -v '^mapmmd-out/' || true)
 if [ -z "$_NON_GRAPH" ]; then
     exit 0
 fi
@@ -251,22 +251,22 @@ export GRAPHIFY_CHANGED="$CHANGED"
 # can take hours; blocking the post-commit hook stalls the shell. The Python
 # launcher below detaches the child cross-platform, so it works on Git for
 # Windows' shell too (which lacks the coreutils backgrounding tools) (#1161).
-_GRAPHIFY_LOG="${HOME}/.cache/graphify-rebuild.log"
+_GRAPHIFY_LOG="${HOME}/.cache/mapmmd-rebuild.log"
 mkdir -p "$(dirname "$_GRAPHIFY_LOG")"
 export GRAPHIFY_REBUILD_LOG="$_GRAPHIFY_LOG"
-echo "[graphify hook] launching background rebuild (log: $_GRAPHIFY_LOG)"
-""" + _detached_launch(_REBUILD_BODY_COMMIT) + """# graphify-hook-end
+echo "[mapmmd hook] launching background rebuild (log: $_GRAPHIFY_LOG)"
+""" + _detached_launch(_REBUILD_BODY_COMMIT) + """# mapmmd-hook-end
 """
 
 
 _CHECKOUT_SCRIPT = """\
-# graphify-checkout-hook-start
+# mapmmd-checkout-hook-start
 # Auto-rebuilds the knowledge graph (code only) when switching branches.
-# Installed by: graphify hook install
+# Installed by: mapmmd hook install
 
 # Deterministic clustering: networkx louvain iterates string-keyed sets whose
 # order is randomized per-process by PYTHONHASHSEED, so community assignments
-# churn run-to-run. Pinning it makes graphify-out reproducible.
+# churn run-to-run. Pinning it makes mapmmd-out reproducible.
 export PYTHONHASHSEED=0
 
 PREV_HEAD=$1
@@ -278,8 +278,8 @@ if [ "$BRANCH_SWITCH" != "1" ]; then
     exit 0
 fi
 
-# Only run if graphify-out/ exists (graph has been built before)
-if [ ! -d "graphify-out" ]; then
+# Only run if mapmmd-out/ exists (graph has been built before)
+if [ ! -d "mapmmd-out" ]; then
     exit 0
 fi
 
@@ -291,11 +291,11 @@ GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
 [ -f "$GIT_DIR/CHERRY_PICK_HEAD" ] && exit 0
 
 """ + _PYTHON_DETECT + """
-_GRAPHIFY_LOG="${HOME}/.cache/graphify-rebuild.log"
+_GRAPHIFY_LOG="${HOME}/.cache/mapmmd-rebuild.log"
 mkdir -p "$(dirname "$_GRAPHIFY_LOG")"
 export GRAPHIFY_REBUILD_LOG="$_GRAPHIFY_LOG"
-echo "[graphify] Branch switched - launching background rebuild (log: $_GRAPHIFY_LOG)"
-""" + _detached_launch(_REBUILD_BODY_CHECKOUT) + """# graphify-checkout-hook-end
+echo "[mapmmd] Branch switched - launching background rebuild (log: $_GRAPHIFY_LOG)"
+""" + _detached_launch(_REBUILD_BODY_CHECKOUT) + """# mapmmd-checkout-hook-end
 """
 
 
@@ -354,7 +354,7 @@ def _hooks_dir(root: Path) -> Path:
         # by another tool). Surface them on stderr instead of silently
         # falling through to the default hooks directory.
         print(
-            f"[graphify hooks] could not read core.hooksPath from "
+            f"[mapmmd hooks] could not read core.hooksPath from "
             f"{root / '.git' / 'config'}: {exc}",
             file=sys.stderr,
         )
@@ -401,13 +401,13 @@ def _install_hook(hooks_dir: Path, name: str, script: str, marker: str) -> str:
 
 
 def _uninstall_hook(hooks_dir: Path, name: str, marker: str, marker_end: str) -> str:
-    """Remove graphify section from a git hook using start/end markers."""
+    """Remove mapmmd section from a git hook using start/end markers."""
     hook_path = hooks_dir / name
     if not hook_path.exists():
         return f"no {name} hook found - nothing to remove."
     content = hook_path.read_text(encoding="utf-8")
     if marker not in content:
-        return f"graphify hook not found in {name} - nothing to remove."
+        return f"mapmmd hook not found in {name} - nothing to remove."
     new_content = re.sub(
         rf"{re.escape(marker)}.*?{re.escape(marker_end)}\n?",
         "",
@@ -418,7 +418,7 @@ def _uninstall_hook(hooks_dir: Path, name: str, marker: str, marker_end: str) ->
         hook_path.unlink()
         return f"removed {name} hook at {hook_path}"
     hook_path.write_text(new_content + "\n", encoding="utf-8", newline="\n")
-    return f"graphify removed from {name} at {hook_path} (other hook content preserved)"
+    return f"mapmmd removed from {name} at {hook_path} (other hook content preserved)"
 
 
 def _user_hooks_dir(hooks_dir: Path) -> Path:
@@ -435,14 +435,14 @@ def _user_hooks_dir(hooks_dir: Path) -> Path:
 
 
 def install(path: Path = Path(".")) -> str:
-    """Install graphify post-commit and post-checkout hooks in the nearest git repo."""
+    """Install mapmmd post-commit and post-checkout hooks in the nearest git repo."""
     root = _git_root(path)
     if root is None:
         raise RuntimeError(f"No git repository found at or above {path.resolve()}")
 
     hooks_dir = _user_hooks_dir(_hooks_dir(root))
 
-    # Pin the current interpreter so the hook works even when the graphify
+    # Pin the current interpreter so the hook works even when the mapmmd
     # launcher is not on PATH at git-trigger time (uv tool / pipx isolation).
     # sys.executable is the Python running this very install command, so it is
     # always the correct isolated-venv interpreter.  The placeholder is replaced
@@ -472,7 +472,7 @@ def install(path: Path = Path(".")) -> str:
 
 
 def uninstall(path: Path = Path(".")) -> str:
-    """Remove graphify post-commit and post-checkout hooks."""
+    """Remove mapmmd post-commit and post-checkout hooks."""
     root = _git_root(path)
     if root is None:
         raise RuntimeError(f"No git repository found at or above {path.resolve()}")
@@ -485,7 +485,7 @@ def uninstall(path: Path = Path(".")) -> str:
 
 
 def status(path: Path = Path(".")) -> str:
-    """Check if graphify hooks are installed."""
+    """Check if mapmmd hooks are installed."""
     root = _git_root(path)
     if root is None:
         return "Not in a git repository."
@@ -495,7 +495,7 @@ def status(path: Path = Path(".")) -> str:
         p = hooks_dir / name
         if not p.exists():
             return "not installed"
-        return "installed" if marker in p.read_text(encoding="utf-8") else "not installed (hook exists but graphify not found)"
+        return "installed" if marker in p.read_text(encoding="utf-8") else "not installed (hook exists but mapmmd not found)"
 
     commit = _check("post-commit", _HOOK_MARKER)
     checkout = _check("post-checkout", _CHECKOUT_MARKER)

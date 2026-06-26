@@ -10,10 +10,10 @@ __pycache__
 dist
 build
 *.egg-info
-graphify-out
-graphify-benchmark
-graphify_eval
-graphify_test
+mapmmd-out
+mapmmd-benchmark
+mapmmd_eval
+mapmmd_test
 worked
 llm-stack-corpus
 llm-stack-demo

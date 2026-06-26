@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
-from graphify.build import build_from_json
-from graphify.cluster import cluster, score_all
-from graphify.analyze import god_nodes, surprising_connections
-from graphify.report import generate
+from mapmmd.build import build_from_json
+from mapmmd.cluster import cluster, score_all
+from mapmmd.analyze import god_nodes, surprising_connections
+from mapmmd.report import generate
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -22,7 +22,7 @@ def make_inputs():
 def test_report_contains_header():
     G, communities, cohesion, labels, gods, surprises, detection, tokens = make_inputs()
     report = generate(G, communities, cohesion, labels, gods, surprises, detection, tokens, "./project")
-    assert "# Graph Report" in report
+    assert "# mmd Report" in report
 
 def test_report_contains_corpus_check():
     G, communities, cohesion, labels, gods, surprises, detection, tokens = make_inputs()

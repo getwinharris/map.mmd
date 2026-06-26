@@ -3,9 +3,9 @@ import math
 import re
 import tempfile
 from pathlib import Path
-from graphify.build import build_from_json
-from graphify.cluster import cluster
-from graphify.export import to_json, to_cypher, to_graphml, to_html, to_canvas, to_obsidian
+from mapmmd.build import build_from_json
+from mapmmd.cluster import cluster
+from mapmmd.export import to_json, to_cypher, to_graphml, to_html, to_canvas, to_obsidian
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -388,37 +388,37 @@ def test_to_obsidian_community_notes_case_collision():
 
 def test_backup_no_graph_json(tmp_path):
     """No graph.json → no backup."""
-    from graphify.export import backup_if_protected
+    from mapmmd.export import backup_if_protected
     assert backup_if_protected(tmp_path) is None
 
 
 def test_backup_no_markers(tmp_path):
     """graph.json present but no sentinel and no curated labels → no backup."""
-    from graphify.export import backup_if_protected
+    from mapmmd.export import backup_if_protected
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
     assert backup_if_protected(tmp_path) is None
 
 
 def test_backup_semantic_marker(tmp_path):
-    """graph.json + .graphify_semantic_marker → backup taken."""
-    from graphify.export import backup_if_protected
+    """graph.json + .mapmmd_semantic_marker → backup taken."""
+    from mapmmd.export import backup_if_protected
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
     (tmp_path / "GRAPH_REPORT.md").write_text("# Report")
-    (tmp_path / ".graphify_semantic_marker").write_text('{"output_tokens": 1234}')
+    (tmp_path / ".mapmmd_semantic_marker").write_text('{"output_tokens": 1234}')
     result = backup_if_protected(tmp_path)
     assert result is not None
     assert result.is_dir()
     assert (result / "graph.json").exists()
     assert (result / "GRAPH_REPORT.md").exists()
-    assert (result / ".graphify_semantic_marker").exists()
+    assert (result / ".mapmmd_semantic_marker").exists()
 
 
 def test_backup_curated_labels(tmp_path):
-    """graph.json + non-default label in .graphify_labels.json → backup taken."""
+    """graph.json + non-default label in .mapmmd_labels.json → backup taken."""
     import json
-    from graphify.export import backup_if_protected
+    from mapmmd.export import backup_if_protected
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
-    (tmp_path / ".graphify_labels.json").write_text(json.dumps({"0": "Auth Pipeline", "1": "Community 1"}))
+    (tmp_path / ".mapmmd_labels.json").write_text(json.dumps({"0": "Auth Pipeline", "1": "Community 1"}))
     result = backup_if_protected(tmp_path)
     assert result is not None
 
@@ -426,18 +426,18 @@ def test_backup_curated_labels(tmp_path):
 def test_backup_default_labels_only(tmp_path):
     """All-default labels → no backup (not curated)."""
     import json
-    from graphify.export import backup_if_protected
+    from mapmmd.export import backup_if_protected
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
-    (tmp_path / ".graphify_labels.json").write_text(json.dumps({"0": "Community 0", "1": "Community 1"}))
+    (tmp_path / ".mapmmd_labels.json").write_text(json.dumps({"0": "Community 0", "1": "Community 1"}))
     assert backup_if_protected(tmp_path) is None
 
 
 def test_backup_same_day_no_accumulation(tmp_path):
     """Same content on same day returns existing backup dir without re-copying."""
-    from graphify.export import backup_if_protected
+    from mapmmd.export import backup_if_protected
     from datetime import date
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
-    (tmp_path / ".graphify_semantic_marker").write_text("{}")
+    (tmp_path / ".mapmmd_semantic_marker").write_text("{}")
     b1 = backup_if_protected(tmp_path)
     b2 = backup_if_protected(tmp_path)
     assert b1 is not None and b2 is not None
@@ -447,10 +447,10 @@ def test_backup_same_day_no_accumulation(tmp_path):
 
 def test_backup_same_day_changed_content(tmp_path):
     """Changed graph.json on same day overwrites the existing backup in place."""
-    from graphify.export import backup_if_protected
+    from mapmmd.export import backup_if_protected
     from datetime import date
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
-    (tmp_path / ".graphify_semantic_marker").write_text("{}")
+    (tmp_path / ".mapmmd_semantic_marker").write_text("{}")
     b1 = backup_if_protected(tmp_path)
     (tmp_path / "graph.json").write_text('{"nodes":[{"id":"x"}],"links":[]}')
     b2 = backup_if_protected(tmp_path)
@@ -460,8 +460,8 @@ def test_backup_same_day_changed_content(tmp_path):
 
 def test_backup_env_disable(tmp_path, monkeypatch):
     """GRAPHIFY_NO_BACKUP=1 disables backup entirely."""
-    from graphify.export import backup_if_protected
+    from mapmmd.export import backup_if_protected
     monkeypatch.setenv("GRAPHIFY_NO_BACKUP", "1")
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
-    (tmp_path / ".graphify_semantic_marker").write_text("{}")
+    (tmp_path / ".mapmmd_semantic_marker").write_text("{}")
     assert backup_if_protected(tmp_path) is None

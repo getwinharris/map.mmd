@@ -1,9 +1,9 @@
-# Graphify Evaluation - httpx Corpus (2026-04-03)
+# map.mmd Evaluation - httpx Corpus (2026-04-03)
 
 **Evaluator:** Claude Sonnet 4.6 (analytical simulation - Bash execution unavailable)
 **Corpus:** 6-file synthetic httpx-like Python codebase (~2,800 words)
-**Pipeline:** graphify AST extractor + graph_builder + Leiden clusterer + analyzer + reporter
-**Method:** Full deterministic code tracing of every graphify source module against
+**Pipeline:** mapmmd AST extractor + graph_builder + Leiden clusterer + analyzer + reporter
+**Method:** Full deterministic code tracing of every mapmmd source module against
 the corpus. Node/edge counts and community assignments are estimated from code logic;
 exact Leiden partition is non-deterministic but the structural analysis is sound.
 
@@ -12,7 +12,7 @@ exact Leiden partition is non-deterministic but the structural analysis is sound
 ## Full GRAPH_REPORT.md Content
 
 ```markdown
-# Graph Report - /home/safi/graphify_test/httpx  (2026-04-03)
+# mmd Report - /home/safi/mapmmd_test/httpx  (2026-04-03)
 
 ## Corpus Check
 - 6 files · ~2,800 words
@@ -73,6 +73,7 @@ Nodes (18): transport.py, BaseTransport, HTTPTransport, MockTransport, ProxyTran
 ### 1. Node/Edge Quality - Score: 6/10
 
 **What's captured well:**
+
 - File-level nodes for all 6 files (exceptions, models, auth, utils, client, transport) ✓
 - All top-level class definitions: HTTPStatusError, RequestError, TransportError and all
   subclasses; URL, Headers, Cookies, Request, Response; Auth, BasicAuth, DigestAuth,
@@ -84,6 +85,7 @@ Nodes (18): transport.py, BaseTransport, HTTPTransport, MockTransport, ProxyTran
 - Methods on all classes (auth_flow, handle_request, send, request, get/post/put/etc.) ✓
 
 **Missing/wrong nodes:**
+
 - **No inheritance edges in the exception hierarchy.** The extractor builds inheritance edges
   as `_make_id(stem, base_name)` - e.g. `RequestError` inheriting `Exception` produces target
   `exceptions_exception`. But `Exception` is never registered as a node, so the edge is filtered
@@ -116,12 +118,14 @@ come from the tree-sitter parse). There are 0 INFERRED edges. This means every e
 graph is a direct structural fact from the source code - honest but **not semantically rich**.
 
 **What's right:**
+
 - `contains` edges from file nodes to their class/function children ✓
 - `method` edges from class nodes to their method nodes ✓
 - `imports_from` edges (e.g., client.py → models, auth.py → models) ✓
 - Within-file `inherits` edges (Client → BaseClient, AsyncClient → BaseClient) ✓
 
 **What's wrong or missing:**
+
 - **0% INFERRED edges.** The AST extractor only does structural extraction. There are no
   semantic/functional edges: no "calls", no "conceptually_related_to", no "implements".
   For example, `DigestAuth.auth_flow` calls `Response.status_code` - this relationship is
@@ -141,6 +145,7 @@ graph is a direct structural fact from the source code - honest but **not semant
   bug appears to be fixed in this version.
 
 **Edge accuracy breakdown (estimated):**
+
 - Correct, present: ~115 edges (88%)
 - Silently dropped (inheritance from builtins): ~14 edges (11%)
 - False positives: ~2 edges (import edges to nonexistent modules like "socket" kept via
@@ -154,15 +159,18 @@ graph is a direct structural fact from the source code - honest but **not semant
 **Communities make semantic sense?** Largely yes, with one significant problem.
 
 **Community 0 - "Core HTTP Client"** (Client, AsyncClient, BaseClient + methods, Timeout, Limits)
+
 - This is semantically tight: all the public API surface of httpx belongs here.
 - Cohesion ~0.14: low but expected - client.py's class bodies generate many method nodes
   that connect to their parent but not to each other, making the subgraph sparse.
 
 **Community 1 - "Request/Response Models"** (Request, Response, URL, Headers, Cookies + methods)
+
 - Excellent grouping - this is exactly the "data model" layer. Cohesion ~0.18 is the highest
   because methods connect within their parent classes.
 
 **Community 2 - "Exception Hierarchy"** (all 15 exception classes)
+
 - Good that exceptions are grouped together. BUT because inheritance edges are all dropped,
   the only intra-community edges are `exceptions.py contains ExceptionClass`. This means
   cohesion is near-zero (0.10 estimated) - the community is held together only by the file
@@ -170,6 +178,7 @@ graph is a direct structural fact from the source code - honest but **not semant
   correctly since they look like isolated nodes connected only to the file hub.
 
 **Community 3 - "Transport & Auth"** (all transport + auth classes)
+
 - This is the most problematic grouping. Transport (HTTPTransport, ConnectionPool, etc.) and
   Auth (BasicAuth, DigestAuth, etc.) are bundled together simply because both modules import
   from models.py and exceptions.py. They are architecturally distinct layers. A developer
@@ -217,6 +226,7 @@ The 5 reported connections are all EXTRACTED (cross-file import edges). Let's ev
    - Score: Mildly interesting.
 
 **Problems:**
+
 - 3 of 5 "surprising" connections are obvious cross-module imports (transport→exceptions,
   client→auth, transport→models)
 - The truly surprising connection (DigestAuth's bidirectional coupling with Response, including
@@ -232,6 +242,7 @@ The 5 reported connections are all EXTRACTED (cross-file import edges). Let's ev
 **Are the most-connected nodes actually the core abstractions?**
 
 **Very good:**
+
 - `client.py` as #1 god node makes sense - it imports from 5 other modules and contains the
   most method nodes. It is the integration hub of the library.
 - `models.py` as #2 is correct - Request, Response, URL, Headers, Cookies are the central
@@ -241,6 +252,7 @@ The 5 reported connections are all EXTRACTED (cross-file import edges). Let's ev
 - `Response` as #7 is accurate - it's the most feature-rich class with the most methods.
 
 **Problematic:**
+
 - File-level nodes (client.py, models.py, transport.py, exceptions.py, auth.py, utils.py)
   dominate the top spots. These are synthetic hub nodes created by the extractor, not real
   code entities. A file node like `client.py` gets an edge to EVERY class and function in
@@ -259,6 +271,7 @@ The 5 reported connections are all EXTRACTED (cross-file import edges). Let's ev
 **Would this graph help a developer understand the codebase?**
 
 **Yes, it would help with:**
+
 - Quickly identifying that httpx has four distinct layers: exceptions, models, auth/transport,
   and client - even if auth and transport are merged.
 - Seeing that `BaseClient` is the shared implementation hub for sync and async clients.
@@ -267,6 +280,7 @@ The 5 reported connections are all EXTRACTED (cross-file import edges). Let's ev
 - Understanding that `Client` and `AsyncClient` mirror each other structurally.
 
 **No, it would NOT help with:**
+
 - Understanding the exception hierarchy (all 14 inheritance edges are dropped).
 - Understanding call flow (which methods call which).
 - Understanding that DigestAuth participates in a request/response cycle, not just
@@ -286,6 +300,7 @@ or shared data structures) would significantly improve usefulness.
 ## Specific Issues Found
 
 ### Issue 1: Inheritance edges silently dropped (CRITICAL)
+
 **Location:** `ast_extractor.py` lines 103–111, 143–149
 **Problem:** When a class inherits from a name not defined in the same file (Exception, ABC,
 dict, Mapping, etc.), the target node ID (`_make_id(stem, base_name)`) is never registered
@@ -296,6 +311,7 @@ TransportError → TimeoutException → ConnectTimeout` is invisible in the grap
 than dropping the edge. Or keep inheritance edges regardless of whether the target exists.
 
 ### Issue 2: File nodes dominate God Nodes (MODERATE)
+
 **Location:** `analyzer.py` god_nodes(), `ast_extractor.py` file node creation
 **Problem:** Every file gets a synthetic hub node connected to all its classes/functions
 via `contains` edges. This makes file nodes always appear as god nodes. A 300-line file
@@ -306,6 +322,7 @@ the "file contains class" edges from degree count. Report file nodes separately 
 "Module Hubs".
 
 ### Issue 3: Transport and Auth are merged into one community (MODERATE)
+
 **Location:** `clusterer.py`, Leiden algorithm input
 **Problem:** Because auth.py and transport.py both import from models.py and exceptions.py,
 and have no direct structural link to each other, Leiden groups them together when there
@@ -316,8 +333,10 @@ Alternatively, run clustering at the module level first (treat files as nodes) b
 drilling down to class/method level.
 
 ### Issue 4: 100% EXTRACTED, 0% INFERRED (MODERATE)
+
 **Location:** `ast_extractor.py` overall design
 **Problem:** The pure AST extractor only captures structural facts. It cannot capture:
+
 - Method A calls Method B (would require call-graph analysis or LLM)
 - Class A conceptually relates to Class B (would require semantic analysis)
 - The "implements" relationship (interface to concrete class)
@@ -327,6 +346,7 @@ semantically interesting relationships in the codebase.
 Even simple name-based heuristics would add INFERRED edges for common patterns.
 
 ### Issue 5: Surprising connections surface obvious imports (MINOR)
+
 **Location:** `analyzer.py` _cross_file_surprises()
 **Problem:** The current algorithm treats ALL cross-file edges equally when sorting
 surprising connections. But many cross-file edges are mundane imports. The sort
@@ -337,6 +357,7 @@ import relationship. A `transport.py → exceptions.py` edge should rank lower t
 a `DigestAuth → Response` edge because transport already imports exceptions directly.
 
 ### Issue 6: _make_id edge fix - CONFIRMED WORKING
+
 **Location:** `ast_extractor.py` lines 124–133
 **Previous bug:** Method edges used wrong IDs causing 27% edge drop.
 **Current code:** Method node ID is `_make_id(parent_class_nid, func_name)` and the
@@ -346,6 +367,7 @@ same `parent_class_nid`. Both `parent_class_nid` and `func_nid` are in `seen_ids
 No 27% drop for method edges. ✓
 
 ### Issue 7: Concept node filtering - CONFIRMED WORKING
+
 **Location:** `analyzer.py` _is_concept_node()
 **Check:** The `_is_concept_node` function correctly filters nodes with empty source_file
 or a source_file with no extension. The AST extractor always sets source_file to the
@@ -372,6 +394,7 @@ correctly shows only real code entities. ✓
 ## Additional Observations
 
 ### The _make_id fix was clearly necessary and is now correct
+
 The old bug would have built method edges with `parent_class_nid` but registered method
 nodes with a different ID. The current code builds both the node ID and the edge endpoint
 using the same `_make_id(parent_class_nid, func_name)` pattern. For a 6-file corpus
@@ -379,7 +402,8 @@ with ~45 methods across all classes, this saves approximately 35-40 edges that w
 otherwise be dropped. The fix is confirmed working.
 
 ### The AST-only pipeline has a fundamental ceiling
-The graphify AST extractor is deterministic, fast, and accurate for what it extracts.
+
+The mapmmd AST extractor is deterministic, fast, and accurate for what it extracts.
 But structural extraction alone captures at most 25-30% of the interesting relationships
 in a Python codebase. The skill.md design correctly envisions the Claude LLM doing a
 richer extraction pass (Step 3) for document/paper corpora - but for code, the pipeline
@@ -387,12 +411,14 @@ currently relies entirely on tree-sitter, producing a structurally correct but
 semantically thin graph.
 
 ### Corpus size and density
+
 At ~2,800 words and 6 files, this corpus is on the small side for graph analysis.
 The skill.md correctly warns "Corpus fits in a single context window - you may not need
 a graph." A real httpx codebase has 30+ files. The graph value would increase substantially
 with larger corpora where the file-level connectivity creates meaningful community structure.
 
 ### What a 9/10 graph would look like
+
 - Exception inheritance edges preserved (stub external base classes)
 - Call-graph edges added (even heuristic name-matching): `raise_for_status → HTTPStatusError`
 - Transport and Auth separated into distinct communities

@@ -7,7 +7,7 @@ from pathlib import Path
 import networkx as nx
 from networkx.readwrite import json_graph as _jg
 
-_GLOBAL_DIR = Path.home() / ".graphify"
+_GLOBAL_DIR = Path.home() / ".mapmmd"
 _GLOBAL_GRAPH = _GLOBAL_DIR / "global-graph.json"
 _GLOBAL_MANIFEST = _GLOBAL_DIR / "global-manifest.json"
 
@@ -26,14 +26,14 @@ def _load_manifest() -> dict:
             try:
                 _GLOBAL_MANIFEST.rename(backup)
                 print(
-                    f"[graphify global] manifest at {_GLOBAL_MANIFEST} failed to parse ({exc}); "
+                    f"[mapmmd global] manifest at {_GLOBAL_MANIFEST} failed to parse ({exc}); "
                     f"moved to {backup} and starting fresh. Restore from the backup if this was "
                     f"unexpected.",
                     file=sys.stderr,
                 )
             except Exception as rename_exc:
                 print(
-                    f"[graphify global] manifest at {_GLOBAL_MANIFEST} failed to parse ({exc}) "
+                    f"[mapmmd global] manifest at {_GLOBAL_MANIFEST} failed to parse ({exc}) "
                     f"and could not be backed up ({rename_exc}). Starting fresh.",
                     file=sys.stderr,
                 )
@@ -45,9 +45,9 @@ def _save_manifest(manifest: dict) -> None:
     _GLOBAL_MANIFEST.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
-def _load_global_graph() -> nx.Graph:
+def _load_global_graph() -> nx.mmd:
     if _GLOBAL_GRAPH.exists():
-        from graphify.security import check_graph_file_size_cap
+        from mapmmd.security import check_graph_file_size_cap
         check_graph_file_size_cap(_GLOBAL_GRAPH)
         data = json.loads(_GLOBAL_GRAPH.read_text(encoding="utf-8"))
         if "links" not in data and "edges" in data:
@@ -56,10 +56,10 @@ def _load_global_graph() -> nx.Graph:
             return _jg.node_link_graph(data, edges="links")
         except TypeError:
             return _jg.node_link_graph(data)
-    return nx.Graph()
+    return nx.mmd()
 
 
-def _save_global_graph(G: nx.Graph) -> None:
+def _save_global_graph(G: nx.mmd) -> None:
     _GLOBAL_DIR.mkdir(parents=True, exist_ok=True)
     try:
         data = _jg.node_link_data(G, edges="links")
@@ -80,7 +80,7 @@ def global_add(source_path: Path, repo_tag: str) -> dict:
     Returns a summary dict with keys: repo_tag, nodes_added, nodes_removed, skipped.
     Skipped=True means the source graph hasn't changed since last add.
     """
-    from graphify.build import prefix_graph_for_global, prune_repo_from_graph
+    from mapmmd.build import prefix_graph_for_global, prune_repo_from_graph
 
     if not source_path.exists():
         raise FileNotFoundError(f"graph not found: {source_path}")
@@ -92,7 +92,7 @@ def global_add(source_path: Path, repo_tag: str) -> dict:
     existing_path = existing.get("source_path", "")
     if existing_path and existing_path != str(source_path.resolve()):
         print(
-            f"[graphify global] warning: repo tag '{repo_tag}' previously pointed to "
+            f"[mapmmd global] warning: repo tag '{repo_tag}' previously pointed to "
             f"{existing_path!r}, now updating to {str(source_path.resolve())!r}. "
             f"Use --as <tag> to give it a different name.",
             file=sys.stderr,
@@ -101,7 +101,7 @@ def global_add(source_path: Path, repo_tag: str) -> dict:
         return {"repo_tag": repo_tag, "nodes_added": 0, "nodes_removed": 0, "skipped": True}
 
     # Load source graph
-    from graphify.security import check_graph_file_size_cap
+    from mapmmd.security import check_graph_file_size_cap
     check_graph_file_size_cap(source_path)
     data = json.loads(source_path.read_text(encoding="utf-8"))
     if "links" not in data and "edges" in data:
@@ -158,7 +158,7 @@ def global_add(source_path: Path, repo_tag: str) -> dict:
 
 def global_remove(repo_tag: str) -> int:
     """Remove all nodes for repo_tag from the global graph. Returns count removed."""
-    from graphify.build import prune_repo_from_graph
+    from mapmmd.build import prune_repo_from_graph
 
     manifest = _load_manifest()
     if repo_tag not in manifest["repos"]:

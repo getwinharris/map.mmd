@@ -2,8 +2,8 @@ import json
 import sys
 import networkx as nx
 from pathlib import Path
-from graphify.build import build_from_json
-from graphify.cluster import cluster, cohesion_score, remap_communities_to_previous, score_all
+from mapmmd.build import build_from_json
+from mapmmd.cluster import cluster, cohesion_score, remap_communities_to_previous, score_all
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -28,13 +28,13 @@ def test_cohesion_score_complete_graph():
     assert score == 1.0
 
 def test_cohesion_score_single_node():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("a")
     score = cohesion_score(G, ["a"])
     assert score == 1.0
 
 def test_cohesion_score_disconnected():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_nodes_from(["a", "b", "c"])
     score = cohesion_score(G, ["a", "b", "c"])
     assert score == 0.0
@@ -71,7 +71,7 @@ def test_cluster_does_not_write_to_stderr(capsys):
     G = make_graph()
     cluster(G)
     captured = capsys.readouterr()
-    # Allow logging output (starts with [graphify]) but no raw ANSI codes
+    # Allow logging output (starts with [mapmmd]) but no raw ANSI codes
     for line in captured.err.splitlines():
         assert "\x1b" not in line, f"cluster() wrote ANSI to stderr: {line!r}"
 

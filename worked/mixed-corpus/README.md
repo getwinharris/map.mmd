@@ -1,6 +1,6 @@
 # Mixed Corpus Benchmark
 
-A small mixed-input corpus: Python source files, a markdown paper with arXiv citations, and one image. Tests graphify on different file types in a single run.
+A small mixed-input corpus: Python source files, a markdown paper with arXiv citations, and one image. Tests mapmmd on different file types in a single run.
 
 ## Corpus (5 files)
 
@@ -17,24 +17,24 @@ Note: the original benchmark included `attention_arabic.png` (an Arabic-language
 ## How to run
 
 ```bash
-pip install graphifyy
+pip install mapmmdy
 
-graphify install                        # Claude Code
-graphify install --platform codex       # Codex
-graphify install --platform opencode    # OpenCode
-graphify install --platform claw        # OpenClaw
+mapmmd install                        # Claude Code
+mapmmd install --platform codex       # Codex
+mapmmd install --platform opencode    # OpenCode
+mapmmd install --platform claw        # OpenClaw
 ```
 
 Then open your AI coding assistant in this directory and type:
 
 ```
-/graphify ./raw
+/mapmmd ./raw
 ```
 
 ## What to expect
 
 - ~20 nodes, ~19 edges from AST alone (3 Python modules)
-- 3 communities: Graph Analysis, Clustering and Scoring, Graph Building
+- 3 communities: mmd Analysis, Clustering and Scoring, mmd Building
 - God nodes: `analyze.py`, `cluster.py`, `build.py`
 - `attention_notes.md` classified as `paper` (arXiv heuristic fires on `1706.03762`)
 - If you include the image: 1 extra node describing the figure content via vision

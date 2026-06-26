@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import networkx as nx
 from networkx.readwrite import json_graph
-from graphify.build import build_from_json, build, build_merge, edge_data, edge_datas, dedupe_edges, dedupe_nodes
+from mapmmd.build import build_from_json, build, build_merge, edge_data, edge_datas, dedupe_edges, dedupe_nodes
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -261,18 +261,18 @@ def test_build_merge_preserves_call_edge_direction(tmp_path):
     """Regression for #760.
 
     When the callee is defined before the caller in source, NetworkX's
-    undirected Graph stores edges in node-insertion order. Going through
+    undirected mmd stores edges in node-insertion order. Going through
     node_link_graph() + edges() during build_merge previously flipped the
     `calls` edge so that on the next save source/target were swapped.
 
     build_merge must read the saved JSON's source/target verbatim instead
     of round-tripping through NetworkX.
     """
-    from graphify.extract import extract_js
-    from graphify.export import to_json
+    from mapmmd.extract import extract_js
+    from mapmmd.export import to_json
 
     # Callee `b` is defined before caller `a` so node insertion order
-    # is b, a. An undirected Graph then yields the edge as (b, a) on
+    # is b, a. An undirected mmd then yields the edge as (b, a) on
     # iteration, which is the wrong direction for `calls` (a calls b).
     src = "function b() {}\nfunction a() { b(); }\n"
     src_file = tmp_path / "x.js"
@@ -329,7 +329,7 @@ def test_build_from_json_preserves_first_direction_on_bidirectional_pair(tmp_pat
 
     When an extraction emits two `calls` edges between the same pair in
     opposite directions (mutual recursion, callbacks, event handlers, etc.),
-    nx.Graph collapses them into a single undirected edge. The deterministic
+    nx.mmd collapses them into a single undirected edge. The deterministic
     edge sort introduced in #1010 ordered edges by (source, target, relation),
     so the lexicographically-later direction always wrote second and clobbered
     the first edge's _src/_tgt — the surviving edge then exported with caller
@@ -338,7 +338,7 @@ def test_build_from_json_preserves_first_direction_on_bidirectional_pair(tmp_pat
     build_from_json must keep the first-seen direction for the surviving edge
     instead of letting the second add_edge overwrite _src/_tgt.
     """
-    from graphify.export import to_json
+    from mapmmd.export import to_json
 
     # Lexicographic order of (src, tgt, rel) puts `a` < `z` first, so the sort
     # processes `a -> z` BEFORE `z -> a`. Without the fix, the second write
@@ -384,12 +384,12 @@ def test_build_from_json_preserves_first_direction_on_bidirectional_pair(tmp_pat
 
 
 # Regression tests for #796 — edge_data / edge_datas helpers must tolerate
-# MultiGraph and MultiDiGraph, which networkx's node_link_graph() produces
+# Multimmd and MultiDimmd, which networkx's node_link_graph() produces
 # whenever the loaded JSON has multigraph: true. Plain G.edges[u, v] crashes
 # on those with `ValueError: not enough values to unpack (expected 3, got 2)`.
 
 def test_edge_data_simple_graph():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_edge("a", "b", relation="calls", confidence="EXTRACTED")
     d = edge_data(G, "a", "b")
     assert isinstance(d, dict)
@@ -398,7 +398,7 @@ def test_edge_data_simple_graph():
 
 
 def test_edge_datas_simple_graph_returns_singleton_list():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_edge("a", "b", relation="calls", confidence="EXTRACTED")
     ds = edge_datas(G, "a", "b")
     assert isinstance(ds, list)
@@ -407,7 +407,7 @@ def test_edge_datas_simple_graph_returns_singleton_list():
 
 
 def test_edge_data_multigraph_with_parallel_edges():
-    G = nx.MultiGraph()
+    G = nx.Multimmd()
     G.add_edge("a", "b", relation="calls", confidence="EXTRACTED")
     G.add_edge("a", "b", relation="references", confidence="INFERRED")
     d = edge_data(G, "a", "b")
@@ -417,7 +417,7 @@ def test_edge_data_multigraph_with_parallel_edges():
 
 
 def test_edge_datas_multigraph_returns_all_parallel_edges():
-    G = nx.MultiGraph()
+    G = nx.Multimmd()
     G.add_edge("a", "b", relation="calls", confidence="EXTRACTED")
     G.add_edge("a", "b", relation="references", confidence="INFERRED")
     ds = edge_datas(G, "a", "b")
@@ -428,7 +428,7 @@ def test_edge_datas_multigraph_returns_all_parallel_edges():
 
 
 def test_edge_data_multidigraph():
-    G = nx.MultiDiGraph()
+    G = nx.MultiDimmd()
     G.add_edge("a", "b", relation="calls")
     G.add_edge("a", "b", relation="imports")
     d = edge_data(G, "a", "b")
@@ -439,7 +439,7 @@ def test_edge_data_multidigraph():
 
 
 def test_edge_data_node_link_multigraph_roundtrip():
-    """A node_link JSON with multigraph: true must load as MultiGraph and the
+    """A node_link JSON with multigraph: true must load as Multimmd and the
     helpers must operate on it without raising the 3-tuple unpack ValueError."""
     data = {
         "directed": False,
@@ -458,7 +458,7 @@ def test_edge_data_node_link_multigraph_roundtrip():
         G = json_graph.node_link_graph(data, edges="links")
     except TypeError:
         G = json_graph.node_link_graph(data)
-    assert isinstance(G, nx.MultiGraph)
+    assert isinstance(G, nx.Multimmd)
     # Plain G.edges[u, v] would raise here; the helper must not.
     d = edge_data(G, "a", "b")
     assert isinstance(d, dict)
@@ -629,7 +629,7 @@ def test_build_merge_root_collapses_convention_drift(tmp_path):
     import networkx as nx
 
     root = tmp_path
-    graph_path = tmp_path / "graphify-out" / "graph.json"
+    graph_path = tmp_path / "mapmmd-out" / "graph.json"
     graph_path.parent.mkdir(parents=True)
 
     # Stored graph: nested project-relative convention + a STALE node for the same
@@ -674,7 +674,7 @@ def test_build_merge_rejects_oversized_existing_graph(monkeypatch, tmp_path):
 
     graph_path = tmp_path / "graph.json"
     graph_path.write_text(json.dumps({"nodes": [], "links": []}), encoding="utf-8")
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 8)
+    monkeypatch.setattr("mapmmd.security._MAX_GRAPH_FILE_BYTES", 8)
     with pytest.raises(ValueError, match="exceeds"):
         build_merge([], graph_path, dedup=False)
 

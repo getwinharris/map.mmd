@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-struct Graph {
+struct mmd {
     nodes: HashMap<String, Vec<String>>,
 }
 
-impl Graph {
+impl mmd {
     fn new() -> Self {
-        Graph { nodes: HashMap::new() }
+        mmd { nodes: HashMap::new() }
     }
 
     fn add_node(&mut self, id: String) {
@@ -18,8 +18,8 @@ impl Graph {
     }
 }
 
-fn build_graph(edges: Vec<(String, String)>) -> Graph {
-    let mut g = Graph::new();
+fn build_graph(edges: Vec<(String, String)>) -> mmd {
+    let mut g = mmd::new();
     for (src, tgt) in edges {
         g.add_edge(src, tgt);
     }

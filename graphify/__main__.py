@@ -1,4 +1,4 @@
-"""graphify CLI - `graphify install` sets up the Claude Code skill."""
+"""mapmmd CLI - `mapmmd install` sets up the Claude Code skill."""
 
 from __future__ import annotations
 import functools
@@ -13,20 +13,20 @@ from pathlib import Path
 try:
     from importlib.metadata import version as _pkg_version
 
-    __version__ = _pkg_version("graphifyy")
+    __version__ = _pkg_version("mapmmdy")
 except Exception:
     __version__ = "unknown"
 
 # Output directory — override with GRAPHIFY_OUT env var for worktrees or shared-output setups.
-# Accepts a relative name ("graphify-out-feature") or an absolute path ("/shared/graphify-out").
-# Defined once in graphify.paths so the security/callflow path guards honour the
+# Accepts a relative name ("mapmmd-out-feature") or an absolute path ("/shared/mapmmd-out").
+# Defined once in mapmmd.paths so the security/callflow path guards honour the
 # same override (#1423).
-from graphify.paths import GRAPHIFY_OUT as _GRAPHIFY_OUT
+from mapmmd.paths import GRAPHIFY_OUT as _GRAPHIFY_OUT
 
 
 @functools.lru_cache(maxsize=None)
 def _always_on(basename: str) -> str:
-    """Read a packaged always-on instruction block from graphify/always_on/.
+    """Read a packaged always-on instruction block from mapmmd/always_on/.
 
     The six always-on blocks (CLAUDE.md / AGENTS.md / GEMINI.md / VS Code
     Copilot instructions / Antigravity rules / Kiro steering) live as committed
@@ -44,8 +44,8 @@ def _always_on(basename: str) -> str:
         # import (which would brick every CLI command, not just install). Reached
         # only by an install/integration path that actually needs this block.
         raise RuntimeError(
-            f"graphify install is incomplete: missing always-on block '{basename}' "
-            f"at {path}. Reinstall graphifyy (e.g. `uv tool install --reinstall graphifyy`)."
+            f"mapmmd install is incomplete: missing always-on block '{basename}' "
+            f"at {path}. Reinstall mapmmdy (e.g. `uv tool install --reinstall mapmmdy`)."
         ) from exc
 
 
@@ -63,7 +63,7 @@ def __getattr__(name: str) -> str:
     # PEP 562: lazily resolve the legacy always-on section constants for external
     # importers (e.g. the install-string tests). In-module code calls _always_on()
     # directly; nothing is read at import time, so a missing block can no longer
-    # brick the CLI on `import graphify.__main__` (#1121 follow-up).
+    # brick the CLI on `import mapmmd.__main__` (#1121 follow-up).
     base = _ALWAYS_ON_ALIASES.get(name)
     if base is not None:
         return _always_on(base)
@@ -77,7 +77,7 @@ def _default_graph_path() -> str:
 def _enforce_graph_size_cap_or_exit(gp: Path) -> None:
     """Reject oversized graph files before parsing (CLI exit-on-fail flavor).
 
-    Delegates to ``graphify.security.check_graph_file_size_cap`` and turns the
+    Delegates to ``mapmmd.security.check_graph_file_size_cap`` and turns the
     raised ``ValueError`` into a CLI-style ``error: ...`` message + exit 1.
     Use this from ``__main__.py`` subcommands that already use the ``print +
     sys.exit(1)`` idiom. Library/MCP/loader callers (``serve._load_graph``,
@@ -85,7 +85,7 @@ def _enforce_graph_size_cap_or_exit(gp: Path) -> None:
     ``global_graph``, ``watch``, ``export``) call the security helper directly
     and let the ``ValueError`` propagate.
     """
-    from graphify.security import check_graph_file_size_cap
+    from mapmmd.security import check_graph_file_size_cap
     try:
         check_graph_file_size_cap(gp)
     except ValueError as exc:
@@ -94,8 +94,8 @@ def _enforce_graph_size_cap_or_exit(gp: Path) -> None:
 
 
 def _check_skill_version(skill_dst: Path) -> None:
-    """Warn if the installed skill is from an older graphify version."""
-    version_file = skill_dst.parent / ".graphify_version"
+    """Warn if the installed skill is from an older mapmmd version."""
+    version_file = skill_dst.parent / ".mapmmd_version"
     try:
         if not version_file.exists():
             return
@@ -106,7 +106,7 @@ def _check_skill_version(skill_dst: Path) -> None:
     except OSError:
         return
     if not skill_exists:
-        print("  warning: skill dir exists but SKILL.md is missing. Run 'graphify install' to repair.")
+        print("  warning: skill dir exists but SKILL.md is missing. Run 'mapmmd install' to repair.")
         return
     # A progressive SKILL.md links to its references/ sidecar. If the body points
     # at references/ but the dir is gone (manual delete, partial upgrade), the
@@ -116,24 +116,24 @@ def _check_skill_version(skill_dst: Path) -> None:
     except OSError:
         body = ""
     if "references/" in body and not (skill_dst.parent / "references").exists():
-        print("  warning: skill references/ sidecar is missing. Run 'graphify install' to repair.", file=sys.stderr)
+        print("  warning: skill references/ sidecar is missing. Run 'mapmmd install' to repair.", file=sys.stderr)
     try:
         installed = version_file.read_text(encoding="utf-8").strip()
     except OSError:
         return
     if installed != __version__:
-        print(f"  warning: skill is from graphify {installed}, package is {__version__}. Run 'graphify install' to update.", file=sys.stderr)
+        print(f"  warning: skill is from mapmmd {installed}, package is {__version__}. Run 'mapmmd install' to update.", file=sys.stderr)
 
 
 def _refresh_all_version_stamps() -> None:
-    """After a successful install, update .graphify_version in all other known skill dirs.
+    """After a successful install, update .mapmmd_version in all other known skill dirs.
 
     Prevents stale-version warnings from platforms that were installed previously
     but not explicitly re-installed during this upgrade.
     """
     for name in _PLATFORM_CONFIG:
         skill_dst = _platform_skill_destination(name)
-        vf = skill_dst.parent / ".graphify_version"
+        vf = skill_dst.parent / ".mapmmd_version"
         if skill_dst.exists():
             vf.write_text(__version__, encoding="utf-8")
 
@@ -142,55 +142,55 @@ def _platform_skill_destination(platform_name: str, *, project: bool = False, pr
     """Return the skill destination for a platform and scope."""
     if platform_name == "gemini":
         if project:
-            return (project_dir or Path(".")) / ".gemini" / "skills" / "graphify" / "SKILL.md"
+            return (project_dir or Path(".")) / ".gemini" / "skills" / "mapmmd" / "SKILL.md"
         if platform.system() == "Windows":
-            return Path.home() / ".agents" / "skills" / "graphify" / "SKILL.md"
-        return Path.home() / ".gemini" / "skills" / "graphify" / "SKILL.md"
+            return Path.home() / ".agents" / "skills" / "mapmmd" / "SKILL.md"
+        return Path.home() / ".gemini" / "skills" / "mapmmd" / "SKILL.md"
 
     if platform_name == "opencode":
         if project:
-            return (project_dir or Path(".")) / ".opencode" / "skills" / "graphify" / "SKILL.md"
-        return Path.home() / ".config" / "opencode" / "skills" / "graphify" / "SKILL.md"
+            return (project_dir or Path(".")) / ".opencode" / "skills" / "mapmmd" / "SKILL.md"
+        return Path.home() / ".config" / "opencode" / "skills" / "mapmmd" / "SKILL.md"
 
     if platform_name == "hermes":
         if project:
-            return (project_dir or Path(".")) / ".hermes" / "skills" / "graphify" / "SKILL.md"
+            return (project_dir or Path(".")) / ".hermes" / "skills" / "mapmmd" / "SKILL.md"
         # On Windows, Hermes scans %LOCALAPPDATA%\hermes\skills, not ~/.hermes (#1403).
         if platform.system() == "Windows":
             local_appdata = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local"))
-            return local_appdata / "hermes" / "skills" / "graphify" / "SKILL.md"
-        return Path.home() / ".hermes" / "skills" / "graphify" / "SKILL.md"
+            return local_appdata / "hermes" / "skills" / "mapmmd" / "SKILL.md"
+        return Path.home() / ".hermes" / "skills" / "mapmmd" / "SKILL.md"
 
     if platform_name == "devin":
         if project:
-            return (project_dir or Path(".")) / ".devin" / "skills" / "graphify" / "SKILL.md"
-        return Path.home() / ".config" / "devin" / "skills" / "graphify" / "SKILL.md"
+            return (project_dir or Path(".")) / ".devin" / "skills" / "mapmmd" / "SKILL.md"
+        return Path.home() / ".config" / "devin" / "skills" / "mapmmd" / "SKILL.md"
 
     if platform_name == "amp":
         if project:
-            return (project_dir or Path(".")) / ".agents" / "skills" / "graphify" / "SKILL.md"
-        return Path.home() / ".config" / "agents" / "skills" / "graphify" / "SKILL.md"
+            return (project_dir or Path(".")) / ".agents" / "skills" / "mapmmd" / "SKILL.md"
+        return Path.home() / ".config" / "agents" / "skills" / "mapmmd" / "SKILL.md"
 
     if platform_name == "agents":
         # The generic Agent-Skills target: project ./.agents/skills, global the
         # spec's user-global ~/.agents/skills (read by `npx skills` and compliant
         # frameworks), NOT amp's ~/.config/agents/skills.
         if project:
-            return (project_dir or Path(".")) / ".agents" / "skills" / "graphify" / "SKILL.md"
-        return Path.home() / ".agents" / "skills" / "graphify" / "SKILL.md"
+            return (project_dir or Path(".")) / ".agents" / "skills" / "mapmmd" / "SKILL.md"
+        return Path.home() / ".agents" / "skills" / "mapmmd" / "SKILL.md"
 
     if platform_name in ("antigravity", "antigravity-windows"):
         if project:
-            return (project_dir or Path(".")) / ".agents" / "skills" / "graphify" / "SKILL.md"
+            return (project_dir or Path(".")) / ".agents" / "skills" / "mapmmd" / "SKILL.md"
         # Global Antigravity skill dir (all workspaces): ~/.gemini/config/skills/
-        return Path.home() / ".gemini" / "config" / "skills" / "graphify" / "SKILL.md"
+        return Path.home() / ".gemini" / "config" / "skills" / "mapmmd" / "SKILL.md"
 
     cfg = _PLATFORM_CONFIG[platform_name]
     if project:
         return (project_dir or Path(".")) / cfg["skill_dst"]
 
     if platform_name in ("claude", "windows") and os.environ.get("CLAUDE_CONFIG_DIR"):
-        return Path(os.environ["CLAUDE_CONFIG_DIR"]) / "skills" / "graphify" / "SKILL.md"
+        return Path(os.environ["CLAUDE_CONFIG_DIR"]) / "skills" / "mapmmd" / "SKILL.md"
     return Path.home() / cfg["skill_dst"]
 
 
@@ -199,7 +199,7 @@ def _packaged_skill_refs_dir(platform_name: str) -> Path | None:
 
     A platform opts into progressive disclosure by setting ``skill_refs`` in its
     ``_PLATFORM_CONFIG`` entry. The value names a bundle under
-    ``graphify/skills/<bundle>/references/``. Reuse keys (e.g. trae-cn) point at
+    ``mapmmd/skills/<bundle>/references/``. Reuse keys (e.g. trae-cn) point at
     their twin's bundle.
 
     ``gemini`` has no ``_PLATFORM_CONFIG`` entry: it installs claude's
@@ -209,7 +209,7 @@ def _packaged_skill_refs_dir(platform_name: str) -> Path | None:
     resolves to the claude bundle rather than opting out.
 
     Bundles ship one platform-group at a time. A host whose bundle directory
-    ``graphify/skills/<bundle>/`` is not in this build has not gone progressive
+    ``mapmmd/skills/<bundle>/`` is not in this build has not gone progressive
     yet, so this returns None and the host installs today's monolithic SKILL.md
     with no references/ sidecar. Only when the bundle directory IS present does
     this return the references path; if that directory then lacks its
@@ -256,14 +256,14 @@ def _copy_skill_file(platform_name: str, *, project: bool = False, project_dir: 
 
     For progressive platforms (those with ``skill_refs`` set), the packaged
     ``references/`` sidecar is installed alongside SKILL.md and the single
-    ``.graphify_version`` stamp covers both. For monolith platforms (no
+    ``.mapmmd_version`` stamp covers both. For monolith platforms (no
     ``skill_refs``), any orphan ``references/`` left by a prior progressive
     install is removed so the on-disk layout matches the package.
     """
     skill_file = "skill.md" if platform_name == "gemini" else _PLATFORM_CONFIG[platform_name]["skill_file"]
     skill_src = Path(__file__).parent / skill_file
     if not skill_src.exists():
-        print(f"error: {skill_file} not found in package - reinstall graphify", file=sys.stderr)
+        print(f"error: {skill_file} not found in package - reinstall mapmmd", file=sys.stderr)
         sys.exit(1)
 
     refs_src = _packaged_skill_refs_dir(platform_name)
@@ -272,7 +272,7 @@ def _copy_skill_file(platform_name: str, *, project: bool = False, project_dir: 
         # the package. Fail loud rather than silently shipping an empty sidecar.
         print(
             f"error: references for '{platform_name}' not found in package "
-            f"({refs_src}) - reinstall graphify",
+            f"({refs_src}) - reinstall mapmmd",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -305,7 +305,7 @@ def _copy_skill_file(platform_name: str, *, project: bool = False, project_dir: 
             pass
         raise
 
-    (skill_dst.parent / ".graphify_version").write_text(__version__, encoding="utf-8")
+    (skill_dst.parent / ".mapmmd_version").write_text(__version__, encoding="utf-8")
     print(f"  skill installed  ->  {skill_dst}")
     return skill_dst
 
@@ -318,7 +318,7 @@ def _remove_skill_file(platform_name: str, *, project: bool = False, project_dir
         skill_dst.unlink()
         print(f"  skill removed    ->  {skill_dst}")
         removed = True
-    version_file = skill_dst.parent / ".graphify_version"
+    version_file = skill_dst.parent / ".mapmmd_version"
     if version_file.exists():
         version_file.unlink()
         removed = True
@@ -349,12 +349,12 @@ def _remove_claude_skill_registration(project_dir: Path) -> None:
     if not claude_md.exists():
         return
     content = claude_md.read_text(encoding="utf-8")
-    if "# graphify" not in content:
+    if "# mapmmd" not in content:
         return
-    cleaned = re.sub(r"\n*# graphify\n.*?(?=\n# |\Z)", "", content, flags=re.DOTALL).rstrip()
+    cleaned = re.sub(r"\n*# mapmmd\n.*?(?=\n# |\Z)", "", content, flags=re.DOTALL).rstrip()
     if cleaned:
         claude_md.write_text(cleaned + "\n", encoding="utf-8")
-        print(f"  CLAUDE.md        ->  graphify skill registration removed from {claude_md}")
+        print(f"  CLAUDE.md        ->  mapmmd skill registration removed from {claude_md}")
     else:
         claude_md.unlink()
         print(f"  CLAUDE.md        ->  deleted {claude_md}")
@@ -387,8 +387,8 @@ _SETTINGS_HOOK = {
                 "print(d.get('tool_input',d).get('command',''))\" 2>/dev/null || true); "
                 "case \"$CMD\" in "
                 r"*grep*|*rg\ *|*ripgrep*|*find\ *|*fd\ *|*ack\ *|*ag\ *) "
-                "  [ -f graphify-out/graph.json ] && "
-                r"""  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"MANDATORY: graphify-out/graph.json exists. You MUST run `graphify query \"<question>\"` before grepping raw files. Only grep after graphify has oriented you, or to modify/debug specific lines."}}' """
+                "  [ -f mapmmd-out/graph.json ] && "
+                r"""  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"MANDATORY: mapmmd-out/graph.json exists. You MUST run `mapmmd query \"<question>\"` before grepping raw files. Only grep after mapmmd has oriented you, or to modify/debug specific lines."}}' """
                 "  || true ;; "
                 "esac"
             ),
@@ -401,10 +401,10 @@ _READ_SETTINGS_HOOK = {
     # Glob, which is the most common way an agent skips the graph: answering a
     # codebase question by Read-ing many source files one by one (issue #1114).
     # Match Read|Glob, inspect the target path, and nudge (never block) only for a
-    # source/doc file outside graphify-out/ when a graph exists. The parser is
-    # python3 (already a graphify dependency), the shell is POSIX, and every branch
+    # source/doc file outside mapmmd-out/ when a graph exists. The parser is
+    # python3 (already a mapmmd dependency), the shell is POSIX, and every branch
     # fails open, so a legitimate read always goes through. Reading the graph's own
-    # report under graphify-out/ is suppressed so it never starts a feedback loop.
+    # report under mapmmd-out/ is suppressed so it never starts a feedback loop.
     # The extension test compares each value's real trailing extension (segment
     # after the last '/' then after the last '.') against exts -- not a substring
     # scan, which both missed framework files like .astro and false-matched .json
@@ -422,137 +422,137 @@ _READ_SETTINGS_HOOK = {
                 "vals=[str(t.get('file_path') or ''),str(t.get('pattern') or ''),str(t.get('path') or '')];"
                 "j=' '.join(vals).lower().replace(chr(92),'/');"
                 "tails=[('.'+x.rsplit('.',1)[-1]) for v in vals if v for x in [v.lower().replace(chr(92),'/').rsplit('/',1)[-1]] if '.' in x];"
-                "sys.stdout.write('1' if 'graphify-out/' not in j and any(tl in exts for tl in tails) else '')\" 2>/dev/null || true); "
-                "if [ \"$HIT\" = 1 ] && [ -f graphify-out/graph.json ]; then "
-                r"""echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"MANDATORY: graphify-out/graph.json exists. You MUST run graphify before reading source files. Use: `graphify query \"<question>\"` (scoped subgraph), `graphify explain \"<concept>\"`, or `graphify path \"<A>\" \"<B>\"`. Only read raw files after graphify has oriented you, or to modify/debug specific lines. This rule applies to subagents too — include it in every subagent prompt involving code exploration."}}'; """
+                "sys.stdout.write('1' if 'mapmmd-out/' not in j and any(tl in exts for tl in tails) else '')\" 2>/dev/null || true); "
+                "if [ \"$HIT\" = 1 ] && [ -f mapmmd-out/graph.json ]; then "
+                r"""echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"MANDATORY: mapmmd-out/graph.json exists. You MUST run mapmmd before reading source files. Use: `mapmmd query \"<question>\"` (scoped subgraph), `mapmmd explain \"<concept>\"`, or `mapmmd path \"<A>\" \"<B>\"`. Only read raw files after mapmmd has oriented you, or to modify/debug specific lines. This rule applies to subagents too — include it in every subagent prompt involving code exploration."}}'; """
                 "fi || true"
             ),
         }
     ],
 }
 
-def _skill_registration(skill_path: str = "~/.claude/skills/graphify/SKILL.md") -> str:
+def _skill_registration(skill_path: str = "~/.claude/skills/mapmmd/SKILL.md") -> str:
     return (
-        "\n# graphify\n"
-        f"- **graphify** (`{skill_path}`) "
-        "- any input to knowledge graph. Trigger: `/graphify`\n"
-        "When the user types `/graphify`, invoke the Skill tool "
-        "with `skill: \"graphify\"` before doing anything else.\n"
+        "\n# mapmmd\n"
+        f"- **mapmmd** (`{skill_path}`) "
+        "- any input to knowledge graph. Trigger: `/mapmmd`\n"
+        "When the user types `/mapmmd`, invoke the Skill tool "
+        "with `skill: \"mapmmd\"` before doing anything else.\n"
     )
 
 
 _PLATFORM_CONFIG: dict[str, dict] = {
     "claude": {
         "skill_file": "skill.md",
-        "skill_dst": Path(".claude") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".claude") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": True,
         "skill_refs": "claude",
     },
     "codex": {
         "skill_file": "skill-codex.md",
-        "skill_dst": Path(".codex") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".codex") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "codex",
     },
     "opencode": {
         "skill_file": "skill-opencode.md",
-        "skill_dst": Path(".config") / "opencode" / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".config") / "opencode" / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "opencode",
     },
     "kilo": {
         "skill_file": "skill-kilo.md",
-        "skill_dst": Path(".config") / "kilo" / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".config") / "kilo" / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "kilo",
     },
     "aider": {
         # Monolith: aider ships the full SKILL.md inline, no references/ sidecar.
         "skill_file": "skill-aider.md",
-        "skill_dst": Path(".aider") / "graphify" / "SKILL.md",
+        "skill_dst": Path(".aider") / "mapmmd" / "SKILL.md",
         "claude_md": False,
     },
     "copilot": {
         "skill_file": "skill-copilot.md",
-        "skill_dst": Path(".copilot") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".copilot") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "copilot",
     },
     "claw": {
         "skill_file": "skill-claw.md",
-        "skill_dst": Path(".openclaw") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".openclaw") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "claw",
     },
     "droid": {
         "skill_file": "skill-droid.md",
-        "skill_dst": Path(".factory") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".factory") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "droid",
     },
     "trae": {
         "skill_file": "skill-trae.md",
-        "skill_dst": Path(".trae") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".trae") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "trae",
     },
     "trae-cn": {
         # Reuses trae's split bundle (same skill body + references).
         "skill_file": "skill-trae.md",
-        "skill_dst": Path(".trae-cn") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".trae-cn") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "trae",
     },
     "hermes": {
         # Reuses claw's split bundle.
         "skill_file": "skill-claw.md",
-        "skill_dst": Path(".hermes") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".hermes") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "claw",
     },
     "kiro": {
         "skill_file": "skill-kiro.md",
-        "skill_dst": Path(".kiro") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".kiro") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "kiro",
     },
     "pi": {
         "skill_file": "skill-pi.md",
-        "skill_dst": Path(".pi") / "agent" / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".pi") / "agent" / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "pi",
     },
     "codebuddy": {
         # Reuses claude's split bundle (shares skill.md).
         "skill_file": "skill.md",
-        "skill_dst": Path(".codebuddy") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".codebuddy") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "claude",
     },
     "antigravity": {
         # Rides claude's split bundle (shares skill.md).
         "skill_file": "skill.md",
-        "skill_dst": Path(".agents") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".agents") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "claude",
     },
     "antigravity-windows": {
         # Rides windows' split bundle.
         "skill_file": "skill-windows.md",
-        "skill_dst": Path(".agents") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".agents") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "windows",
     },
     "windows": {
         "skill_file": "skill-windows.md",
-        "skill_dst": Path(".claude") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".claude") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": True,
         "skill_refs": "windows",
     },
     "kimi": {
         # Reuses claude's split bundle (shares skill.md).
         "skill_file": "skill.md",
-        "skill_dst": Path(".kimi") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".kimi") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "claude",
     },
@@ -560,7 +560,7 @@ _PLATFORM_CONFIG: dict[str, dict] = {
         # Amp searches .agents/skills (project) and ~/.config/agents/skills (user),
         # not .amp/skills. The user-scope path is set in _platform_skill_destination.
         "skill_file": "skill-amp.md",
-        "skill_dst": Path(".agents") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".agents") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "amp",
     },
@@ -570,16 +570,16 @@ _PLATFORM_CONFIG: dict[str, dict] = {
         # frameworks); project: ./.agents/skills. The CLI accepts `skills` as an
         # alias (see _canonical_platform). Ships its own rendered bundle.
         "skill_file": "skill-agents.md",
-        "skill_dst": Path(".agents") / "skills" / "graphify" / "SKILL.md",
+        "skill_dst": Path(".agents") / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
         "skill_refs": "agents",
     },
     "devin": {
         # Monolith: devin ships the full SKILL.md inline, no references/ sidecar.
         "skill_file": "skill-devin.md",
-        # User scope: ~/.config/devin/skills/graphify/SKILL.md
-        # Project scope: .devin/skills/graphify/SKILL.md (overridden in _platform_skill_destination)
-        "skill_dst": Path(".config") / "devin" / "skills" / "graphify" / "SKILL.md",
+        # User scope: ~/.config/devin/skills/mapmmd/SKILL.md
+        # Project scope: .devin/skills/mapmmd/SKILL.md (overridden in _platform_skill_destination)
+        "skill_dst": Path(".config") / "devin" / "skills" / "mapmmd" / "SKILL.md",
         "claude_md": False,
     },
 }
@@ -596,7 +596,7 @@ def _canonical_platform(platform_name: str) -> str:
 
 
 def _replace_or_append_section(content: str, marker: str, new_section: str) -> str:
-    """Idempotently update or append a graphify-owned section in shared files.
+    """Idempotently update or append a mapmmd-owned section in shared files.
 
     If ``marker`` is not in ``content``, append ``new_section`` to the end
     (with a blank-line separator if there's existing content).
@@ -641,7 +641,7 @@ def _replace_or_append_section(content: str, marker: str, new_section: str) -> s
 
 
 def _print_banner() -> None:
-    """Amber brain banner on graphify install. TTY-only, never raises."""
+    """Amber brain banner on mapmmd install. TTY-only, never raises."""
     if not sys.stdout.isatty():
         return
     try:
@@ -694,15 +694,15 @@ def install(platform: str = "claude", *, project: bool = False, project_dir: Pat
     skill_dst = _copy_skill_file(platform, project=project, project_dir=project_dir)
 
     if platform == "kilo":
-        # Kilo Code also supports a native /graphify command file.
+        # Kilo Code also supports a native /mapmmd command file.
         command_src = Path(__file__).parent / "command-kilo.md"
         if not command_src.exists():
             print(
-                f"error: command-kilo.md not found in package - reinstall graphify",
+                f"error: command-kilo.md not found in package - reinstall mapmmd",
                 file=sys.stderr,
             )
             sys.exit(1)
-        command_dst = Path.home() / ".config" / "kilo" / "command" / "graphify.md"
+        command_dst = Path.home() / ".config" / "kilo" / "command" / "mapmmd.md"
         command_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(command_src, command_dst)
         print(f"  command installed ->  {command_dst}")
@@ -710,10 +710,10 @@ def install(platform: str = "claude", *, project: bool = False, project_dir: Pat
     if cfg["claude_md"]:
         # Register in the matching Claude Code scope.
         claude_md = (project_dir / ".claude" / "CLAUDE.md") if project else Path.home() / ".claude" / "CLAUDE.md"
-        registration = _skill_registration(".claude/skills/graphify/SKILL.md" if project else "~/.claude/skills/graphify/SKILL.md")
+        registration = _skill_registration(".claude/skills/mapmmd/SKILL.md" if project else "~/.claude/skills/mapmmd/SKILL.md")
         if claude_md.exists():
             content = claude_md.read_text(encoding="utf-8")
-            if "graphify" in content:
+            if "mapmmd" in content:
                 print(f"  CLAUDE.md        ->  already registered (no change)")
             else:
                 claude_md.write_text(content.rstrip() + registration, encoding="utf-8")
@@ -726,10 +726,10 @@ def install(platform: str = "claude", *, project: bool = False, project_dir: Pat
     if platform == "codebuddy":
         # Register in ~/.codebuddy/CODEBUDDY.md (CodeBuddy only)
         codebuddy_md = Path.home() / ".codebuddy" / "CODEBUDDY.md"
-        registration = _skill_registration("~/.codebuddy/skills/graphify/SKILL.md")
+        registration = _skill_registration("~/.codebuddy/skills/mapmmd/SKILL.md")
         if codebuddy_md.exists():
             content = codebuddy_md.read_text(encoding="utf-8")
-            if "graphify" in content:
+            if "mapmmd" in content:
                 print(f"  CODEBUDDY.md     ->  already registered (no change)")
             else:
                 codebuddy_md.write_text(content.rstrip() + registration, encoding="utf-8")
@@ -752,32 +752,32 @@ def install(platform: str = "claude", *, project: bool = False, project_dir: Pat
     print()
     print("Done. Open your AI coding assistant and type:")
     print()
-    print("  /graphify .")
+    print("  /mapmmd .")
     print()
 
 
 def _print_install_usage() -> None:
     platforms = ", ".join([*_PLATFORM_CONFIG, "gemini", "cursor"])
-    print("Usage: graphify install [--project] [--platform P|P]")
+    print("Usage: mapmmd install [--project] [--platform P|P]")
     print(f"Platforms: {platforms}")
 
 
-# The always-on instruction blocks are packaged markdown under graphify/always_on/,
+# The always-on instruction blocks are packaged markdown under mapmmd/always_on/,
 # generated by tools/skillgen and guarded by `skillgen --check`. Reading them at
 # load keeps the install-string / issue-#580 contract byte-for-byte while letting
 # a human edit one fragment instead of a triple-quoted literal here.
 
-_CLAUDE_MD_MARKER = "## graphify"
+_CLAUDE_MD_MARKER = "## mapmmd"
 
-_CODEBUDDY_MD_MARKER = "## graphify"
+_CODEBUDDY_MD_MARKER = "## mapmmd"
 
 # AGENTS.md section for Codex, OpenCode, and OpenClaw.
 # All three platforms read AGENTS.md in the project root for persistent instructions.
 
-_AGENTS_MD_MARKER = "## graphify"
+_AGENTS_MD_MARKER = "## mapmmd"
 
 
-_GEMINI_MD_MARKER = "## graphify"
+_GEMINI_MD_MARKER = "## mapmmd"
 
 _GEMINI_HOOK = {
     "matcher": "read_file|list_directory",
@@ -787,9 +787,9 @@ _GEMINI_HOOK = {
             "command": (
                 'python -c "'
                 "import sys,pathlib,json;"
-                "e=pathlib.Path('graphify-out/graph.json').exists();"
+                "e=pathlib.Path('mapmmd-out/graph.json').exists();"
                 "d={'decision':'allow'};"
-                "e and d.update({'additionalContext':'graphify: knowledge graph at graphify-out/. For focused questions, run `graphify query \"<question>\"` (scoped subgraph, usually much smaller than GRAPH_REPORT.md) instead of grepping raw files. Read GRAPH_REPORT.md only for broad architecture context.'});"
+                "e and d.update({'additionalContext':'mapmmd: knowledge graph at mapmmd-out/. For focused questions, run `mapmmd query \"<question>\"` (scoped subgraph, usually much smaller than GRAPH_REPORT.md) instead of grepping raw files. Read GRAPH_REPORT.md only for broad architecture context.'});"
                 "sys.stdout.write(json.dumps(d))"
                 '"'
             ),
@@ -814,10 +814,10 @@ def gemini_install(project_dir: Path | None = None, *, project: bool = False) ->
         new_content = _always_on("gemini-md")
 
     if target.exists() and new_content == target.read_text(encoding="utf-8"):
-        print(f"graphify already configured in {target.resolve()} (no change)")
+        print(f"mapmmd already configured in {target.resolve()} (no change)")
     else:
         target.write_text(new_content, encoding="utf-8")
-        print(f"graphify section written to {target.resolve()}")
+        print(f"mapmmd section written to {target.resolve()}")
 
     # Always re-install the Gemini hook so an older payload (e.g. pre-issue-#580
     # wording) is replaced on upgrade.
@@ -842,7 +842,7 @@ def _install_gemini_hook(project_dir: Path) -> None:
         settings = {}
     before_tool = settings.setdefault("hooks", {}).setdefault("BeforeTool", [])
     settings["hooks"]["BeforeTool"] = [
-        h for h in before_tool if "graphify" not in str(h)
+        h for h in before_tool if "mapmmd" not in str(h)
     ]
     settings["hooks"]["BeforeTool"].append(_GEMINI_HOOK)
     settings_path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
@@ -858,7 +858,7 @@ def _uninstall_gemini_hook(project_dir: Path) -> None:
     except json.JSONDecodeError:
         return
     before_tool = settings.get("hooks", {}).get("BeforeTool", [])
-    filtered = [h for h in before_tool if "graphify" not in str(h)]
+    filtered = [h for h in before_tool if "mapmmd" not in str(h)]
     if len(filtered) == len(before_tool):
         return
     settings["hooks"]["BeforeTool"] = filtered
@@ -867,7 +867,7 @@ def _uninstall_gemini_hook(project_dir: Path) -> None:
 
 
 def gemini_uninstall(project_dir: Path | None = None, *, project: bool = False) -> None:
-    """Remove the graphify section from GEMINI.md, uninstall hook, and remove skill file."""
+    """Remove the mapmmd section from GEMINI.md, uninstall hook, and remove skill file."""
     project_dir = project_dir or Path(".")
     _remove_skill_file("gemini", project=project, project_dir=project_dir)
 
@@ -877,31 +877,31 @@ def gemini_uninstall(project_dir: Path | None = None, *, project: bool = False) 
         return
     content = target.read_text(encoding="utf-8")
     if _GEMINI_MD_MARKER not in content:
-        print("graphify section not found in GEMINI.md - nothing to do")
+        print("mapmmd section not found in GEMINI.md - nothing to do")
         return
     cleaned = re.sub(
-        r"\n*## graphify\n.*?(?=\n## |\Z)", "", content, flags=re.DOTALL
+        r"\n*## mapmmd\n.*?(?=\n## |\Z)", "", content, flags=re.DOTALL
     ).rstrip()
     if cleaned:
         target.write_text(cleaned + "\n", encoding="utf-8")
-        print(f"graphify section removed from {target.resolve()}")
+        print(f"mapmmd section removed from {target.resolve()}")
     else:
         target.unlink()
         print(f"GEMINI.md was empty after removal - deleted {target.resolve()}")
     _uninstall_gemini_hook(project_dir)
 
 
-_VSCODE_INSTRUCTIONS_MARKER = "## graphify"
+_VSCODE_INSTRUCTIONS_MARKER = "## mapmmd"
 
 
 def vscode_install(project_dir: Path | None = None) -> None:
-    """Install graphify skill for VS Code Copilot Chat + write .github/copilot-instructions.md."""
+    """Install mapmmd skill for VS Code Copilot Chat + write .github/copilot-instructions.md."""
     skill_src = Path(__file__).parent / "skill-vscode.md"
     refs_bundle = "vscode"
     if not skill_src.exists():
         skill_src = Path(__file__).parent / "skill-copilot.md"
         refs_bundle = "copilot"
-    skill_dst = Path.home() / ".copilot" / "skills" / "graphify" / "SKILL.md"
+    skill_dst = Path.home() / ".copilot" / "skills" / "mapmmd" / "SKILL.md"
     skill_dst.parent.mkdir(parents=True, exist_ok=True)
     tmp_dst = skill_dst.with_suffix(skill_dst.suffix + ".tmp")
     try:
@@ -922,7 +922,7 @@ def vscode_install(project_dir: Path | None = None) -> None:
         orphan_refs = skill_dst.parent / "references"
         if orphan_refs.exists():
             shutil.rmtree(orphan_refs)
-    (skill_dst.parent / ".graphify_version").write_text(__version__, encoding="utf-8")
+    (skill_dst.parent / ".mapmmd_version").write_text(__version__, encoding="utf-8")
     print(f"  skill installed  ->  {skill_dst}")
 
     instructions = (project_dir or Path(".")) / ".github" / "copilot-instructions.md"
@@ -936,25 +936,25 @@ def vscode_install(project_dir: Path | None = None) -> None:
             print(f"  {instructions}  ->  already configured (no change)")
         else:
             instructions.write_text(new_content, encoding="utf-8")
-            print(f"  {instructions}  ->  graphify section {'updated' if _VSCODE_INSTRUCTIONS_MARKER in content else 'added'}")
+            print(f"  {instructions}  ->  mapmmd section {'updated' if _VSCODE_INSTRUCTIONS_MARKER in content else 'added'}")
     else:
         instructions.write_text(_always_on("vscode-instructions"), encoding="utf-8")
         print(f"  {instructions}  ->  created")
 
     print()
     print(
-        "VS Code Copilot Chat configured. Type /graphify in the chat panel to build the graph."
+        "VS Code Copilot Chat configured. Type /mapmmd in the chat panel to build the graph."
     )
-    print("Note: for GitHub Copilot CLI (terminal), use: graphify copilot install")
+    print("Note: for GitHub Copilot CLI (terminal), use: mapmmd copilot install")
 
 
 def vscode_uninstall(project_dir: Path | None = None) -> None:
-    """Remove graphify VS Code Copilot Chat skill and .github/copilot-instructions.md section."""
-    skill_dst = Path.home() / ".copilot" / "skills" / "graphify" / "SKILL.md"
+    """Remove mapmmd VS Code Copilot Chat skill and .github/copilot-instructions.md section."""
+    skill_dst = Path.home() / ".copilot" / "skills" / "mapmmd" / "SKILL.md"
     if skill_dst.exists():
         skill_dst.unlink()
         print(f"  skill removed    ->  {skill_dst}")
-    version_file = skill_dst.parent / ".graphify_version"
+    version_file = skill_dst.parent / ".mapmmd_version"
     if version_file.exists():
         version_file.unlink()
     refs_dir = skill_dst.parent / "references"
@@ -977,77 +977,77 @@ def vscode_uninstall(project_dir: Path | None = None) -> None:
     if _VSCODE_INSTRUCTIONS_MARKER not in content:
         return
     cleaned = re.sub(
-        r"\n*## graphify\n.*?(?=\n## |\Z)", "", content, flags=re.DOTALL
+        r"\n*## mapmmd\n.*?(?=\n## |\Z)", "", content, flags=re.DOTALL
     ).rstrip()
     if cleaned:
         instructions.write_text(cleaned + "\n", encoding="utf-8")
-        print(f"  graphify section removed from {instructions}")
+        print(f"  mapmmd section removed from {instructions}")
     else:
         instructions.unlink()
         print(f"  {instructions}  ->  deleted (was empty after removal)")
 
 
-_ANTIGRAVITY_RULES_PATH = Path(".agents") / "rules" / "graphify.md"
-_ANTIGRAVITY_WORKFLOW_PATH = Path(".agents") / "workflows" / "graphify.md"
+_ANTIGRAVITY_RULES_PATH = Path(".agents") / "rules" / "mapmmd.md"
+_ANTIGRAVITY_WORKFLOW_PATH = Path(".agents") / "workflows" / "mapmmd.md"
 
 
 _ANTIGRAVITY_WORKFLOW = """\
 ---
-name: graphify
+name: mapmmd
 description: Turn any folder of files into a navigable knowledge graph
 ---
 
-# Workflow: graphify
+# Workflow: mapmmd
 
-Follow the graphify skill installed at ~/.gemini/config/skills/graphify/SKILL.md to run the full pipeline.
+Follow the mapmmd skill installed at ~/.gemini/config/skills/mapmmd/SKILL.md to run the full pipeline.
 
 If no path argument is given, use `.` (current directory).
 """
 
 
 
-_KIRO_STEERING_MARKER = "graphify: A knowledge graph of this project"
+_KIRO_STEERING_MARKER = "mapmmd: A knowledge graph of this project"
 
 
 def _kiro_install(project_dir: Path) -> None:
-    """Write graphify skill + steering file for Kiro IDE/CLI."""
+    """Write mapmmd skill + steering file for Kiro IDE/CLI."""
     project_dir = project_dir or Path(".")
 
-    # Skill file + references/ sidecar + .graphify_version stamp via the shared
+    # Skill file + references/ sidecar + .mapmmd_version stamp via the shared
     # progressive-disclosure helper.  Previously this used a bare write_text that
     # bypassed _copy_skill_file, so the references/ dir and version stamp were
     # never written even though kiro declares skill_refs: "kiro" (#1142).
     _copy_skill_file("kiro", project=True, project_dir=project_dir)
 
-    # Steering file → .kiro/steering/graphify.md (always-on)
+    # Steering file → .kiro/steering/mapmmd.md (always-on)
     steering_dir = project_dir / ".kiro" / "steering"
     steering_dir.mkdir(parents=True, exist_ok=True)
-    steering_dst = steering_dir / "graphify.md"
+    steering_dst = steering_dir / "mapmmd.md"
     if steering_dst.exists() and steering_dst.read_text(encoding="utf-8") == _always_on("kiro-steering"):
-        print(f"  .kiro/steering/graphify.md  ->  already configured (no change)")
+        print(f"  .kiro/steering/mapmmd.md  ->  already configured (no change)")
     else:
-        # File is wholly graphify-owned. Overwrite on upgrade so older
+        # File is wholly mapmmd-owned. Overwrite on upgrade so older
         # report-first wording does not silently linger (issue #580).
         action = "updated" if steering_dst.exists() else "written"
         steering_dst.write_text(_always_on("kiro-steering"), encoding="utf-8")
-        print(f"  .kiro/steering/graphify.md  ->  always-on steering {action}")
+        print(f"  .kiro/steering/mapmmd.md  ->  always-on steering {action}")
 
     print()
     print("Kiro will now read the knowledge graph before every conversation.")
-    print("Use /graphify to build or update the graph.")
+    print("Use /mapmmd to build or update the graph.")
 
 
 def _kiro_uninstall(project_dir: Path) -> None:
-    """Remove graphify skill + steering file for Kiro."""
+    """Remove mapmmd skill + steering file for Kiro."""
     project_dir = project_dir or Path(".")
     removed = []
 
-    # Skill + .graphify_version + references/ sidecar + empty-dir walk.
+    # Skill + .mapmmd_version + references/ sidecar + empty-dir walk.
     skill_dst = _platform_skill_destination("kiro", project=True, project_dir=project_dir)
     if _remove_skill_file("kiro", project=True, project_dir=project_dir):
         removed.append(str(skill_dst.relative_to(project_dir)))
 
-    steering_dst = project_dir / ".kiro" / "steering" / "graphify.md"
+    steering_dst = project_dir / ".kiro" / "steering" / "mapmmd.md"
     if steering_dst.exists():
         steering_dst.unlink()
         removed.append(str(steering_dst.relative_to(project_dir)))
@@ -1059,7 +1059,7 @@ def _antigravity_finalize(skill_dst: Path, project_dir: Path) -> None:
     """Write Antigravity's always-on layer next to an installed skill.
 
     Injects the native tool-discovery YAML frontmatter into *skill_dst*, then
-    writes ``.agents/rules/graphify.md`` and ``.agents/workflows/graphify.md``
+    writes ``.agents/rules/mapmmd.md`` and ``.agents/workflows/mapmmd.md``
     under *project_dir*. Shared by the global ``antigravity install`` and the
     project-scoped ``install --project --platform antigravity`` paths, so both lay
     down the rules/workflows that the uninstall path already expects to remove.
@@ -1068,82 +1068,82 @@ def _antigravity_finalize(skill_dst: Path, project_dir: Path) -> None:
     if skill_dst.exists():
         content = skill_dst.read_text(encoding="utf-8")
         if not content.startswith("---\n"):
-            frontmatter = "---\nname: graphify-manager\ndescription: Rebuild the code graph or perform manual CLI queries when MCP server is offline.\n---\n\n"
+            frontmatter = "---\nname: mapmmd-manager\ndescription: Rebuild the code graph or perform manual CLI queries when MCP server is offline.\n---\n\n"
             skill_dst.write_text(frontmatter + content, encoding="utf-8")
 
-    # .agents/rules/graphify.md
+    # .agents/rules/mapmmd.md
     rules_path = project_dir / _ANTIGRAVITY_RULES_PATH
     rules_path.parent.mkdir(parents=True, exist_ok=True)
     if rules_path.exists():
         existing = rules_path.read_text(encoding="utf-8")
         if _always_on("antigravity-rules").strip() != existing.strip():
             rules_path.write_text(_always_on("antigravity-rules"), encoding="utf-8")
-            print(f"graphify rule updated at {rules_path.resolve()}")
+            print(f"mapmmd rule updated at {rules_path.resolve()}")
         else:
-            print(f"graphify rule already configured at {rules_path.resolve()} (no change)")
+            print(f"mapmmd rule already configured at {rules_path.resolve()} (no change)")
     else:
         rules_path.write_text(_always_on("antigravity-rules"), encoding="utf-8")
-        print(f"graphify rule written to {rules_path.resolve()}")
+        print(f"mapmmd rule written to {rules_path.resolve()}")
 
-    # .agents/workflows/graphify.md
+    # .agents/workflows/mapmmd.md
     wf_path = project_dir / _ANTIGRAVITY_WORKFLOW_PATH
     wf_path.parent.mkdir(parents=True, exist_ok=True)
     if wf_path.exists():
         existing = wf_path.read_text(encoding="utf-8")
         if _ANTIGRAVITY_WORKFLOW.strip() != existing.strip():
             wf_path.write_text(_ANTIGRAVITY_WORKFLOW, encoding="utf-8")
-            print(f"graphify workflow updated at {wf_path.resolve()}")
+            print(f"mapmmd workflow updated at {wf_path.resolve()}")
         else:
-            print(f"graphify workflow already configured at {wf_path.resolve()} (no change)")
+            print(f"mapmmd workflow already configured at {wf_path.resolve()} (no change)")
     else:
         wf_path.write_text(_ANTIGRAVITY_WORKFLOW, encoding="utf-8")
-        print(f"graphify workflow written to {wf_path.resolve()}")
+        print(f"mapmmd workflow written to {wf_path.resolve()}")
 
 
 def _antigravity_install(project_dir: Path) -> None:
-    """Install graphify for Google Antigravity (global skill + .agents/rules + .agents/workflows)."""
-    # Copy the skill to ~/.gemini/config/skills/graphify/SKILL.md (global), then
+    """Install mapmmd for Google Antigravity (global skill + .agents/rules + .agents/workflows)."""
+    # Copy the skill to ~/.gemini/config/skills/mapmmd/SKILL.md (global), then
     # lay down the always-on rules/workflows under the project dir.
     install(platform="antigravity")
     _antigravity_finalize(_platform_skill_destination("antigravity"), project_dir)
 
     print()
     print("Antigravity will now check the knowledge graph before answering")
-    print("codebase questions. Run /graphify first to build the graph.")
+    print("codebase questions. Run /mapmmd first to build the graph.")
     print()
     print(
         "To enable full MCP architecture navigation, add this to ~/.gemini/antigravity/mcp_config.json:"
     )
-    print('  "graphify": {')
+    print('  "mapmmd": {')
     print('    "command": "uv",')
     print(
-        '    "args": ["run", "--with", "graphifyy", "--with", "mcp", "-m", "graphify.serve", "${workspace.path}/graphify-out/graph.json"]'
+        '    "args": ["run", "--with", "mapmmdy", "--with", "mcp", "-m", "mapmmd.serve", "${workspace.path}/mapmmd-out/graph.json"]'
     )
     print("  }")
 
 
 def _antigravity_uninstall(project_dir: Path, *, project: bool = False) -> None:
-    """Remove graphify Antigravity rules, workflow, and skill files."""
+    """Remove mapmmd Antigravity rules, workflow, and skill files."""
     # Remove rules file
     rules_path = project_dir / _ANTIGRAVITY_RULES_PATH
     if rules_path.exists():
         rules_path.unlink()
-        print(f"graphify rule removed from {rules_path.resolve()}")
+        print(f"mapmmd rule removed from {rules_path.resolve()}")
     else:
-        print("No graphify Antigravity rule found - nothing to do")
+        print("No mapmmd Antigravity rule found - nothing to do")
 
     # Remove workflow file
     wf_path = project_dir / _ANTIGRAVITY_WORKFLOW_PATH
     if wf_path.exists():
         wf_path.unlink()
-        print(f"graphify workflow removed from {wf_path.resolve()}")
+        print(f"mapmmd workflow removed from {wf_path.resolve()}")
 
     # Remove skill file
     skill_dst = _platform_skill_destination("antigravity", project=project, project_dir=project_dir)
     if skill_dst.exists():
         skill_dst.unlink()
-        print(f"graphify skill removed from {skill_dst}")
-    version_file = skill_dst.parent / ".graphify_version"
+        print(f"mapmmd skill removed from {skill_dst}")
+    version_file = skill_dst.parent / ".mapmmd_version"
     if version_file.exists():
         version_file.unlink()
     refs_dir = skill_dst.parent / "references"
@@ -1160,77 +1160,77 @@ def _antigravity_uninstall(project_dir: Path, *, project: bool = False) -> None:
             break
 
 
-_CURSOR_RULE_PATH = Path(".cursor") / "rules" / "graphify.mdc"
+_CURSOR_RULE_PATH = Path(".cursor") / "rules" / "mapmmd.mdc"
 _CURSOR_RULE = """\
 ---
-description: graphify knowledge graph context
+description: mapmmd knowledge graph context
 alwaysApply: true
 ---
 
-This project has a graphify knowledge graph at graphify-out/.
+This project has a mapmmd knowledge graph at mapmmd-out/.
 
-**MANDATORY: Before using Read, Grep, Glob, or Bash to explore the codebase, you MUST run graphify first:**
-- `graphify query "<question>"` — scoped subgraph for any codebase or architecture question
-- `graphify path "<A>" "<B>"` — dependency path between two symbols
-- `graphify explain "<concept>"` — all nodes related to a concept
+**MANDATORY: Before using Read, Grep, Glob, or Bash to explore the codebase, you MUST run mapmmd first:**
+- `mapmmd query "<question>"` — scoped subgraph for any codebase or architecture question
+- `mapmmd path "<A>" "<B>"` — dependency path between two symbols
+- `mapmmd explain "<concept>"` — all nodes related to a concept
 
-This applies to YOU and to every subagent you spawn. Include this rule explicitly in every subagent prompt that involves code exploration. Do not skip graphify because files are "already known" or because you are executing a plan — the graph surfaces cross-file dependencies and INFERRED edges that grep and Read cannot find.
+This applies to YOU and to every subagent you spawn. Include this rule explicitly in every subagent prompt that involves code exploration. Do not skip mapmmd because files are "already known" or because you are executing a plan — the graph surfaces cross-file dependencies and INFERRED edges that grep and Read cannot find.
 
 Only use Read/Grep/Glob directly when:
-1. graphify has already oriented you and you need to modify or debug specific lines
-2. `graphify-out/graph.json` does not exist yet
+1. mapmmd has already oriented you and you need to modify or debug specific lines
+2. `mapmmd-out/graph.json` does not exist yet
 
-- If `graphify-out/wiki/index.md` exists, navigate it instead of reading raw files
-- Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review when query/path/explain do not surface enough context
-- After modifying code files, run `graphify update .` to keep the graph current (AST-only, no API cost)
+- If `mapmmd-out/wiki/index.md` exists, navigate it instead of reading raw files
+- Read `mapmmd-out/GRAPH_REPORT.md` only for broad architecture review when query/path/explain do not surface enough context
+- After modifying code files, run `mapmmd update .` to keep the graph current (AST-only, no API cost)
 """
 
 
 def _cursor_install(project_dir: Path) -> None:
-    """Write .cursor/rules/graphify.mdc with alwaysApply: true."""
+    """Write .cursor/rules/mapmmd.mdc with alwaysApply: true."""
     rule_path = (project_dir or Path(".")) / _CURSOR_RULE_PATH
     rule_path.parent.mkdir(parents=True, exist_ok=True)
     if rule_path.exists() and rule_path.read_text(encoding="utf-8") == _CURSOR_RULE:
-        print(f"graphify rule at {rule_path} already configured (no change)")
+        print(f"mapmmd rule at {rule_path} already configured (no change)")
         return
-    # File is wholly graphify-owned. Overwrite on upgrade so older
+    # File is wholly mapmmd-owned. Overwrite on upgrade so older
     # report-first wording does not silently linger (issue #580).
     action = "updated" if rule_path.exists() else "written"
     rule_path.write_text(_CURSOR_RULE, encoding="utf-8")
-    print(f"graphify rule {action} at {rule_path.resolve()}")
+    print(f"mapmmd rule {action} at {rule_path.resolve()}")
     print()
     print("Cursor will now always include the knowledge graph context.")
-    print("Run /graphify . first to build the graph if you haven't already.")
+    print("Run /mapmmd . first to build the graph if you haven't already.")
 
 
 def _cursor_uninstall(project_dir: Path) -> None:
-    """Remove .cursor/rules/graphify.mdc."""
+    """Remove .cursor/rules/mapmmd.mdc."""
     rule_path = (project_dir or Path(".")) / _CURSOR_RULE_PATH
     if not rule_path.exists():
-        print("No graphify Cursor rule found - nothing to do")
+        print("No mapmmd Cursor rule found - nothing to do")
         return
     rule_path.unlink()
-    print(f"graphify Cursor rule removed from {rule_path.resolve()}")
+    print(f"mapmmd Cursor rule removed from {rule_path.resolve()}")
 
 
-# Devin CLI — .windsurf/rules/graphify.md (always-on context)
+# Devin CLI — .windsurf/rules/mapmmd.md (always-on context)
 # Devin reads .windsurf/rules/*.md files the same way Windsurf IDE does.
-_DEVIN_RULES_PATH = Path(".windsurf") / "rules" / "graphify.md"
+_DEVIN_RULES_PATH = Path(".windsurf") / "rules" / "mapmmd.md"
 _DEVIN_RULES = """\
-## graphify
+## mapmmd
 
-This project has a graphify knowledge graph at graphify-out/.
+This project has a mapmmd knowledge graph at mapmmd-out/.
 
 Rules:
-- For codebase or architecture questions, when `graphify-out/graph.json` exists, first run `graphify query "<question>"` (or `graphify path "<A>" "<B>"` / `graphify explain "<concept>"`). These return a scoped subgraph, usually much smaller than `GRAPH_REPORT.md` or raw grep output.
-- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context
-- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+- For codebase or architecture questions, when `mapmmd-out/graph.json` exists, first run `mapmmd query "<question>"` (or `mapmmd path "<A>" "<B>"` / `mapmmd explain "<concept>"`). These return a scoped subgraph, usually much smaller than `GRAPH_REPORT.md` or raw grep output.
+- If mapmmd-out/wiki/index.md exists, navigate it instead of reading raw files
+- Read mapmmd-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context
+- After modifying code files in this session, run `mapmmd update .` to keep the graph current (AST-only, no API cost)
 """
 
 
 def _devin_rules_install(project_dir: Path) -> None:
-    """Write .windsurf/rules/graphify.md for always-on Devin context."""
+    """Write .windsurf/rules/mapmmd.md for always-on Devin context."""
     rules_path = (project_dir or Path(".")) / _DEVIN_RULES_PATH
     rules_path.parent.mkdir(parents=True, exist_ok=True)
     if rules_path.exists() and rules_path.read_text(encoding="utf-8") == _DEVIN_RULES:
@@ -1242,7 +1242,7 @@ def _devin_rules_install(project_dir: Path) -> None:
 
 
 def _devin_rules_uninstall(project_dir: Path) -> None:
-    """Remove .windsurf/rules/graphify.md."""
+    """Remove .windsurf/rules/mapmmd.md."""
     rules_path = (project_dir or Path(".")) / _DEVIN_RULES_PATH
     if not rules_path.exists():
         return
@@ -1251,22 +1251,22 @@ def _devin_rules_uninstall(project_dir: Path) -> None:
 
 
 _KILO_PLUGIN_JS = """\
-// graphify Kilo plugin
+// mapmmd Kilo plugin
 // Injects a knowledge graph reminder before bash tool calls when the graph exists.
 import { existsSync } from "fs";
 import { join } from "path";
 
-export const GraphifyPlugin = async ({ directory }) => {
+export const map.mmdPlugin = async ({ directory }) => {
   let reminded = false;
 
   return {
     "tool.execute.before": async (input, output) => {
       if (reminded) return;
-      if (!existsSync(join(directory, "graphify-out", "graph.json"))) return;
+      if (!existsSync(join(directory, "mapmmd-out", "graph.json"))) return;
 
       if (input.tool === "bash") {
         output.args.command =
-          'echo "[graphify] Knowledge graph available. Read graphify-out/GRAPH_REPORT.md for god nodes and architecture context before searching files." && ' +
+          'echo "[mapmmd] Knowledge graph available. Read mapmmd-out/GRAPH_REPORT.md for god nodes and architecture context before searching files." && ' +
           output.args.command;
         reminded = true;
       }
@@ -1275,7 +1275,7 @@ export const GraphifyPlugin = async ({ directory }) => {
 };
 """
 
-_KILO_PLUGIN_PATH = Path(".kilo") / "plugins" / "graphify.js"
+_KILO_PLUGIN_PATH = Path(".kilo") / "plugins" / "mapmmd.js"
 _KILO_CONFIG_JSON_PATH = Path(".kilo") / "kilo.json"
 _KILO_CONFIG_JSONC_PATH = Path(".kilo") / "kilo.jsonc"
 
@@ -1367,7 +1367,7 @@ def _kilo_config_write_path(project_dir: Path) -> Path:
 
 
 def _install_kilo_plugin(project_dir: Path) -> None:
-    """Write graphify.js plugin and register it without rewriting user JSONC."""
+    """Write mapmmd.js plugin and register it without rewriting user JSONC."""
     plugin_file = project_dir / _KILO_PLUGIN_PATH
     plugin_file.parent.mkdir(parents=True, exist_ok=True)
     plugin_file.write_text(_KILO_PLUGIN_JS, encoding="utf-8")
@@ -1393,7 +1393,7 @@ def _install_kilo_plugin(project_dir: Path) -> None:
 
 
 def _uninstall_kilo_plugin(project_dir: Path) -> None:
-    """Remove graphify.js plugin and deregister it without rewriting user JSONC."""
+    """Remove mapmmd.js plugin and deregister it without rewriting user JSONC."""
     plugin_file = project_dir / _KILO_PLUGIN_PATH
     if plugin_file.exists():
         plugin_file.unlink()
@@ -1422,28 +1422,28 @@ def _uninstall_kilo_plugin(project_dir: Path) -> None:
 # OpenCode tool.execute.before plugin — fires before every tool call.
 # Injects a graph reminder into bash command output when graph.json exists.
 _OPENCODE_PLUGIN_JS = """\
-// graphify OpenCode plugin
+// mapmmd OpenCode plugin
 // Injects a knowledge graph reminder before bash tool calls when the graph exists.
 //
 // IMPORTANT: keep the reminder string free of backticks and $(...) constructs.
 // The hook prepends `echo "<reminder>" && <cmd>` to the user's bash command;
 // backticks inside the double-quoted echo trigger bash command substitution,
-// which both corrupts tool output and silently executes the very graphify
+// which both corrupts tool output and silently executes the very mapmmd
 // command we are only suggesting. Plain words render fine in opencode's TUI.
 import { existsSync } from "fs";
 import { join } from "path";
 
-export const GraphifyPlugin = async ({ directory }) => {
+export const map.mmdPlugin = async ({ directory }) => {
   let reminded = false;
 
   return {
     "tool.execute.before": async (input, output) => {
       if (reminded) return;
-      if (!existsSync(join(directory, "graphify-out", "graph.json"))) return;
+      if (!existsSync(join(directory, "mapmmd-out", "graph.json"))) return;
 
       if (input.tool === "bash") {
         output.args.command =
-          'echo "[graphify] knowledge graph at graphify-out/. For focused questions, run graphify query with your question (scoped subgraph, usually much smaller than GRAPH_REPORT.md) instead of grepping raw files. Read GRAPH_REPORT.md only for broad architecture context." && ' +
+          'echo "[mapmmd] knowledge graph at mapmmd-out/. For focused questions, run mapmmd query with your question (scoped subgraph, usually much smaller than GRAPH_REPORT.md) instead of grepping raw files. Read GRAPH_REPORT.md only for broad architecture context." && ' +
           output.args.command;
         reminded = true;
       }
@@ -1452,12 +1452,12 @@ export const GraphifyPlugin = async ({ directory }) => {
 };
 """
 
-_OPENCODE_PLUGIN_PATH = Path(".opencode") / "plugins" / "graphify.js"
+_OPENCODE_PLUGIN_PATH = Path(".opencode") / "plugins" / "mapmmd.js"
 _OPENCODE_CONFIG_PATH = Path(".opencode") / "opencode.json"
 
 
 def _install_opencode_plugin(project_dir: Path) -> None:
-    """Write graphify.js plugin and register it in opencode.json."""
+    """Write mapmmd.js plugin and register it in opencode.json."""
     plugin_file = project_dir / _OPENCODE_PLUGIN_PATH
     plugin_file.parent.mkdir(parents=True, exist_ok=True)
     plugin_file.write_text(_OPENCODE_PLUGIN_JS, encoding="utf-8")
@@ -1483,7 +1483,7 @@ def _install_opencode_plugin(project_dir: Path) -> None:
 
 
 def _uninstall_opencode_plugin(project_dir: Path) -> None:
-    """Remove graphify.js plugin and deregister from opencode.json."""
+    """Remove mapmmd.js plugin and deregister from opencode.json."""
     plugin_file = project_dir / _OPENCODE_PLUGIN_PATH
     if plugin_file.exists():
         plugin_file.unlink()
@@ -1514,11 +1514,11 @@ _CODEX_HOOK = {
                 "hooks": [
                     {
                         "type": "command",
-                        # Use the graphify CLI itself so the hook is shell-agnostic:
+                        # Use the mapmmd CLI itself so the hook is shell-agnostic:
                         # no [ -f ] bash syntax, no python3 vs python Conda issue,
                         # no JSON escaping inside PowerShell strings. Works on
                         # Windows (PowerShell/cmd.exe), macOS, and Linux.
-                        "command": "graphify hook-check",
+                        "command": "mapmmd hook-check",
                     }
                 ],
             }
@@ -1527,28 +1527,28 @@ _CODEX_HOOK = {
 }
 
 
-def _resolve_graphify_exe() -> str:
-    """Return the absolute path to the graphify executable.
+def _resolve_mapmmd_exe() -> str:
+    """Return the absolute path to the mapmmd executable.
 
-    Falls back to bare 'graphify' if resolution fails. Using an absolute path
+    Falls back to bare 'mapmmd' if resolution fails. Using an absolute path
     ensures the hook works in environments where the venv Scripts/ directory is
     not on PATH (e.g. VS Code Codex extension on Windows).
     """
     import shutil
-    found = shutil.which("graphify")
+    found = shutil.which("mapmmd")
     if found:
         return found
     # Derive from sys.executable: same Scripts/ (Windows) or bin/ (Unix) dir
     scripts_dir = Path(sys.executable).parent
-    for name in ("graphify.exe", "graphify"):
+    for name in ("mapmmd.exe", "mapmmd"):
         candidate = scripts_dir / name
         if candidate.exists():
             return str(candidate)
-    return "graphify"
+    return "mapmmd"
 
 
 def _install_codex_hook(project_dir: Path) -> None:
-    """Add graphify PreToolUse hook to .codex/hooks.json."""
+    """Add mapmmd PreToolUse hook to .codex/hooks.json."""
     hooks_path = project_dir / ".codex" / "hooks.json"
     hooks_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1560,27 +1560,27 @@ def _install_codex_hook(project_dir: Path) -> None:
     else:
         existing = {}
 
-    graphify_exe = _resolve_graphify_exe()
+    mapmmd_exe = _resolve_mapmmd_exe()
     hook_entry = {
         "hooks": {
             "PreToolUse": [
                 {
                     "matcher": "Bash",
-                    "hooks": [{"type": "command", "command": f"{graphify_exe} hook-check"}],
+                    "hooks": [{"type": "command", "command": f"{mapmmd_exe} hook-check"}],
                 }
             ]
         }
     }
 
     pre_tool = existing.setdefault("hooks", {}).setdefault("PreToolUse", [])
-    existing["hooks"]["PreToolUse"] = [h for h in pre_tool if "graphify" not in str(h)]
+    existing["hooks"]["PreToolUse"] = [h for h in pre_tool if "mapmmd" not in str(h)]
     existing["hooks"]["PreToolUse"].extend(hook_entry["hooks"]["PreToolUse"])
     hooks_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
-    print(f"  .codex/hooks.json  ->  PreToolUse hook registered ({graphify_exe} hook-check)")
+    print(f"  .codex/hooks.json  ->  PreToolUse hook registered ({mapmmd_exe} hook-check)")
 
 
 def _uninstall_codex_hook(project_dir: Path) -> None:
-    """Remove graphify PreToolUse hook from .codex/hooks.json."""
+    """Remove mapmmd PreToolUse hook from .codex/hooks.json."""
     hooks_path = project_dir / ".codex" / "hooks.json"
     if not hooks_path.exists():
         return
@@ -1589,14 +1589,14 @@ def _uninstall_codex_hook(project_dir: Path) -> None:
     except json.JSONDecodeError:
         return
     pre_tool = existing.get("hooks", {}).get("PreToolUse", [])
-    filtered = [h for h in pre_tool if "graphify" not in str(h)]
+    filtered = [h for h in pre_tool if "mapmmd" not in str(h)]
     existing["hooks"]["PreToolUse"] = filtered
     hooks_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
     print(f"  .codex/hooks.json  ->  PreToolUse hook removed")
 
 
 def _agents_install(project_dir: Path, platform: str) -> None:
-    """Write the graphify section to the local AGENTS.md for always-on platforms."""
+    """Write the mapmmd section to the local AGENTS.md for always-on platforms."""
     target = (project_dir or Path(".")) / "AGENTS.md"
 
     if target.exists():
@@ -1608,10 +1608,10 @@ def _agents_install(project_dir: Path, platform: str) -> None:
         new_content = _always_on("agents-md")
 
     if target.exists() and new_content == target.read_text(encoding="utf-8"):
-        print(f"graphify already configured in {target.resolve()} (no change)")
+        print(f"mapmmd already configured in {target.resolve()} (no change)")
     else:
         target.write_text(new_content, encoding="utf-8")
-        print(f"graphify section written to {target.resolve()}")
+        print(f"mapmmd section written to {target.resolve()}")
 
     if platform == "codex":
         _install_codex_hook(project_dir or Path("."))
@@ -1634,13 +1634,13 @@ def _agents_install(project_dir: Path, platform: str) -> None:
 
 
 def _amp_legacy_cleanup() -> None:
-    """Best-effort removal of the pre-fix ~/.amp/skills/graphify install dir.
+    """Best-effort removal of the pre-fix ~/.amp/skills/mapmmd install dir.
 
-    Older graphify versions wrote the Amp skill to ~/.amp/skills, which Amp does
+    Older mapmmd versions wrote the Amp skill to ~/.amp/skills, which Amp does
     not search. Clean it up on install so a stale, never-loaded copy does not
     linger. Failures are ignored (the new path is what matters).
     """
-    legacy = Path.home() / ".amp" / "skills" / "graphify"
+    legacy = Path.home() / ".amp" / "skills" / "mapmmd"
     if legacy.exists():
         shutil.rmtree(legacy, ignore_errors=True)
         if not legacy.exists():
@@ -1663,13 +1663,13 @@ def _amp_uninstall(project_dir: Path | None = None) -> None:
 
 
 def _agents_platform_install(project_dir: Path | None = None) -> None:
-    """`graphify agents install`: skill into ~/.agents/skills + AGENTS.md.
+    """`mapmmd agents install`: skill into ~/.agents/skills + AGENTS.md.
 
     The amp-twin of the generic Agent-Skills target. Mirrors _amp_install but
     lands the skill at the spec's user-global ~/.agents/skills (set in
     _platform_skill_destination). Wiring AGENTS.md keeps it honest with the
-    rendered hooks reference, which points at `graphify agents install`. The bare
-    `graphify install --platform agents` path stays skill-only (via install()),
+    rendered hooks reference, which points at `mapmmd agents install`. The bare
+    `mapmmd install --platform agents` path stays skill-only (via install()),
     exactly as amp's `--platform amp` does.
     """
     _copy_skill_file("agents")
@@ -1677,7 +1677,7 @@ def _agents_platform_install(project_dir: Path | None = None) -> None:
 
 
 def _agents_platform_uninstall(project_dir: Path | None = None) -> None:
-    """`graphify agents uninstall`: remove the skill and the AGENTS.md section."""
+    """`mapmmd agents uninstall`: remove the skill and the AGENTS.md section."""
     removed = _remove_skill_file("agents")
     if removed:
         print("skill removed")
@@ -1722,7 +1722,7 @@ def _project_install(platform_name: str, project_dir: Path | None = None) -> Non
         _print_project_git_add_hint([_project_scope_root(skill_dst, project_dir), project_dir / ".agents"])
     elif platform_name in ("copilot", "pi", "kimi", "agents"):
         # Skill-only project install: drop SKILL.md (+ references) at the scope
-        # root. `agents` -> ./.agents/skills/graphify/SKILL.md.
+        # root. `agents` -> ./.agents/skills/mapmmd/SKILL.md.
         skill_dst = _copy_skill_file(platform_name, project=True, project_dir=project_dir)
         _print_project_git_add_hint([_project_scope_root(skill_dst, project_dir)])
     else:
@@ -1768,7 +1768,7 @@ def _project_uninstall(platform_name: str, project_dir: Path | None = None) -> N
 def _project_uninstall_all(project_dir: Path | None = None) -> None:
     """Remove project-scoped install files without touching user-scope installs."""
     project_dir = project_dir or Path(".")
-    print("Uninstalling project-scoped graphify files...\n")
+    print("Uninstalling project-scoped mapmmd files...\n")
     for platform_name in _PLATFORM_CONFIG:
         _project_uninstall(platform_name, project_dir)
     for platform_name in ("gemini", "cursor"):
@@ -1777,7 +1777,7 @@ def _project_uninstall_all(project_dir: Path | None = None) -> None:
 
 
 def _agents_uninstall(project_dir: Path, platform: str = "") -> None:
-    """Remove the graphify section from the local AGENTS.md."""
+    """Remove the mapmmd section from the local AGENTS.md."""
     target = (project_dir or Path(".")) / "AGENTS.md"
 
     if not target.exists():
@@ -1790,7 +1790,7 @@ def _agents_uninstall(project_dir: Path, platform: str = "") -> None:
 
     content = target.read_text(encoding="utf-8")
     if _AGENTS_MD_MARKER not in content:
-        print("graphify section not found in AGENTS.md - nothing to do")
+        print("mapmmd section not found in AGENTS.md - nothing to do")
         if platform == "opencode":
             _uninstall_opencode_plugin(project_dir or Path("."))
         elif platform == "kilo":
@@ -1798,14 +1798,14 @@ def _agents_uninstall(project_dir: Path, platform: str = "") -> None:
         return
 
     cleaned = re.sub(
-        r"\n*## graphify\n.*?(?=\n## |\Z)",
+        r"\n*## mapmmd\n.*?(?=\n## |\Z)",
         "",
         content,
         flags=re.DOTALL,
     ).rstrip()
     if cleaned:
         target.write_text(cleaned + "\n", encoding="utf-8")
-        print(f"graphify section removed from {target.resolve()}")
+        print(f"mapmmd section removed from {target.resolve()}")
     else:
         target.unlink()
         print(f"AGENTS.md was empty after removal - deleted {target.resolve()}")
@@ -1818,7 +1818,7 @@ def _agents_uninstall(project_dir: Path, platform: str = "") -> None:
 
 def _kilo_uninstall_global() -> list[str]:
     removed = []
-    command_dst = Path.home() / ".config" / "kilo" / "command" / "graphify.md"
+    command_dst = Path.home() / ".config" / "kilo" / "command" / "mapmmd.md"
     if command_dst.exists():
         command_dst.unlink()
         removed.append(f"command removed: {command_dst}")
@@ -1831,7 +1831,7 @@ def _kilo_uninstall_global() -> list[str]:
     if skill_dst.exists():
         skill_dst.unlink()
         removed.append(f"skill removed: {skill_dst}")
-    version_file = skill_dst.parent / ".graphify_version"
+    version_file = skill_dst.parent / ".mapmmd_version"
     if version_file.exists():
         version_file.unlink()
     for d in (
@@ -1861,7 +1861,7 @@ def _kilo_uninstall(project_dir: Path) -> None:
 
 
 def claude_install(project_dir: Path | None = None) -> None:
-    """Write the graphify section to the local CLAUDE.md."""
+    """Write the mapmmd section to the local CLAUDE.md."""
     target = (project_dir or Path(".")) / "CLAUDE.md"
 
     if target.exists():
@@ -1873,10 +1873,10 @@ def claude_install(project_dir: Path | None = None) -> None:
         new_content = _always_on("claude-md")
 
     if target.exists() and new_content == target.read_text(encoding="utf-8"):
-        print(f"graphify already configured in {target.resolve()} (no change)")
+        print(f"mapmmd already configured in {target.resolve()} (no change)")
     else:
         target.write_text(new_content, encoding="utf-8")
-        print(f"graphify section written to {target.resolve()}")
+        print(f"mapmmd section written to {target.resolve()}")
 
     # Always re-install the Claude Code PreToolUse hook so an old hook
     # payload (e.g. pre-issue-#580 wording) is replaced on upgrade.
@@ -1888,7 +1888,7 @@ def claude_install(project_dir: Path | None = None) -> None:
 
 
 def _install_claude_hook(project_dir: Path) -> None:
-    """Add graphify PreToolUse hook to .claude/settings.json."""
+    """Add mapmmd PreToolUse hook to .claude/settings.json."""
     settings_path = project_dir / ".claude" / "settings.json"
     settings_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1903,7 +1903,7 @@ def _install_claude_hook(project_dir: Path) -> None:
     hooks = settings.setdefault("hooks", {})
     pre_tool = hooks.setdefault("PreToolUse", [])
 
-    hooks["PreToolUse"] = [h for h in pre_tool if not (h.get("matcher") in ("Glob|Grep", "Bash", "Read|Glob") and "graphify" in str(h))]
+    hooks["PreToolUse"] = [h for h in pre_tool if not (h.get("matcher") in ("Glob|Grep", "Bash", "Read|Glob") and "mapmmd" in str(h))]
     hooks["PreToolUse"].append(_SETTINGS_HOOK)
     hooks["PreToolUse"].append(_READ_SETTINGS_HOOK)
     settings_path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
@@ -1911,7 +1911,7 @@ def _install_claude_hook(project_dir: Path) -> None:
 
 
 def _uninstall_claude_hook(project_dir: Path) -> None:
-    """Remove graphify PreToolUse hook from .claude/settings.json."""
+    """Remove mapmmd PreToolUse hook from .claude/settings.json."""
     settings_path = project_dir / ".claude" / "settings.json"
     if not settings_path.exists():
         return
@@ -1920,7 +1920,7 @@ def _uninstall_claude_hook(project_dir: Path) -> None:
     except json.JSONDecodeError:
         return
     pre_tool = settings.get("hooks", {}).get("PreToolUse", [])
-    filtered = [h for h in pre_tool if not (h.get("matcher") in ("Glob|Grep", "Bash", "Read|Glob") and "graphify" in str(h))]
+    filtered = [h for h in pre_tool if not (h.get("matcher") in ("Glob|Grep", "Bash", "Read|Glob") and "mapmmd" in str(h))]
     if len(filtered) == len(pre_tool):
         return
     settings["hooks"]["PreToolUse"] = filtered
@@ -1929,9 +1929,9 @@ def _uninstall_claude_hook(project_dir: Path) -> None:
 
 
 def uninstall_all(project_dir: Path | None = None, purge: bool = False) -> None:
-    """Remove graphify from every platform detected in the current project."""
+    """Remove mapmmd from every platform detected in the current project."""
     pd = project_dir or Path(".")
-    print("Uninstalling graphify from all detected platforms...\n")
+    print("Uninstalling mapmmd from all detected platforms...\n")
 
     # Skill-file / config-section uninstallers
     claude_uninstall(pd)
@@ -1954,7 +1954,7 @@ def uninstall_all(project_dir: Path | None = None, purge: bool = False) -> None:
 
     # Git hook
     try:
-        from graphify.hooks import uninstall as hook_uninstall
+        from mapmmd.hooks import uninstall as hook_uninstall
         result = hook_uninstall(pd)
         if result:
             print(result)
@@ -1970,13 +1970,13 @@ def uninstall_all(project_dir: Path | None = None, purge: bool = False) -> None:
         else:
             print(f"\n  {_GRAPHIFY_OUT}/  ->  not found (nothing to purge)")
 
-    print("\nDone. Run 'pip uninstall graphifyy' to remove the package itself.")
+    print("\nDone. Run 'pip uninstall mapmmdy' to remove the package itself.")
 
 
 def claude_uninstall(project_dir: Path | None = None, *, project: bool = False) -> None:
-    """Remove the graphify skill tree (SKILL.md + references/) and the CLAUDE.md section.
+    """Remove the mapmmd skill tree (SKILL.md + references/) and the CLAUDE.md section.
 
-    Mirrors gemini_uninstall: the bare `graphify uninstall` and `graphify claude
+    Mirrors gemini_uninstall: the bare `mapmmd uninstall` and `mapmmd claude
     uninstall` must remove the installed skill, not just strip CLAUDE.md, or the
     progressive-disclosure tree (SKILL.md + references/) is orphaned (#1121).
     """
@@ -1990,19 +1990,19 @@ def claude_uninstall(project_dir: Path | None = None, *, project: bool = False) 
 
     content = target.read_text(encoding="utf-8")
     if _CLAUDE_MD_MARKER not in content:
-        print("graphify section not found in CLAUDE.md - nothing to do")
+        print("mapmmd section not found in CLAUDE.md - nothing to do")
         return
 
-    # Remove the ## graphify section: from the marker to the next ## heading or EOF
+    # Remove the ## mapmmd section: from the marker to the next ## heading or EOF
     cleaned = re.sub(
-        r"\n*## graphify\n.*?(?=\n## |\Z)",
+        r"\n*## mapmmd\n.*?(?=\n## |\Z)",
         "",
         content,
         flags=re.DOTALL,
     ).rstrip()
     if cleaned:
         target.write_text(cleaned + "\n", encoding="utf-8")
-        print(f"graphify section removed from {target.resolve()}")
+        print(f"mapmmd section removed from {target.resolve()}")
     else:
         target.unlink()
         print(f"CLAUDE.md was empty after removal - deleted {target.resolve()}")
@@ -2011,7 +2011,7 @@ def claude_uninstall(project_dir: Path | None = None, *, project: bool = False) 
 
 
 def codebuddy_install(project_dir: Path | None = None) -> None:
-    """Install the graphify skill and CODEBUDDY.md section for CodeBuddy."""
+    """Install the mapmmd skill and CODEBUDDY.md section for CodeBuddy."""
     _copy_skill_file("codebuddy", project=bool(project_dir), project_dir=project_dir)
     target = (project_dir or Path(".")) / "CODEBUDDY.md"
 
@@ -2024,10 +2024,10 @@ def codebuddy_install(project_dir: Path | None = None) -> None:
         new_content = _always_on("claude-md")
 
     if target.exists() and new_content == target.read_text(encoding="utf-8"):
-        print(f"graphify already configured in {target.resolve()} (no change)")
+        print(f"mapmmd already configured in {target.resolve()} (no change)")
     else:
         target.write_text(new_content, encoding="utf-8")
-        print(f"graphify section written to {target.resolve()}")
+        print(f"mapmmd section written to {target.resolve()}")
 
     # Also write CodeBuddy PreToolUse hook to .codebuddy/settings.json
     _install_codebuddy_hook(project_dir or Path("."))
@@ -2038,7 +2038,7 @@ def codebuddy_install(project_dir: Path | None = None) -> None:
 
 
 def _install_codebuddy_hook(project_dir: Path) -> None:
-    """Add graphify PreToolUse hook to .codebuddy/settings.json."""
+    """Add mapmmd PreToolUse hook to .codebuddy/settings.json."""
     settings_path = project_dir / ".codebuddy" / "settings.json"
     settings_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -2053,7 +2053,7 @@ def _install_codebuddy_hook(project_dir: Path) -> None:
     hooks = settings.setdefault("hooks", {})
     pre_tool = hooks.setdefault("PreToolUse", [])
 
-    hooks["PreToolUse"] = [h for h in pre_tool if not (h.get("matcher") in ("Glob|Grep", "Bash", "Read|Glob") and "graphify" in str(h))]
+    hooks["PreToolUse"] = [h for h in pre_tool if not (h.get("matcher") in ("Glob|Grep", "Bash", "Read|Glob") and "mapmmd" in str(h))]
     hooks["PreToolUse"].append(_SETTINGS_HOOK)
     hooks["PreToolUse"].append(_READ_SETTINGS_HOOK)
     settings_path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
@@ -2061,7 +2061,7 @@ def _install_codebuddy_hook(project_dir: Path) -> None:
 
 
 def _uninstall_codebuddy_hook(project_dir: Path) -> None:
-    """Remove graphify PreToolUse hook from .codebuddy/settings.json."""
+    """Remove mapmmd PreToolUse hook from .codebuddy/settings.json."""
     settings_path = project_dir / ".codebuddy" / "settings.json"
     if not settings_path.exists():
         return
@@ -2070,7 +2070,7 @@ def _uninstall_codebuddy_hook(project_dir: Path) -> None:
     except json.JSONDecodeError:
         return
     pre_tool = settings.get("hooks", {}).get("PreToolUse", [])
-    filtered = [h for h in pre_tool if not (h.get("matcher") in ("Glob|Grep", "Bash", "Read|Glob") and "graphify" in str(h))]
+    filtered = [h for h in pre_tool if not (h.get("matcher") in ("Glob|Grep", "Bash", "Read|Glob") and "mapmmd" in str(h))]
     if len(filtered) == len(pre_tool):
         return
     settings["hooks"]["PreToolUse"] = filtered
@@ -2079,7 +2079,7 @@ def _uninstall_codebuddy_hook(project_dir: Path) -> None:
 
 
 def codebuddy_uninstall(project_dir: Path | None = None, *, project: bool = False) -> None:
-    """Remove the graphify skill tree (SKILL.md + references/) and the CODEBUDDY.md section."""
+    """Remove the mapmmd skill tree (SKILL.md + references/) and the CODEBUDDY.md section."""
     project_dir = project_dir or Path(".")
     _remove_skill_file("codebuddy", project=project, project_dir=project_dir)
     target = project_dir / "CODEBUDDY.md"
@@ -2090,19 +2090,19 @@ def codebuddy_uninstall(project_dir: Path | None = None, *, project: bool = Fals
 
     content = target.read_text(encoding="utf-8")
     if _CODEBUDDY_MD_MARKER not in content:
-        print("graphify section not found in CODEBUDDY.md - nothing to do")
+        print("mapmmd section not found in CODEBUDDY.md - nothing to do")
         return
 
-    # Remove the ## graphify section: from the marker to the next ## heading or EOF
+    # Remove the ## mapmmd section: from the marker to the next ## heading or EOF
     cleaned = re.sub(
-        r"\n*## graphify\n.*?(?=\n## |\Z)",
+        r"\n*## mapmmd\n.*?(?=\n## |\Z)",
         "",
         content,
         flags=re.DOTALL,
     ).rstrip()
     if cleaned:
         target.write_text(cleaned + "\n", encoding="utf-8")
-        print(f"graphify section removed from {target.resolve()}")
+        print(f"mapmmd section removed from {target.resolve()}")
     else:
         target.unlink()
         print(f"CODEBUDDY.md was empty after removal - deleted {target.resolve()}")
@@ -2114,7 +2114,7 @@ def _clone_repo(
 ) -> Path:
     """Clone a GitHub repo to a local cache dir and return the path.
 
-    Clones into ~/.graphify/repos/<owner>/<repo> by default so repeated
+    Clones into ~/.mapmmd/repos/<owner>/<repo> by default so repeated
     runs on the same URL reuse the existing clone (git pull instead of clone).
     """
     import subprocess as _sp
@@ -2138,7 +2138,7 @@ def _clone_repo(
     if out_dir:
         dest = out_dir
     else:
-        dest = Path.home() / ".graphify" / "repos" / owner / repo
+        dest = Path.home() / ".mapmmd" / "repos" / owner / repo
 
     if branch and branch.startswith("-"):
         print(f"error: invalid branch name: {branch!r}", file=sys.stderr)
@@ -2188,23 +2188,23 @@ def main() -> None:
             _check_skill_version(skill_dst)
 
     if len(sys.argv) >= 2 and sys.argv[1] in ("-v", "--version", "version"):
-        print(f"graphify {__version__}")
+        print(f"mapmmd {__version__}")
         return
 
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "-?"):
-        print("Usage: graphify <command>")
+        print("Usage: mapmmd <command>")
         print()
         print("Commands:")
         print("  install [--platform P]  copy skill to platform config dir (claude|windows|codebuddy|codex|opencode|aider|amp|agents|claw|droid|trae|trae-cn|gemini|cursor|antigravity|hermes|kiro|pi|devin)")
-        print("  uninstall               remove graphify from all detected platforms in one shot")
-        print("    --purge                 also delete graphify-out/ directory")
+        print("  uninstall               remove mapmmd from all detected platforms in one shot")
+        print("    --purge                 also delete mapmmd-out/ directory")
         print("  path \"A\" \"B\"            shortest path between two nodes in graph.json")
-        print("    --graph <path>          path to graph.json (default graphify-out/graph.json)")
+        print("    --graph <path>          path to graph.json (default mapmmd-out/graph.json)")
         print("  explain \"X\"             plain-language explanation of a node and its neighbors")
-        print("    --graph <path>          path to graph.json (default graphify-out/graph.json)")
+        print("    --graph <path>          path to graph.json (default mapmmd-out/graph.json)")
         print("  diagnose multigraph    report same-endpoint edge collapse risk in graph.json")
         print("    --graph <path>          path to graph/extraction JSON")
-        print("                            (default graphify-out/graph.json)")
+        print("                            (default mapmmd-out/graph.json)")
         print("    --json                  emit machine-readable JSON")
         print("    --max-examples N        max same-endpoint examples to print (default 5)")
         print("    --directed              force directed post-build simulation")
@@ -2212,12 +2212,12 @@ def main() -> None:
         print("                            (default follows JSON directed flag;")
         print("                             raw extraction with no flag defaults directed)")
         print("    --extract-path PATH     extractor source for suppression scan")
-        print("  clone <github-url>      clone a GitHub repo locally and print its path for /graphify")
+        print("  clone <github-url>      clone a GitHub repo locally and print its path for /mapmmd")
         print("  merge-driver <base> <current> <other>  git merge driver: union-merge two graph.json files (set up via hook install)")
         print("  merge-graphs <g1> <g2>  merge two or more graph.json files into one cross-repo graph")
-        print("    --out <path>            output path (default: graphify-out/merged-graph.json)")
+        print("    --out <path>            output path (default: mapmmd-out/merged-graph.json)")
         print("    --branch <branch>       checkout a specific branch (default: repo default)")
-        print("    --out <dir>             clone to a custom directory (default: ~/.graphify/repos/<owner>/<repo>)")
+        print("    --out <dir>             clone to a custom directory (default: ~/.mapmmd/repos/<owner>/<repo>)")
         print("  add <url>               fetch a URL and save it to ./raw, then update the graph")
         print("    --author \"Name\"         tag the author of the content")
         print("    --contributor \"Name\"    tag who added it to the corpus")
@@ -2229,7 +2229,7 @@ def main() -> None:
         print("    --no-cluster            skip clustering, write raw extraction only")
         print("  cluster-only <path>     rerun clustering on an existing graph.json and regenerate report")
         print("    --no-viz                skip graph.html generation (useful for >5000 node graphs / CI)")
-        print("    --graph <path>          path to graph.json (default <path>/graphify-out/graph.json)")
+        print("    --graph <path>          path to graph.json (default <path>/mapmmd-out/graph.json)")
         print("    --no-label              keep 'Community N' placeholders (skip LLM community naming)")
         print("    --backend=<name>        backend to use for community naming (default: auto-detect)")
         print("    --model=<name>          model to use for community naming")
@@ -2244,12 +2244,12 @@ def main() -> None:
         print("    --dfs                   use depth-first instead of breadth-first")
         print("    --context C             explicit edge-context filter (repeatable)")
         print("    --budget N              cap output at N tokens (default 2000)")
-        print("    --graph <path>          path to graph.json (default graphify-out/graph.json)")
+        print("    --graph <path>          path to graph.json (default mapmmd-out/graph.json)")
         print("  affected \"X\"             reverse traversal to find nodes impacted by X")
         print("    --relation R            edge relation to traverse in reverse (repeatable)")
         print("    --depth N               reverse traversal depth (default 2)")
-        print("    --graph <path>          path to graph.json (default graphify-out/graph.json)")
-        print("  save-result             save a Q&A result to graphify-out/memory/ for graph feedback loop")
+        print("    --graph <path>          path to graph.json (default mapmmd-out/graph.json)")
+        print("  save-result             save a Q&A result to mapmmd-out/memory/ for graph feedback loop")
         print("    --question Q            the question asked")
         print("    --answer A              the answer to save")
         print(
@@ -2258,19 +2258,19 @@ def main() -> None:
         print("    --nodes N1 N2 ...       source node labels cited in the answer")
         print("    --outcome O             work-memory signal: useful|dead_end|corrected")
         print("    --correction TEXT       what the right answer was (pairs with --outcome corrected)")
-        print("    --memory-dir DIR        memory directory (default: graphify-out/memory)")
-        print("  reflect                 aggregate graphify-out/memory/ outcomes into a deterministic lessons doc")
-        print("    --memory-dir DIR        memory directory (default: graphify-out/memory)")
-        print("    --out FILE              output path (default: graphify-out/reflections/LESSONS.md)")
+        print("    --memory-dir DIR        memory directory (default: mapmmd-out/memory)")
+        print("  reflect                 aggregate mapmmd-out/memory/ outcomes into a deterministic lessons doc")
+        print("    --memory-dir DIR        memory directory (default: mapmmd-out/memory)")
+        print("    --out FILE              output path (default: mapmmd-out/reflections/LESSONS.md)")
         print("    --graph PATH            graph.json, for community grouping + dropping stale nodes (optional)")
-        print("    --analysis PATH         .graphify_analysis.json (optional, auto-detected next to --graph)")
-        print("    --labels PATH           .graphify_labels.json (optional, auto-detected next to --graph)")
+        print("    --analysis PATH         .mapmmd_analysis.json (optional, auto-detected next to --graph)")
+        print("    --labels PATH           .mapmmd_labels.json (optional, auto-detected next to --graph)")
         print("    --half-life-days N      signal weight halves every N days (default 30)")
         print("    --min-corroboration N   distinct useful results to prefer a node (default 2)")
         print("  check-update <path>     check needs_update flag and notify if semantic re-extraction is pending (cron-safe)")
         print("  tree                    emit a D3 v7 collapsible-tree HTML for graph.json")
-        print("    --graph PATH            path to graph.json (default graphify-out/graph.json)")
-        print("    --output HTML           output path (default graphify-out/GRAPH_TREE.html)")
+        print("    --graph PATH            path to graph.json (default mapmmd-out/graph.json)")
+        print("    --output HTML           output path (default mapmmd-out/GRAPH_TREE.html)")
         print("    --root PATH             filesystem root for the hierarchy")
         print("    --max-children N        cap children per node (default 200)")
         print("    --top-k-edges N         per-symbol outbound edges in inspector (default 12)")
@@ -2288,7 +2288,7 @@ def main() -> None:
         print("    --token-budget N        per-chunk token cap for semantic extraction (default: 60000)")
         print("    --max-concurrency N     parallel semantic chunks in flight (default: 4; set 1 for local LLMs)")
         print("    --api-timeout S         per-request timeout in seconds for the LLM client (default: 600)")
-        print("    --out DIR               output dir (default: <path>); writes <DIR>/graphify-out/")
+        print("    --out DIR               output dir (default: <path>); writes <DIR>/mapmmd-out/")
         print("    --google-workspace      export .gdoc/.gsheet/.gslides shortcuts via gws before extraction")
         print("    --no-cluster            skip clustering, write raw extraction only")
         print("    --postgres DSN          extract schema from a live PostgreSQL database")
@@ -2297,7 +2297,7 @@ def main() -> None:
         print("    --cargo                 extract crate→crate deps from Cargo.toml")
         print("    --global                also merge the resulting graph into the global graph")
         print("    --as <tag>              repo tag for --global (default: target directory name)")
-        print("  global add <graph.json>  add/update a project graph in the global graph (~/.graphify/global-graph.json)")
+        print("  global add <graph.json>  add/update a project graph in the global graph (~/.mapmmd/global-graph.json)")
         print("    --as <tag>               repo tag (default: parent directory name)")
         print("  global remove <tag>      remove a repo's nodes from the global graph")
         print("  global list              list repos in the global graph")
@@ -2311,19 +2311,19 @@ def main() -> None:
             "  gemini install          write GEMINI.md section + BeforeTool hook (Gemini CLI)"
         )
         print("  gemini uninstall        remove GEMINI.md section + BeforeTool hook")
-        print("  cursor install          write .cursor/rules/graphify.mdc (Cursor)")
-        print("  cursor uninstall        remove .cursor/rules/graphify.mdc")
-        print("  claude install          write graphify section to CLAUDE.md + PreToolUse hook (Claude Code)")
-        print("  claude uninstall        remove graphify section from CLAUDE.md + PreToolUse hook")
-        print("  codebuddy install       write graphify section to CODEBUDDY.md + PreToolUse hook (CodeBuddy)")
-        print("  codebuddy uninstall     remove graphify section from CODEBUDDY.md + PreToolUse hook")
-        print("  codex install           write graphify section to AGENTS.md (Codex)")
-        print("  codex uninstall         remove graphify section from AGENTS.md")
+        print("  cursor install          write .cursor/rules/mapmmd.mdc (Cursor)")
+        print("  cursor uninstall        remove .cursor/rules/mapmmd.mdc")
+        print("  claude install          write mapmmd section to CLAUDE.md + PreToolUse hook (Claude Code)")
+        print("  claude uninstall        remove mapmmd section from CLAUDE.md + PreToolUse hook")
+        print("  codebuddy install       write mapmmd section to CODEBUDDY.md + PreToolUse hook (CodeBuddy)")
+        print("  codebuddy uninstall     remove mapmmd section from CODEBUDDY.md + PreToolUse hook")
+        print("  codex install           write mapmmd section to AGENTS.md (Codex)")
+        print("  codex uninstall         remove mapmmd section from AGENTS.md")
         print(
-            "  opencode install        write graphify section to AGENTS.md + tool.execute.before plugin (OpenCode)"
+            "  opencode install        write mapmmd section to AGENTS.md + tool.execute.before plugin (OpenCode)"
         )
         print(
-            "  opencode uninstall      remove graphify section from AGENTS.md + plugin"
+            "  opencode uninstall      remove mapmmd section from AGENTS.md + plugin"
         )
         print(
             "  kilo install            install native Kilo skill + command + AGENTS.md + .kilo plugin"
@@ -2331,28 +2331,28 @@ def main() -> None:
         print(
             "  kilo uninstall          remove native Kilo skill + command + AGENTS.md + .kilo plugin"
         )
-        print("  aider install           write graphify section to AGENTS.md (Aider)")
-        print("  aider uninstall         remove graphify section from AGENTS.md")
+        print("  aider install           write mapmmd section to AGENTS.md (Aider)")
+        print("  aider uninstall         remove mapmmd section from AGENTS.md")
         print(
-            "  copilot install         copy graphify skill to ~/.copilot/skills (GitHub Copilot CLI)"
+            "  copilot install         copy mapmmd skill to ~/.copilot/skills (GitHub Copilot CLI)"
         )
-        print("  copilot uninstall       remove graphify skill from ~/.copilot/skills")
+        print("  copilot uninstall       remove mapmmd skill from ~/.copilot/skills")
         print(
             "  vscode install          configure VS Code Copilot Chat (skill + .github/copilot-instructions.md)"
         )
         print("  vscode uninstall        remove VS Code Copilot Chat configuration")
         print(
-            "  claw install            write graphify section to AGENTS.md (OpenClaw)"
+            "  claw install            write mapmmd section to AGENTS.md (OpenClaw)"
         )
-        print("  claw uninstall          remove graphify section from AGENTS.md")
+        print("  claw uninstall          remove mapmmd section from AGENTS.md")
         print(
-            "  droid install           write graphify section to AGENTS.md (Factory Droid)"
+            "  droid install           write mapmmd section to AGENTS.md (Factory Droid)"
         )
-        print("  droid uninstall        remove graphify section from AGENTS.md")
-        print("  trae install            write graphify section to AGENTS.md (Trae)")
-        print("  trae uninstall         remove graphify section from AGENTS.md")
-        print("  trae-cn install         write graphify section to AGENTS.md (Trae CN)")
-        print("  trae-cn uninstall      remove graphify section from AGENTS.md")
+        print("  droid uninstall        remove mapmmd section from AGENTS.md")
+        print("  trae install            write mapmmd section to AGENTS.md (Trae)")
+        print("  trae uninstall         remove mapmmd section from AGENTS.md")
+        print("  trae-cn install         write mapmmd section to AGENTS.md (Trae CN)")
+        print("  trae-cn uninstall      remove mapmmd section from AGENTS.md")
         print(
             "  antigravity install     write .agents/rules + .agents/workflows + skill (Google Antigravity)"
         )
@@ -2360,17 +2360,17 @@ def main() -> None:
             "  antigravity uninstall   remove .agents/rules, .agents/workflows, and skill"
         )
         print(
-            "  hermes install          write skill to ~/.hermes/skills/graphify/ (Hermes)"
+            "  hermes install          write skill to ~/.hermes/skills/mapmmd/ (Hermes)"
         )
-        print("  hermes uninstall        remove skill from ~/.hermes/skills/graphify/")
+        print("  hermes uninstall        remove skill from ~/.hermes/skills/mapmmd/")
         print(
-            "  kiro install            write skill to .kiro/skills/graphify/ + steering file (Kiro IDE/CLI)"
+            "  kiro install            write skill to .kiro/skills/mapmmd/ + steering file (Kiro IDE/CLI)"
         )
         print("  kiro uninstall          remove skill + steering file")
-        print("  pi install              write skill to ~/.pi/agent/skills/graphify/ (Pi coding agent)")
-        print("  pi uninstall            remove skill from ~/.pi/agent/skills/graphify/")
-        print("  devin install           write skill to ~/.config/devin/skills/graphify/ (Devin CLI)")
-        print("  devin uninstall         remove skill from ~/.config/devin/skills/graphify/")
+        print("  pi install              write skill to ~/.pi/agent/skills/mapmmd/ (Pi coding agent)")
+        print("  pi uninstall            remove skill from ~/.pi/agent/skills/mapmmd/")
+        print("  devin install           write skill to ~/.config/devin/skills/mapmmd/ (Devin CLI)")
+        print("  devin uninstall         remove skill from ~/.config/devin/skills/mapmmd/")
         print()
         return
 
@@ -2383,7 +2383,7 @@ def main() -> None:
     # "install"/"uninstall" which have their own per-subcommand help handlers.
     _FREE_TEXT_CMDS = {"query", "explain", "path", "save-result", "install", "uninstall"}
     if cmd not in _FREE_TEXT_CMDS and any(a in {"-h", "--help", "-?"} for a in sys.argv[2:]):
-        print(f"Run 'graphify --help' for full usage.")
+        print(f"Run 'mapmmd --help' for full usage.")
         return
 
     if cmd == "install":
@@ -2477,7 +2477,7 @@ def main() -> None:
             else:
                 claude_uninstall()
         else:
-            print("Usage: graphify claude [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd claude [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "codebuddy":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2486,7 +2486,7 @@ def main() -> None:
         elif subcmd == "uninstall":
             codebuddy_uninstall()
         else:
-            print("Usage: graphify codebuddy [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd codebuddy [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "gemini":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2495,7 +2495,7 @@ def main() -> None:
         elif subcmd == "uninstall":
             gemini_uninstall(project=("--project" in sys.argv[3:]))
         else:
-            print("Usage: graphify gemini [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd gemini [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "cursor":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2504,7 +2504,7 @@ def main() -> None:
         elif subcmd == "uninstall":
             _cursor_uninstall(Path("."))
         else:
-            print("Usage: graphify cursor [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd cursor [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "vscode":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2513,7 +2513,7 @@ def main() -> None:
         elif subcmd == "uninstall":
             vscode_uninstall()
         else:
-            print("Usage: graphify vscode [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd vscode [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "copilot":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2529,7 +2529,7 @@ def main() -> None:
                 removed = _remove_skill_file("copilot")
                 print("skill removed" if removed else "nothing to remove")
         else:
-            print("Usage: graphify copilot [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd copilot [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "kilo":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2538,7 +2538,7 @@ def main() -> None:
         elif subcmd == "uninstall":
             _kilo_uninstall(Path("."))
         else:
-            print("Usage: graphify kilo [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd kilo [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "kiro":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2547,7 +2547,7 @@ def main() -> None:
         elif subcmd == "uninstall":
             _kiro_uninstall(Path("."))
         else:
-            print("Usage: graphify kiro [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd kiro [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "devin":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2563,7 +2563,7 @@ def main() -> None:
                 removed = _remove_skill_file("devin")
                 print("skill removed" if removed else "nothing to remove")
         else:
-            print("Usage: graphify devin [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd devin [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "pi":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2578,7 +2578,7 @@ def main() -> None:
             else:
                 _remove_skill_file("pi")
         else:
-            print("Usage: graphify pi [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd pi [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "amp":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2593,7 +2593,7 @@ def main() -> None:
             else:
                 _amp_uninstall(Path("."))
         else:
-            print("Usage: graphify amp [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd amp [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd in ("agents", "skills"):
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2608,7 +2608,7 @@ def main() -> None:
             else:
                 _agents_platform_uninstall(Path("."))
         else:
-            print(f"Usage: graphify {cmd} [install|uninstall]", file=sys.stderr)
+            print(f"Usage: mapmmd {cmd} [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd in ("aider", "codex", "opencode", "claw", "droid", "trae", "trae-cn", "hermes"):
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2625,7 +2625,7 @@ def main() -> None:
                 if cmd == "codex":
                     _uninstall_codex_hook(Path("."))
         else:
-            print(f"Usage: graphify {cmd} [install|uninstall]", file=sys.stderr)
+            print(f"Usage: mapmmd {cmd} [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "antigravity":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2640,10 +2640,10 @@ def main() -> None:
             else:
                 _antigravity_uninstall(Path("."))
         else:
-            print("Usage: graphify antigravity [install|uninstall]", file=sys.stderr)
+            print("Usage: mapmmd antigravity [install|uninstall]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "provider":
-        from graphify.llm import _custom_providers_path, BACKENDS
+        from mapmmd.llm import _custom_providers_path, BACKENDS
         import json as _json
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
         global_path = _custom_providers_path(global_=True)
@@ -2665,7 +2665,7 @@ def main() -> None:
         elif subcmd == "show":
             name = sys.argv[3] if len(sys.argv) > 3 else ""
             if not name:
-                print("Usage: graphify provider show <name>", file=sys.stderr)
+                print("Usage: mapmmd provider show <name>", file=sys.stderr)
                 sys.exit(1)
             existing = {}
             if global_path.is_file():
@@ -2682,7 +2682,7 @@ def main() -> None:
             args = sys.argv[3:]
             name = args[0] if args and not args[0].startswith("-") else ""
             if not name:
-                print("Usage: graphify provider add <name> --base-url URL --default-model MODEL --env-key KEY", file=sys.stderr)
+                print("Usage: mapmmd provider add <name> --base-url URL --default-model MODEL --env-key KEY", file=sys.stderr)
                 sys.exit(1)
             if name in BACKENDS:
                 print(f"Error: '{name}' is a built-in provider and cannot be overridden.", file=sys.stderr)
@@ -2716,7 +2716,7 @@ def main() -> None:
             if not base_url or not default_model or not env_key:
                 print("Error: --base-url, --default-model, and --env-key are required.", file=sys.stderr)
                 sys.exit(1)
-            from graphify.llm import provider_base_url_ok
+            from mapmmd.llm import provider_base_url_ok
             if not provider_base_url_ok(base_url, name):
                 print(f"Error: refusing to add provider with unsafe base_url {base_url!r}.", file=sys.stderr)
                 sys.exit(1)
@@ -2735,12 +2735,12 @@ def main() -> None:
                 "temperature": 0,
             }
             global_path.write_text(_json.dumps(existing, indent=2) + "\n", encoding="utf-8")
-            print(f"Provider '{name}' added. Use with: graphify extract . --backend {name}")
+            print(f"Provider '{name}' added. Use with: mapmmd extract . --backend {name}")
 
         elif subcmd == "remove":
             name = sys.argv[3] if len(sys.argv) > 3 else ""
             if not name:
-                print("Usage: graphify provider remove <name>", file=sys.stderr)
+                print("Usage: mapmmd provider remove <name>", file=sys.stderr)
                 sys.exit(1)
             existing = {}
             if global_path.is_file():
@@ -2756,14 +2756,14 @@ def main() -> None:
             print(f"Provider '{name}' removed.")
 
         else:
-            print("Usage: graphify provider [add|list|show|remove]", file=sys.stderr)
+            print("Usage: mapmmd provider [add|list|show|remove]", file=sys.stderr)
             if subcmd:
                 sys.exit(1)
     elif cmd == "prs":
-        from graphify.prs import cmd_prs
+        from mapmmd.prs import cmd_prs
         cmd_prs(sys.argv[2:])
     elif cmd == "hook":
-        from graphify.hooks import (
+        from mapmmd.hooks import (
             install as hook_install,
             uninstall as hook_uninstall,
             status as hook_status,
@@ -2777,16 +2777,16 @@ def main() -> None:
         elif subcmd == "status":
             print(hook_status(Path(".")))
         else:
-            print("Usage: graphify hook [install|uninstall|status]", file=sys.stderr)
+            print("Usage: mapmmd hook [install|uninstall|status]", file=sys.stderr)
             sys.exit(1)
     elif cmd == "query":
         if len(sys.argv) < 3:
-            print("Usage: graphify query \"<question>\" [--dfs] [--context C] [--budget N] [--graph path]", file=sys.stderr)
+            print("Usage: mapmmd query \"<question>\" [--dfs] [--context C] [--budget N] [--graph path]", file=sys.stderr)
             sys.exit(1)
-        from graphify.serve import _query_graph_text
-        from graphify.security import sanitize_label
+        from mapmmd.serve import _query_graph_text
+        from mapmmd.security import sanitize_label
         from networkx.readwrite import json_graph
-        from graphify import querylog
+        from mapmmd import querylog
 
         question = sys.argv[2]
         use_dfs = "--dfs" in sys.argv
@@ -2867,9 +2867,9 @@ def main() -> None:
         print(_result)
     elif cmd == "affected":
         if len(sys.argv) < 3:
-            print("Usage: graphify affected \"<node-or-label>\" [--relation R] [--depth N] [--graph path]", file=sys.stderr)
+            print("Usage: mapmmd affected \"<node-or-label>\" [--relation R] [--depth N] [--graph path]", file=sys.stderr)
             sys.exit(1)
-        from graphify.affected import DEFAULT_AFFECTED_RELATIONS, format_affected, load_graph
+        from mapmmd.affected import DEFAULT_AFFECTED_RELATIONS, format_affected, load_graph
         query = sys.argv[2]
         graph_path = _default_graph_path()
         depth = 2
@@ -2926,11 +2926,11 @@ def main() -> None:
             )
         )
     elif cmd == "save-result":
-        # graphify save-result --question Q --answer A [--type T] [--nodes N1 N2 ...]
+        # mapmmd save-result --question Q --answer A [--type T] [--nodes N1 N2 ...]
         #                      [--outcome useful|dead_end|corrected] [--correction TEXT]
         import argparse as _ap
 
-        p = _ap.ArgumentParser(prog="graphify save-result")
+        p = _ap.ArgumentParser(prog="mapmmd save-result")
         p.add_argument("--question", required=True)
         p.add_argument("--answer", required=True)
         p.add_argument("--type", dest="query_type", default="query")
@@ -2939,7 +2939,7 @@ def main() -> None:
         p.add_argument("--correction", default=None)
         p.add_argument("--memory-dir", default=str(Path(_GRAPHIFY_OUT) / "memory"))
         opts = p.parse_args(sys.argv[2:])
-        from graphify.ingest import save_query_result as _sqr
+        from mapmmd.ingest import save_query_result as _sqr
 
         out = _sqr(
             question=opts.question,
@@ -2954,7 +2954,7 @@ def main() -> None:
     elif cmd == "reflect":
         import argparse as _ap
 
-        p = _ap.ArgumentParser(prog="graphify reflect")
+        p = _ap.ArgumentParser(prog="mapmmd reflect")
         p.add_argument("--memory-dir", default=str(Path(_GRAPHIFY_OUT) / "memory"))
         p.add_argument(
             "--out",
@@ -2971,7 +2971,7 @@ def main() -> None:
                        help="skip when LESSONS.md is already newer than every input "
                             "(e.g. the git hook just refreshed it)")
         opts = p.parse_args(sys.argv[2:])
-        from graphify.reflect import reflect as _reflect, lessons_fresh as _lessons_fresh
+        from mapmmd.reflect import reflect as _reflect, lessons_fresh as _lessons_fresh
 
         graph_arg = opts.graph
         if graph_arg is None:
@@ -3001,11 +3001,11 @@ def main() -> None:
     elif cmd == "path":
         if len(sys.argv) < 4:
             print(
-                'Usage: graphify path "<source>" "<target>" [--graph path]',
+                'Usage: mapmmd path "<source>" "<target>" [--graph path]',
                 file=sys.stderr,
             )
             sys.exit(1)
-        from graphify.serve import _score_nodes
+        from mapmmd.serve import _score_nodes
         from networkx.readwrite import json_graph
         import networkx as _nx
 
@@ -3065,7 +3065,7 @@ def main() -> None:
             sys.exit(0)
         hops = len(path_nodes) - 1
         segments = []
-        from graphify.build import edge_data
+        from mapmmd.build import edge_data
         for i in range(len(path_nodes) - 1):
             u, v = path_nodes[i], path_nodes[i + 1]
             # Check which direction the stored edge points.
@@ -3085,7 +3085,7 @@ def main() -> None:
             else:
                 segments.append(f"<--{rel}{conf_str}-- {G.nodes[v].get('label', v)}")
         print(f"Shortest path ({hops} hops):\n  " + " ".join(segments))
-        from graphify import querylog
+        from mapmmd import querylog
         querylog.log_query(
             kind="path",
             question=f"{sys.argv[2]} -> {sys.argv[3]}",
@@ -3095,9 +3095,9 @@ def main() -> None:
 
     elif cmd == "explain":
         if len(sys.argv) < 3:
-            print('Usage: graphify explain "<node>" [--graph path]', file=sys.stderr)
+            print('Usage: mapmmd explain "<node>" [--graph path]', file=sys.stderr)
             sys.exit(1)
-        from graphify.serve import _find_node
+        from mapmmd.serve import _find_node
         from networkx.readwrite import json_graph
 
         label = sys.argv[2]
@@ -3134,7 +3134,7 @@ def main() -> None:
         print(f"  Type:      {d.get('file_type', '')}")
         print(f"  Community: {d.get('community_name') or d.get('community', '')}")
         print(f"  Degree:    {G.degree(nid)}")
-        from graphify.build import edge_data
+        from mapmmd.build import edge_data
         connections: list[tuple[str, str, dict]] = []  # (direction, neighbor_id, edge_data)
         for nb in G.successors(nid):
             connections.append(("out", nb, edge_data(G, nid, nb)))
@@ -3150,7 +3150,7 @@ def main() -> None:
                 print(f"  {arrow} {G.nodes[nb].get('label', nb)} [{rel}] [{conf}]")
             if len(connections) > 20:
                 print(f"  ... and {len(connections) - 20} more")
-        from graphify import querylog
+        from mapmmd import querylog
         querylog.log_query(
             kind="explain",
             question=sys.argv[2],
@@ -3162,7 +3162,7 @@ def main() -> None:
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
         if subcmd != "multigraph":
             print(
-                "Usage: graphify diagnose multigraph "
+                "Usage: mapmmd diagnose multigraph "
                 "[--graph path] [--json] [--max-examples N] "
                 "[--directed] [--undirected] [--extract-path path]",
                 file=sys.stderr,
@@ -3229,7 +3229,7 @@ def main() -> None:
                 sys.exit(1)
             i += 1
 
-        from graphify.diagnostics import (
+        from mapmmd.diagnostics import (
             diagnose_file,
             format_diagnostic_json,
             format_diagnostic_report,
@@ -3255,11 +3255,11 @@ def main() -> None:
     elif cmd == "add":
         if len(sys.argv) < 3:
             print(
-                "Usage: graphify add <url> [--author Name] [--contributor Name] [--dir ./raw]",
+                "Usage: mapmmd add <url> [--author Name] [--contributor Name] [--dir ./raw]",
                 file=sys.stderr,
             )
             sys.exit(1)
-        from graphify.ingest import ingest as _ingest
+        from mapmmd.ingest import ingest as _ingest
 
         url = sys.argv[2]
         author: str | None = None
@@ -3282,7 +3282,7 @@ def main() -> None:
         try:
             saved = _ingest(url, target_dir, author=author, contributor=contributor)
             print(f"Saved to {saved}")
-            print("Run /graphify --update in your AI assistant to update the graph.")
+            print("Run /mapmmd --update in your AI assistant to update the graph.")
         except Exception as exc:
             print(f"error: {exc}", file=sys.stderr)
             sys.exit(1)
@@ -3292,7 +3292,7 @@ def main() -> None:
         if not watch_path.exists():
             print(f"error: path not found: {watch_path}", file=sys.stderr)
             sys.exit(1)
-        from graphify.watch import watch as _watch
+        from mapmmd.watch import watch as _watch
 
         try:
             _watch(watch_path)
@@ -3302,7 +3302,7 @@ def main() -> None:
 
     elif cmd in ("cluster-only", "label"):
         # `label` is `cluster-only` that always (re)generates community names with
-        # the configured backend, even when a .graphify_labels.json already exists.
+        # the configured backend, even when a .mapmmd_labels.json already exists.
         force_relabel = cmd == "label"
         # Mirror the tree/export arg-parsing pattern: walk argv so flags and
         # the optional positional path can appear in any order (#724).
@@ -3363,27 +3363,27 @@ def main() -> None:
         graph_json = graph_override if graph_override is not None else watch_path / _GRAPHIFY_OUT / "graph.json"
         if not graph_json.exists():
             print(
-                f"error: no graph found at {graph_json} — run /graphify first",
+                f"error: no graph found at {graph_json} — run /mapmmd first",
                 file=sys.stderr,
             )
             sys.exit(1)
         from networkx.readwrite import json_graph as _jg
-        from graphify.build import build_from_json
-        from graphify.cluster import cluster, score_all, remap_communities_to_previous
-        from graphify.analyze import (
+        from mapmmd.build import build_from_json
+        from mapmmd.cluster import cluster, score_all, remap_communities_to_previous
+        from mapmmd.analyze import (
             god_nodes,
             surprising_connections,
             suggest_questions,
         )
-        from graphify.report import generate
-        from graphify.export import to_json, to_html
+        from mapmmd.report import generate
+        from mapmmd.export import to_json, to_html
 
         print("Loading existing graph...")
         # Solution 3 (#1019): don't hard-exit on an oversized graph.json here.
         # Core outputs (graph.json + GRAPH_REPORT.md) still get written; the
         # graph.html render below falls back to the community-aggregation view
         # (node_limit=5000) when over the cap.
-        from graphify.security import check_graph_file_size_cap as _check_cap
+        from mapmmd.security import check_graph_file_size_cap as _check_cap
         _over_cap = False
         try:
             _check_cap(graph_json)
@@ -3401,11 +3401,11 @@ def main() -> None:
         _raw = json.loads(graph_json.read_text(encoding="utf-8"))
         _directed = bool(_raw.get("directed", False))
         G = build_from_json(_raw, directed=_directed)
-        print(f"Graph: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+        print(f"mmd: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
         print("Re-clustering...")
         communities = cluster(G, resolution=co_resolution, exclude_hubs_percentile=co_exclude_hubs)
         # Mirror the watch/update path (#822): map new cids to prior ones by
-        # node-overlap so the existing .graphify_labels.json keeps attaching
+        # node-overlap so the existing .mapmmd_labels.json keeps attaching
         # to the same conceptual community after re-clustering. Without this,
         # labels follow raw cid index and become misaligned whenever the
         # graph has changed between labeling and cluster-only (#1027).
@@ -3421,7 +3421,7 @@ def main() -> None:
         surprises = surprising_connections(G, communities)
         out = watch_path / _GRAPHIFY_OUT
         out.mkdir(parents=True, exist_ok=True)
-        labels_path = out / ".graphify_labels.json"
+        labels_path = out / ".mapmmd_labels.json"
         if labels_path.exists() and not force_relabel:
             try:
                 labels = {int(k): v for k, v in json.loads(labels_path.read_text(encoding="utf-8")).items()}
@@ -3430,28 +3430,28 @@ def main() -> None:
         elif no_label and not force_relabel:
             labels = {cid: f"Community {cid}" for cid in communities}
         else:
-            # No labels file yet (or `graphify label` forced a refresh). When run
+            # No labels file yet (or `mapmmd label` forced a refresh). When run
             # standalone there is no orchestrating agent to do skill.md Step 5, so
             # auto-name communities with the configured backend rather than leave
             # "Community N" (#1097). Degrades to placeholders if no backend/on error.
-            from graphify.llm import generate_community_labels
+            from mapmmd.llm import generate_community_labels
             print("Labeling communities...")
             # The final labels (LLM or placeholder fallback) are persisted to
-            # .graphify_labels.json by the unconditional write below.
+            # .mapmmd_labels.json by the unconditional write below.
             labels, _ = generate_community_labels(
                 G, communities, backend=label_backend, model=label_model, gods=gods,
                 max_concurrency=label_max_concurrency, batch_size=label_batch_size,
             )
         questions = suggest_questions(G, communities, labels)
         tokens = {"input": 0, "output": 0}
-        from graphify.export import _git_head as _gh
+        from mapmmd.export import _git_head as _gh
         _commit = _gh()
         report = generate(G, communities, cohesion, labels, gods, surprises,
                           {"warning": "cluster-only mode — file stats not available"},
                           tokens, str(watch_path), suggested_questions=questions,
                           min_community_size=min_community_size, built_at_commit=_commit)
         (out / "GRAPH_REPORT.md").write_text(report, encoding="utf-8")
-        from graphify.export import backup_if_protected as _backup
+        from mapmmd.export import backup_if_protected as _backup
         _backup(out)
         to_json(G, communities, str(out / "graph.json"), community_labels=labels)
         labels_path.write_text(json.dumps({str(k): v for k, v in labels.items()}, ensure_ascii=False), encoding="utf-8")
@@ -3503,7 +3503,7 @@ def main() -> None:
             watch_path = Path(watch_arg)
         else:
             # Try to recover the scan root saved by the last full build
-            saved = Path(_GRAPHIFY_OUT) / ".graphify_root"
+            saved = Path(_GRAPHIFY_OUT) / ".mapmmd_root"
             if saved.exists():
                 watch_path = Path(saved.read_text(encoding="utf-8").strip())
             else:
@@ -3511,15 +3511,15 @@ def main() -> None:
         if not watch_path.exists():
             print(f"error: path not found: {watch_path}", file=sys.stderr)
             sys.exit(1)
-        from graphify.watch import _rebuild_code
+        from mapmmd.watch import _rebuild_code
 
         print(f"Re-extracting code files in {watch_path} (no LLM needed)...")
         # Interactive CLI: block on the per-repo lock rather than skip, so the
-        # user sees their explicit `graphify update` complete instead of
+        # user sees their explicit `mapmmd update` complete instead of
         # exiting silently when a hook-driven rebuild happens to be running.
         ok = _rebuild_code(watch_path, force=force, no_cluster=no_cluster, block_on_lock=True)
         if ok:
-            print("Code graph updated. For doc/paper/image changes run /graphify --update in your AI assistant.")
+            print("Code graph updated. For doc/paper/image changes run /mapmmd --update in your AI assistant.")
             if not (
                 os.environ.get("GEMINI_API_KEY")
                 or os.environ.get("GOOGLE_API_KEY")
@@ -3538,13 +3538,13 @@ def main() -> None:
     elif cmd == "hook-check":
         # Codex Desktop rejects hookSpecificOutput.additionalContext on PreToolUse.
         # Keep this as a cross-platform no-op so installed hooks never break Bash
-        # tool calls. Graph guidance reaches the agent via AGENTS.md / skill instead.
+        # tool calls. mmd guidance reaches the agent via AGENTS.md / skill instead.
         sys.exit(0)
     elif cmd == "check-update":
         if len(sys.argv) < 3:
-            print("Usage: graphify check-update <path>", file=sys.stderr)
+            print("Usage: mapmmd check-update <path>", file=sys.stderr)
             sys.exit(1)
-        from graphify.watch import check_update
+        from mapmmd.watch import check_update
 
         check_update(Path(sys.argv[2]).resolve())
         sys.exit(0)
@@ -3555,7 +3555,7 @@ def main() -> None:
         # depth-based palette, click-to-toggle subtree, hover inspector
         # showing top-K outbound edges per symbol.
         from typing import Optional as _Opt
-        from graphify.tree_html import write_tree_html, DEFAULT_MAX_CHILDREN
+        from mapmmd.tree_html import write_tree_html, DEFAULT_MAX_CHILDREN
         graph_path = Path(_GRAPHIFY_OUT) / "graph.json"
         output_path: "_Opt[Path]" = None
         root: "_Opt[str]" = None
@@ -3579,9 +3579,9 @@ def main() -> None:
             elif a == "--label" and i_arg + 1 < len(args):
                 project_label = args[i_arg + 1]; i_arg += 2
             elif a in ("-h", "--help"):
-                print("Usage: graphify tree [--graph PATH] [--output HTML]")
-                print("  --graph PATH         path to graph.json (default graphify-out/graph.json)")
-                print("  --output HTML        output path (default graphify-out/GRAPH_TREE.html)")
+                print("Usage: mapmmd tree [--graph PATH] [--output HTML]")
+                print("  --graph PATH         path to graph.json (default mapmmd-out/graph.json)")
+                print("  --output HTML        output path (default mapmmd-out/GRAPH_TREE.html)")
                 print("  --root PATH          filesystem root (default: longest common dir of all source_files)")
                 print("  --max-children N     cap visible children per node (default 200)")
                 print("  --top-k-edges N      pre-compute top-K outbound edges per symbol (default 12)")
@@ -3610,9 +3610,9 @@ def main() -> None:
         # the union of current+other nodes/edges back to current. Exits 1 on
         # corrupt input so git surfaces the conflict instead of silently
         # accepting a poisoned merge (see F-005).
-        # Usage: graphify merge-driver %O %A %B  (set in .git/config merge driver)
+        # Usage: mapmmd merge-driver %O %A %B  (set in .git/config merge driver)
         if len(sys.argv) < 5:
-            print("Usage: graphify merge-driver <base> <current> <other>", file=sys.stderr)
+            print("Usage: mapmmd merge-driver <base> <current> <other>", file=sys.stderr)
             sys.exit(1)
         _base_path, _current_path, _other_path = sys.argv[2], sys.argv[3], sys.argv[4]
         # Hard caps so a malicious or corrupted graph.json cannot exhaust memory
@@ -3642,12 +3642,12 @@ def main() -> None:
             G_cur, _ = _load_graph(_current_path)
             G_oth, _ = _load_graph(_other_path)
         except Exception as exc:
-            print(f"[graphify merge-driver] error loading graphs: {exc}", file=sys.stderr)
+            print(f"[mapmmd merge-driver] error loading graphs: {exc}", file=sys.stderr)
             sys.exit(1)  # surface the conflict so git doesn't accept a corrupt merge
         merged = _nx.compose(G_cur, G_oth)
         if merged.number_of_nodes() > _MERGE_MAX_NODES:
             print(
-                f"[graphify merge-driver] merged graph has {merged.number_of_nodes()} nodes, "
+                f"[mapmmd merge-driver] merged graph has {merged.number_of_nodes()} nodes, "
                 f"exceeds {_MERGE_MAX_NODES}-node cap; aborting merge.",
                 file=sys.stderr,
             )
@@ -3660,7 +3660,7 @@ def main() -> None:
         sys.exit(0)
 
     elif cmd == "merge-graphs":
-        # graphify merge-graphs graph1.json graph2.json ... --out merged.json
+        # mapmmd merge-graphs graph1.json graph2.json ... --out merged.json
         args = sys.argv[2:]
         graph_paths: list[Path] = []
         out_path = Path(_GRAPHIFY_OUT) / "merged-graph.json"
@@ -3674,13 +3674,13 @@ def main() -> None:
                 i += 1
         if len(graph_paths) < 2:
             print(
-                "Usage: graphify merge-graphs <graph1.json> <graph2.json> [...] [--out merged.json]",
+                "Usage: mapmmd merge-graphs <graph1.json> <graph2.json> [...] [--out merged.json]",
                 file=sys.stderr,
             )
             sys.exit(1)
         import networkx as _nx
         from networkx.readwrite import json_graph as _jg
-        from graphify.build import prefix_graph_for_global as _prefix
+        from mapmmd.build import prefix_graph_for_global as _prefix
         graphs = []
         for gp in graph_paths:
             if not gp.exists():
@@ -3688,7 +3688,7 @@ def main() -> None:
                 sys.exit(1)
             _enforce_graph_size_cap_or_exit(gp)
             data = json.loads(gp.read_text(encoding="utf-8"))
-            # Normalize edges/links key before loading — graphify writes "links"
+            # Normalize edges/links key before loading — mapmmd writes "links"
             # via node_link_data but older runs may have used "edges" (#738).
             if "links" not in data and "edges" in data:
                 data = dict(data, links=data["edges"])
@@ -3699,15 +3699,15 @@ def main() -> None:
             graphs.append(G)
         # nx.compose requires all graphs to be the same type.  When input graphs
         # come from different sources (e.g. an AST-only run vs a full LLM run) one
-        # may be a MultiGraph and another a Graph.  Normalise everything to Graph
-        # (the graphify default) by converting MultiGraphs with nx.Graph().
-        def _to_simple(g: "_nx.Graph") -> "_nx.Graph":
-            if isinstance(g, _nx.MultiGraph):
-                return _nx.Graph(g)
+        # may be a Multimmd and another a mmd.  Normalise everything to mmd
+        # (the mapmmd default) by converting Multimmds with nx.mmd().
+        def _to_simple(g: "_nx.mmd") -> "_nx.mmd":
+            if isinstance(g, _nx.Multimmd):
+                return _nx.mmd(g)
             return g
-        merged = _nx.Graph()
+        merged = _nx.mmd()
         for G, gp in zip(graphs, graph_paths):
-            repo_tag = gp.parent.parent.name  # graphify-out/../ → repo dir name
+            repo_tag = gp.parent.parent.name  # mapmmd-out/../ → repo dir name
             prefixed = _to_simple(_prefix(G, repo_tag))
             merged = _nx.compose(merged, prefixed)
         try:
@@ -3722,7 +3722,7 @@ def main() -> None:
     elif cmd == "clone":
         if len(sys.argv) < 3:
             print(
-                "Usage: graphify clone <github-url> [--branch <branch>] [--out <dir>]",
+                "Usage: mapmmd clone <github-url> [--branch <branch>] [--out <dir>]",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -3746,7 +3746,7 @@ def main() -> None:
     elif cmd == "export":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
         if subcmd not in ("html", "callflow-html", "obsidian", "wiki", "svg", "graphml", "neo4j", "falkordb"):
-            print("Usage: graphify export <format>", file=sys.stderr)
+            print("Usage: mapmmd export <format>", file=sys.stderr)
             print("  html      [--graph PATH] [--labels PATH] [--node-limit N] [--no-viz]", file=sys.stderr)
             print("  callflow-html [GRAPH|DIR] [--graph PATH] [--labels PATH] [--report PATH] [--sections PATH] [--output HTML]", file=sys.stderr)
             print("            [--lang auto|zh-CN|en] [--max-sections N] [--diagram-scale N]", file=sys.stderr)
@@ -3764,7 +3764,7 @@ def main() -> None:
         args = sys.argv[3:]
         graph_path = Path(_GRAPHIFY_OUT) / "graph.json"
         graph_path_explicit = False
-        labels_path = Path(_GRAPHIFY_OUT) / ".graphify_labels.json"
+        labels_path = Path(_GRAPHIFY_OUT) / ".mapmmd_labels.json"
         labels_path_explicit = False
         report_path = Path(_GRAPHIFY_OUT) / "GRAPH_REPORT.md"
         report_path_explicit = False
@@ -3775,7 +3775,7 @@ def main() -> None:
         callflow_diagram_scale = 1.0
         callflow_max_diagram_nodes = 18
         callflow_max_diagram_edges = 24
-        analysis_path = Path(_GRAPHIFY_OUT) / ".graphify_analysis.json"
+        analysis_path = Path(_GRAPHIFY_OUT) / ".mapmmd_analysis.json"
         node_limit = 5000
         no_viz = False
         obsidian_dir = Path(_GRAPHIFY_OUT) / "obsidian"
@@ -3824,10 +3824,10 @@ def main() -> None:
             elif a == "--max-diagram-edges" and i + 1 < len(args):
                 callflow_max_diagram_edges = int(args[i + 1]); i += 2
             elif a in ("-h", "--help") and subcmd == "callflow-html":
-                print("Usage: graphify export callflow-html [GRAPH|DIR] [--graph PATH] [--labels PATH]")
+                print("Usage: mapmmd export callflow-html [GRAPH|DIR] [--graph PATH] [--labels PATH]")
                 print("  --report PATH          path to GRAPH_REPORT.md")
                 print("  --sections PATH        JSON section definitions")
-                print("  --output HTML          output path (default graphify-out/<project>-callflow.html)")
+                print("  --output HTML          output path (default mapmmd-out/<project>-callflow.html)")
                 print("  --lang LANG            auto, zh-CN, en, etc. (default auto)")
                 print("  --max-sections N       maximum auto-derived sections (default 15)")
                 print("  --diagram-scale N      Mermaid diagram scale (default 1.0)")
@@ -3863,18 +3863,18 @@ def main() -> None:
         if graph_path_explicit:
             graph_out_dir = graph_path.parent
             if not labels_path_explicit:
-                labels_path = graph_out_dir / ".graphify_labels.json"
+                labels_path = graph_out_dir / ".mapmmd_labels.json"
             if not report_path_explicit:
                 report_path = graph_out_dir / "GRAPH_REPORT.md"
         labels_path = labels_path.expanduser()
         report_path = report_path.expanduser()
 
         if not graph_path.exists():
-            print(f"error: graph not found: {graph_path}. Run /graphify <path> first.", file=sys.stderr)
+            print(f"error: graph not found: {graph_path}. Run /mapmmd <path> first.", file=sys.stderr)
             sys.exit(1)
 
         if subcmd == "callflow-html":
-            from graphify.callflow_html import write_callflow_html as _write_callflow_html
+            from mapmmd.callflow_html import write_callflow_html as _write_callflow_html
             out = _write_callflow_html(
                 graph=graph_path,
                 report=report_path,
@@ -3892,8 +3892,8 @@ def main() -> None:
             sys.exit(0)
 
         from networkx.readwrite import json_graph as _jg
-        from graphify.build import build_from_json as _bfj
-        from graphify.security import check_graph_file_size_cap as _check_cap
+        from mapmmd.build import build_from_json as _bfj
+        from mapmmd.security import check_graph_file_size_cap as _check_cap
 
         # Solution 3 (#1019): for the HTML view, an oversized graph.json should
         # not be a hard error. Detect the over-cap condition here and fall back
@@ -3940,7 +3940,7 @@ def main() -> None:
         # (`to_json` writes it on every node). The analysis sidecar is the
         # canonical source — but the post-commit / watch rebuild path doesn't
         # regenerate it, and `extract` may have its temp files cleaned up. When
-        # that happens, `graphify export html` previously bailed with
+        # that happens, `mapmmd export html` previously bailed with
         # "Single community - aggregated view not useful." even though the
         # per-node attribute had the right data all along. Reconstruct from
         # the graph itself so downstream subcommands (html, obsidian, wiki,
@@ -3966,7 +3966,7 @@ def main() -> None:
         out_dir = graph_path.parent
 
         if subcmd == "html":
-            from graphify.export import to_html as _to_html
+            from mapmmd.export import to_html as _to_html
             if no_viz:
                 html_target = out_dir / "graph.html"
                 if html_target.exists():
@@ -3984,7 +3984,7 @@ def main() -> None:
                     sys.exit(0)
 
         elif subcmd == "obsidian":
-            from graphify.export import to_obsidian as _to_obsidian, to_canvas as _to_canvas
+            from mapmmd.export import to_obsidian as _to_obsidian, to_canvas as _to_canvas
             n = _to_obsidian(G, communities, str(obsidian_dir),
                              community_labels=labels or None, cohesion=cohesion or None)
             print(f"Obsidian vault: {n} notes in {obsidian_dir}/")
@@ -3994,12 +3994,12 @@ def main() -> None:
             print(f"Open {obsidian_dir}/ as a vault in Obsidian.")
 
         elif subcmd == "wiki":
-            from graphify.wiki import to_wiki as _to_wiki
-            from graphify.analyze import god_nodes as _god_nodes
+            from mapmmd.wiki import to_wiki as _to_wiki
+            from mapmmd.analyze import god_nodes as _god_nodes
             if not communities:
                 print(
-                    "error: .graphify_analysis.json is missing or empty — refusing to export wiki to prevent data loss.\n"
-                    "Run `graphify extract .` (or `graphify cluster-only .`) to regenerate community data first.",
+                    "error: .mapmmd_analysis.json is missing or empty — refusing to export wiki to prevent data loss.\n"
+                    "Run `mapmmd extract .` (or `mapmmd cluster-only .`) to regenerate community data first.",
                     file=sys.stderr,
                 )
                 sys.exit(1)
@@ -4012,19 +4012,19 @@ def main() -> None:
             print(f"  {out_dir}/wiki/index.md  ->  agent entry point")
 
         elif subcmd == "svg":
-            from graphify.export import to_svg as _to_svg
+            from mapmmd.export import to_svg as _to_svg
             _to_svg(G, communities, str(out_dir / "graph.svg"),
                     community_labels=labels or None)
             print(f"graph.svg written - embeds in Obsidian, Notion, GitHub READMEs")
 
         elif subcmd == "graphml":
-            from graphify.export import to_graphml as _to_graphml
+            from mapmmd.export import to_graphml as _to_graphml
             _to_graphml(G, communities, str(out_dir / "graph.graphml"))
-            print(f"graph.graphml written - open in Gephi, yEd, or any GraphML tool")
+            print(f"graph.graphml written - open in Gephi, yEd, or any mmdML tool")
 
         elif subcmd == "neo4j":
             if push_uri:
-                from graphify.export import push_to_neo4j as _push
+                from mapmmd.export import push_to_neo4j as _push
                 if push_password is None:
                     print("error: --password required for --push", file=sys.stderr)
                     sys.exit(1)
@@ -4032,32 +4032,32 @@ def main() -> None:
                                password=push_password, communities=communities)
                 print(f"Pushed to Neo4j: {result['nodes']} nodes, {result['edges']} edges")
             else:
-                from graphify.export import to_cypher as _to_cypher
+                from mapmmd.export import to_cypher as _to_cypher
                 _to_cypher(G, str(out_dir / "cypher.txt"))
                 print(f"cypher.txt written - import with: cypher-shell < {out_dir}/cypher.txt")
 
         elif subcmd == "falkordb":
             if push_uri:
-                from graphify.export import push_to_falkordb as _push
+                from mapmmd.export import push_to_falkordb as _push
                 result = _push(G, uri=push_uri, user=push_user,
                                password=push_password, communities=communities)
                 print(f"Pushed to FalkorDB: {result['nodes']} nodes, {result['edges']} edges")
             else:
-                from graphify.export import to_cypher as _to_cypher
+                from mapmmd.export import to_cypher as _to_cypher
                 _to_cypher(G, str(out_dir / "cypher.txt"))
                 print(f"cypher.txt written ({out_dir}/cypher.txt) - statements are OpenCypher. "
                       f"FalkorDB's GRAPH.QUERY runs one statement at a time (no bulk script "
-                      f"import), so load a graph with: graphify export falkordb --push "
+                      f"import), so load a graph with: mapmmd export falkordb --push "
                       f"falkordb://localhost:6379")
 
     elif cmd == "benchmark":
-        from graphify.benchmark import run_benchmark, print_benchmark
+        from mapmmd.benchmark import run_benchmark, print_benchmark
 
         graph_path = sys.argv[2] if len(sys.argv) > 2 else _default_graph_path()
         _enforce_graph_size_cap_or_exit(Path(graph_path))
         # Try to load corpus_words from detect output
         corpus_words = None
-        detect_path = Path(".graphify_detect.json")
+        detect_path = Path(".mapmmd_detect.json")
         if detect_path.exists():
             try:
                 detect_data = json.loads(detect_path.read_text(encoding="utf-8"))
@@ -4069,14 +4069,14 @@ def main() -> None:
 
     elif cmd == "global":
         subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
-        from graphify.global_graph import (
+        from mapmmd.global_graph import (
             global_add as _global_add,
             global_remove as _global_remove,
             global_list as _global_list,
             global_path as _global_path,
         )
         if subcmd == "add":
-            # graphify global add <graph.json> [--as <tag>]
+            # mapmmd global add <graph.json> [--as <tag>]
             args = sys.argv[3:]
             source = None
             tag = None
@@ -4089,7 +4089,7 @@ def main() -> None:
                 else:
                     i += 1
             if not source:
-                print("Usage: graphify global add <graph.json> [--as <repo-tag>]", file=sys.stderr)
+                print("Usage: mapmmd global add <graph.json> [--as <repo-tag>]", file=sys.stderr)
                 sys.exit(1)
             tag = tag or source.parent.parent.name
             try:
@@ -4104,7 +4104,7 @@ def main() -> None:
         elif subcmd == "remove":
             tag = sys.argv[3] if len(sys.argv) > 3 else ""
             if not tag:
-                print("Usage: graphify global remove <repo-tag>", file=sys.stderr); sys.exit(1)
+                print("Usage: mapmmd global remove <repo-tag>", file=sys.stderr); sys.exit(1)
             try:
                 removed = _global_remove(tag)
                 print(f"Removed '{tag}' from global graph ({removed} nodes pruned).")
@@ -4113,7 +4113,7 @@ def main() -> None:
         elif subcmd == "list":
             repos = _global_list()
             if not repos:
-                print("Global graph is empty. Use 'graphify global add' to add a project.")
+                print("Global graph is empty. Use 'mapmmd global add' to add a project.")
             else:
                 print(f"Global graph: {_global_path()}")
                 for tag, info in repos.items():
@@ -4121,7 +4121,7 @@ def main() -> None:
         elif subcmd == "path":
             print(_global_path())
         else:
-            print("Usage: graphify global [add|remove|list|path]", file=sys.stderr); sys.exit(1)
+            print("Usage: mapmmd global [add|remove|list|path]", file=sys.stderr); sys.exit(1)
 
     elif cmd == "extract":
         # Headless full-pipeline extraction for CI / scripts (#698).
@@ -4132,7 +4132,7 @@ def main() -> None:
         # has an API key set.
         if len(sys.argv) < 3:
             print(
-                "Usage: graphify extract <path> [--backend gemini|kimi|claude|openai|deepseek|ollama] "
+                "Usage: mapmmd extract <path> [--backend gemini|kimi|claude|openai|deepseek|ollama] "
                 "[--model M] [--mode deep] [--out DIR] [--google-workspace] [--no-cluster] "
                 "[--max-workers N] [--token-budget N] [--max-concurrency N] "
                 "[--api-timeout S] [--postgres DSN] [--cargo]",
@@ -4275,7 +4275,7 @@ def main() -> None:
             sys.exit(2)
         deep_mode = extract_mode == "deep"
         if deep_mode:
-            print("[graphify extract] deep mode enabled: richer semantic extraction")
+            print("[mapmmd extract] deep mode enabled: richer semantic extraction")
 
         # CLI flag wins over env var. Setting GRAPHIFY_API_TIMEOUT here so
         # _call_openai_compat picks it up without needing a new kwarg path.
@@ -4284,20 +4284,20 @@ def main() -> None:
         if cli_max_workers is not None:
             os.environ["GRAPHIFY_MAX_WORKERS"] = str(cli_max_workers)
 
-        # Resolve output dir. The user-facing contract is "<out>/graphify-out/"
-        # so a fresh checkout writes graphify-out/ at the project root, matching
+        # Resolve output dir. The user-facing contract is "<out>/mapmmd-out/"
+        # so a fresh checkout writes mapmmd-out/ at the project root, matching
         # the skill.md pipeline.
         out_root = (out_dir.resolve() if out_dir else target)
-        graphify_out = out_root / _GRAPHIFY_OUT
-        graphify_out.mkdir(parents=True, exist_ok=True)
+        mapmmd_out = out_root / _GRAPHIFY_OUT
+        mapmmd_out.mkdir(parents=True, exist_ok=True)
 
-        from graphify.detect import (
+        from mapmmd.detect import (
             detect as _detect,
             detect_incremental as _detect_incremental,
             save_manifest as _save_manifest,
         )
-        manifest_path = graphify_out / "manifest.json"
-        existing_graph_path = graphify_out / "graph.json"
+        manifest_path = mapmmd_out / "manifest.json"
+        existing_graph_path = mapmmd_out / "graph.json"
         incremental_mode = manifest_path.exists() and existing_graph_path.exists() if has_path else False
 
         if not has_path:
@@ -4309,7 +4309,7 @@ def main() -> None:
             unchanged_total = 0
             files_by_type = {}
         elif incremental_mode:
-            print(f"[graphify extract] incremental scan of {target}")
+            print(f"[mapmmd extract] incremental scan of {target}")
             detection = _detect_incremental(
                 target,
                 manifest_path=str(manifest_path),
@@ -4325,7 +4325,7 @@ def main() -> None:
             deleted_files = list(detection.get("deleted_files", []))
             unchanged_total = sum(len(v) for v in detection.get("unchanged_files", {}).values())
         else:
-            print(f"[graphify extract] scanning {target}")
+            print(f"[mapmmd extract] scanning {target}")
             detection = _detect(target, google_workspace=google_workspace or None, extra_excludes=cli_excludes or None)
             files_by_type = detection.get("files", {})
             code_files = [Path(p) for p in files_by_type.get("code", [])]
@@ -4338,13 +4338,13 @@ def main() -> None:
         semantic_files = doc_files + paper_files + image_files
         if incremental_mode:
             print(
-                f"[graphify extract] {len(code_files)} code, {len(doc_files)} docs, "
+                f"[mapmmd extract] {len(code_files)} code, {len(doc_files)} docs, "
                 f"{len(paper_files)} papers, {len(image_files)} images changed; "
                 f"{unchanged_total} unchanged; {len(deleted_files)} deleted"
             )
         else:
             print(
-                f"[graphify extract] found {len(code_files)} code, "
+                f"[mapmmd extract] found {len(code_files)} code, "
                 f"{len(doc_files)} docs, {len(paper_files)} papers, "
                 f"{len(image_files)} images"
             )
@@ -4352,7 +4352,7 @@ def main() -> None:
         # Resolve the LLM backend only now that we know whether the corpus
         # needs one. A code-only corpus is pure local AST and must not require
         # an API key; the key is enforced below only when there's LLM work.
-        from graphify.llm import (
+        from mapmmd.llm import (
             BACKENDS as _BACKENDS,
             detect_backend as _detect_backend,
             estimate_cost as _estimate_cost,
@@ -4389,7 +4389,7 @@ def main() -> None:
                 )
                 sys.exit(1)
             if backend == "ollama":
-                from graphify.llm import _validate_ollama_base_url
+                from mapmmd.llm import _validate_ollama_base_url
                 _oll_url = os.environ.get("OLLAMA_BASE_URL", _BACKENDS["ollama"].get("base_url", ""))
                 try:
                     _validate_ollama_base_url(_oll_url, warn=False)
@@ -4440,22 +4440,22 @@ def main() -> None:
         # the issue #698 case — skip cleanly instead of crashing inside extract().
         ast_result: dict = {"nodes": [], "edges": [], "input_tokens": 0, "output_tokens": 0}
         if code_files:
-            from graphify.extract import extract as _ast_extract
+            from mapmmd.extract import extract as _ast_extract
             # Anchor the cache at the output root, not the scanned project:
-            # with --out, a <target>/graphify-out/cache/ would leak a
-            # graphify-out/ dir into a project that asked for external output.
+            # with --out, a <target>/mapmmd-out/cache/ would leak a
+            # mapmmd-out/ dir into a project that asked for external output.
             ast_kwargs: dict = {"cache_root": out_root}
             if cli_max_workers is not None:
                 ast_kwargs["max_workers"] = cli_max_workers
-            print(f"[graphify extract] AST extraction on {len(code_files)} code files...")
+            print(f"[mapmmd extract] AST extraction on {len(code_files)} code files...")
             try:
                 ast_result = _ast_extract(code_files, **ast_kwargs)
             except Exception as exc:
-                print(f"[graphify extract] AST extraction failed: {exc}", file=sys.stderr)
+                print(f"[mapmmd extract] AST extraction failed: {exc}", file=sys.stderr)
                 ast_result = {"nodes": [], "edges": [], "input_tokens": 0, "output_tokens": 0}
 
         # Semantic extraction on docs/papers/images. Check cache first.
-        from graphify.cache import (
+        from mapmmd.cache import (
             check_semantic_cache as _check_semantic_cache,
             save_semantic_cache as _save_semantic_cache,
         )
@@ -4476,10 +4476,10 @@ def main() -> None:
             sem_result["edges"].extend(cached_edges)
             sem_result["hyperedges"].extend(cached_hyperedges)
             if sem_cache_hits:
-                print(f"[graphify extract] semantic cache: {sem_cache_hits} hit / {sem_cache_misses} miss")
+                print(f"[mapmmd extract] semantic cache: {sem_cache_hits} hit / {sem_cache_misses} miss")
 
             if uncached_paths:
-                print(f"[graphify extract] semantic extraction on {len(uncached_paths)} files via {backend}...")
+                print(f"[mapmmd extract] semantic extraction on {len(uncached_paths)} files via {backend}...")
                 corpus_kwargs: dict = {
                     "backend": backend,
                     "model": model,
@@ -4501,7 +4501,7 @@ def main() -> None:
                     _chunk_stats["total"] = total
                     _chunk_stats["succeeded"] += 1
                     print(
-                        f"[graphify extract] chunk {idx + 1}/{total} done",
+                        f"[mapmmd extract] chunk {idx + 1}/{total} done",
                         flush=True,
                     )
                 corpus_kwargs["on_chunk_done"] = _progress
@@ -4516,7 +4516,7 @@ def main() -> None:
                     sys.exit(1)
                 except Exception as exc:
                     print(
-                        f"[graphify extract] semantic extraction failed: {exc}",
+                        f"[mapmmd extract] semantic extraction failed: {exc}",
                         file=sys.stderr,
                     )
                     fresh = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 0, "output_tokens": 0}
@@ -4526,7 +4526,7 @@ def main() -> None:
                 # fail instead of writing an AST-only graph with exit 0.
                 if uncached_paths and _chunk_stats["succeeded"] == 0:
                     print(
-                        f"[graphify extract] error: all semantic chunks failed "
+                        f"[mapmmd extract] error: all semantic chunks failed "
                         f"for backend '{backend}' ({len(uncached_paths)} uncached files) - "
                         f"see per-chunk errors above. If you see 'requires the X package', "
                         f"run `pip install X` and retry.",
@@ -4541,7 +4541,7 @@ def main() -> None:
                         root=out_root,
                     )
                 except Exception as exc:
-                    print(f"[graphify extract] warning: could not write semantic cache: {exc}", file=sys.stderr)
+                    print(f"[mapmmd extract] warning: could not write semantic cache: {exc}", file=sys.stderr)
                 sem_result["nodes"].extend(fresh.get("nodes", []))
                 sem_result["edges"].extend(fresh.get("edges", []))
                 sem_result["hyperedges"].extend(fresh.get("hyperedges", []))
@@ -4550,26 +4550,26 @@ def main() -> None:
 
         pg_result: dict = {"nodes": [], "edges": []}
         if cli_postgres_dsn is not None:
-            from graphify.pg_introspect import introspect_postgres
-            print(f"[graphify extract] introspecting PostgreSQL schema...")
+            from mapmmd.pg_introspect import introspect_postgres
+            print(f"[mapmmd extract] introspecting PostgreSQL schema...")
             try:
                 pg_result = introspect_postgres(cli_postgres_dsn)
             except (ConnectionError, ImportError) as exc:
                 print(f"error: {exc}", file=sys.stderr)
                 sys.exit(1)
-            print(f"[graphify extract] PostgreSQL: {len(pg_result['nodes'])} nodes, "
+            print(f"[mapmmd extract] PostgreSQL: {len(pg_result['nodes'])} nodes, "
                   f"{len(pg_result['edges'])} edges")
 
         cargo_result: dict = {"nodes": [], "edges": []}
         if cli_cargo:
-            from graphify.cargo_introspect import introspect_cargo
-            print("[graphify extract] introspecting Cargo workspace...")
+            from mapmmd.cargo_introspect import introspect_cargo
+            print("[mapmmd extract] introspecting Cargo workspace...")
             try:
                 cargo_result = introspect_cargo(target)
             except (ConnectionError, ImportError, OSError) as exc:
                 print(f"error: {exc}", file=sys.stderr)
                 sys.exit(1)
-            print(f"[graphify extract] Cargo: {len(cargo_result['nodes'])} nodes, "
+            print(f"[mapmmd extract] Cargo: {len(cargo_result['nodes'])} nodes, "
                   f"{len(cargo_result['edges'])} edges")
 
         # Merge AST + semantic + pg_result + cargo_result. Order matters for deduplication: passing AST
@@ -4584,8 +4584,8 @@ def main() -> None:
             "output_tokens": ast_result.get("output_tokens", 0) + sem_result.get("output_tokens", 0),
         }
 
-        graph_json_path = graphify_out / "graph.json"
-        analysis_path = graphify_out / ".graphify_analysis.json"
+        graph_json_path = mapmmd_out / "graph.json"
+        analysis_path = mapmmd_out / ".mapmmd_analysis.json"
 
         # Build a manifest-safe files dict: only stamp semantic_hash for files
         # that actually produced output (cache hit or fresh extraction). Files
@@ -4607,11 +4607,11 @@ def main() -> None:
             # --no-cluster: dump the raw merged extraction as graph.json.
             # No NetworkX, no community detection, no analysis sidecar.
             # Dedupe nodes (by id) and parallel edges so the raw output matches the
-            # clustered path (whose DiGraph collapses both) and stays deterministic
+            # clustered path (whose Dimmd collapses both) and stays deterministic
             # across modes (#1317; node dedup also collapses shared Swift module
             # anchors emitted per importing file, #1327).
-            from graphify.build import dedupe_edges as _dedupe_edges, dedupe_nodes as _dedupe_nodes
-            from graphify.export import backup_if_protected as _backup
+            from mapmmd.build import dedupe_edges as _dedupe_edges, dedupe_nodes as _dedupe_nodes
+            from mapmmd.export import backup_if_protected as _backup
             if (
                 incremental_mode
                 and not code_files
@@ -4623,13 +4623,13 @@ def main() -> None:
                 and not cargo_result.get("edges")
             ):
                 print(
-                    "[graphify extract] no incremental changes detected "
+                    "[mapmmd extract] no incremental changes detected "
                     "(--no-cluster); outputs left untouched."
                 )
                 try:
                     _save_manifest(_manifest_files, manifest_path=str(manifest_path), kind="both", root=target)
                 except Exception as exc:
-                    print(f"[graphify extract] warning: could not write manifest: {exc}", file=sys.stderr)
+                    print(f"[mapmmd extract] warning: could not write manifest: {exc}", file=sys.stderr)
                 sys.exit(0)
 
             merged["nodes"] = _dedupe_nodes(merged["nodes"])
@@ -4642,7 +4642,7 @@ def main() -> None:
                     _e["source_file"] = (
                         _node_sf.get(_e.get("source")) or _node_sf.get(_e.get("target")) or ""
                     )
-            _backup(graphify_out)
+            _backup(mapmmd_out)
             graph_json_path.write_text(
                 json.dumps(merged, indent=2), encoding="utf-8"
             )
@@ -4650,13 +4650,13 @@ def main() -> None:
                 backend, merged["input_tokens"], merged["output_tokens"]
             )
             print(
-                f"[graphify extract] wrote {graph_json_path} — "
+                f"[mapmmd extract] wrote {graph_json_path} — "
                 f"{len(merged['nodes'])} nodes, {len(merged['edges'])} edges "
                 f"(no clustering)"
             )
             if merged["input_tokens"] or merged["output_tokens"]:
                 print(
-                    f"[graphify extract] tokens: "
+                    f"[mapmmd extract] tokens: "
                     f"{merged['input_tokens']:,} in / "
                     f"{merged['output_tokens']:,} out, "
                     f"est. cost: ${cost:.4f}"
@@ -4664,30 +4664,30 @@ def main() -> None:
             try:
                 _save_manifest(_manifest_files, manifest_path=str(manifest_path), kind="both", root=target)
             except Exception as exc:
-                print(f"[graphify extract] warning: could not write manifest: {exc}", file=sys.stderr)
+                print(f"[mapmmd extract] warning: could not write manifest: {exc}", file=sys.stderr)
             if global_merge:
-                from graphify.global_graph import global_add as _global_add
+                from mapmmd.global_graph import global_add as _global_add
                 _tag = global_repo_tag or target.name
                 try:
-                    result = _global_add(graphify_out / "graph.json", _tag)
+                    result = _global_add(mapmmd_out / "graph.json", _tag)
                     if result["skipped"]:
-                        print(f"[graphify global] '{_tag}' unchanged since last add - skipped.")
+                        print(f"[mapmmd global] '{_tag}' unchanged since last add - skipped.")
                     else:
-                        print(f"[graphify global] '{_tag}' merged into global graph "
+                        print(f"[mapmmd global] '{_tag}' merged into global graph "
                               f"(+{result['nodes_added']} nodes, -{result['nodes_removed']} pruned).")
                 except Exception as exc:
-                    print(f"[graphify global] warning: failed to merge into global graph: {exc}", file=sys.stderr)
+                    print(f"[mapmmd global] warning: failed to merge into global graph: {exc}", file=sys.stderr)
             sys.exit(0)
 
         # Build graph + cluster + score + write.
-        from graphify.build import (
+        from mapmmd.build import (
             build as _build,
             build_from_json as _build_from_json,
             build_merge as _build_merge,
         )
-        from graphify.cluster import cluster as _cluster, score_all as _score_all
-        from graphify.export import to_json as _to_json
-        from graphify.analyze import god_nodes as _god_nodes, surprising_connections as _surprising
+        from mapmmd.cluster import cluster as _cluster, score_all as _score_all
+        from mapmmd.export import to_json as _to_json
+        from mapmmd.analyze import god_nodes as _god_nodes, surprising_connections as _surprising
         dedup_backend = backend if dedup_llm else None
         if incremental_mode:
             G = _build_merge(
@@ -4702,7 +4702,7 @@ def main() -> None:
             G = _build([merged], dedup=True, dedup_llm_backend=dedup_backend, root=target)
         if G.number_of_nodes() == 0:
             print(
-                "[graphify extract] graph is empty — extraction produced no nodes. "
+                "[mapmmd extract] graph is empty — extraction produced no nodes. "
                 "Possible causes: all files skipped, binary-only corpus, or LLM "
                 "returned no edges.",
                 file=sys.stderr,
@@ -4720,25 +4720,25 @@ def main() -> None:
         except Exception:
             surprises = []
 
-        from graphify.export import backup_if_protected as _backup
-        _backup(graphify_out)
+        from mapmmd.export import backup_if_protected as _backup
+        _backup(mapmmd_out)
         _to_json(G, communities, str(graph_json_path), force=True)
         if merged.get("output_tokens", 0) > 0:
-            (graphify_out / ".graphify_semantic_marker").write_text(
+            (mapmmd_out / ".mapmmd_semantic_marker").write_text(
                 json.dumps({"output_tokens": merged["output_tokens"]}), encoding="utf-8"
             )
         if global_merge:
-            from graphify.global_graph import global_add as _global_add
+            from mapmmd.global_graph import global_add as _global_add
             _tag = global_repo_tag or target.name
             try:
-                result = _global_add(graphify_out / "graph.json", _tag)
+                result = _global_add(mapmmd_out / "graph.json", _tag)
                 if result["skipped"]:
-                    print(f"[graphify global] '{_tag}' unchanged since last add - skipped.")
+                    print(f"[mapmmd global] '{_tag}' unchanged since last add - skipped.")
                 else:
-                    print(f"[graphify global] '{_tag}' merged into global graph "
+                    print(f"[mapmmd global] '{_tag}' merged into global graph "
                           f"(+{result['nodes_added']} nodes, -{result['nodes_removed']} pruned).")
             except Exception as exc:
-                print(f"[graphify global] warning: failed to merge into global graph: {exc}", file=sys.stderr)
+                print(f"[mapmmd global] warning: failed to merge into global graph: {exc}", file=sys.stderr)
         analysis = {
             "communities": {str(k): v for k, v in communities.items()},
             "cohesion": {str(k): v for k, v in cohesion.items()},
@@ -4753,27 +4753,27 @@ def main() -> None:
         try:
             _save_manifest(_manifest_files, manifest_path=str(manifest_path), kind="both", root=target)
         except Exception as exc:
-            print(f"[graphify extract] warning: could not write manifest: {exc}", file=sys.stderr)
+            print(f"[mapmmd extract] warning: could not write manifest: {exc}", file=sys.stderr)
 
         cost = _estimate_cost(backend, merged["input_tokens"], merged["output_tokens"])
         print(
-            f"[graphify extract] wrote {graph_json_path}: "
+            f"[mapmmd extract] wrote {graph_json_path}: "
             f"{G.number_of_nodes()} nodes, {G.number_of_edges()} edges, "
             f"{len(communities)} communities"
         )
-        print(f"[graphify extract] wrote {analysis_path}")
+        print(f"[mapmmd extract] wrote {analysis_path}")
         if incremental_mode:
             print(
-                f"[graphify extract] incremental summary: "
+                f"[mapmmd extract] incremental summary: "
                 f"{sem_cache_hits + unchanged_total} files cached/unchanged, "
                 f"{len(code_files) + sem_cache_misses} re-extracted, "
                 f"{len(deleted_files)} deleted"
             )
         elif sem_cache_hits:
-            print(f"[graphify extract] semantic cache: {sem_cache_hits} cached, {sem_cache_misses} re-extracted")
+            print(f"[mapmmd extract] semantic cache: {sem_cache_hits} cached, {sem_cache_misses} re-extracted")
         if merged["input_tokens"] or merged["output_tokens"]:
             print(
-                f"[graphify extract] tokens: "
+                f"[mapmmd extract] tokens: "
                 f"{merged['input_tokens']:,} in / "
                 f"{merged['output_tokens']:,} out, "
                 f"est. cost (~{backend}): ${cost:.4f}"
@@ -4782,21 +4782,21 @@ def main() -> None:
         # community labels are produced by `cluster-only` (or an agent's Step 5).
         # Point standalone users at it so communities get named (#1097).
         print(
-            "[graphify extract] next: run "
-            f"`graphify cluster-only {graphify_out.parent}` "
+            "[mapmmd extract] next: run "
+            f"`mapmmd cluster-only {mapmmd_out.parent}` "
             "to generate GRAPH_REPORT.md and name communities"
         )
 
     elif cmd == "cache-check":
-        # graphify cache-check <files_from> [--root <dir>]
+        # mapmmd cache-check <files_from> [--root <dir>]
         # Reads file paths (one per line) from <files_from>, checks semantic cache.
         # Writes:
-        #   graphify-out/.graphify_cached.json   — already-cached nodes/edges/hyperedges
-        #   graphify-out/.graphify_uncached.txt  — paths that need extraction
+        #   mapmmd-out/.mapmmd_cached.json   — already-cached nodes/edges/hyperedges
+        #   mapmmd-out/.mapmmd_uncached.txt  — paths that need extraction
         # Stdout: "Cache: N hit, M miss"
-        from graphify.cache import check_semantic_cache
+        from mapmmd.cache import check_semantic_cache
         if len(sys.argv) < 3:
-            print("Usage: graphify cache-check <files_from> [--root <dir>]", file=sys.stderr)
+            print("Usage: mapmmd cache-check <files_from> [--root <dir>]", file=sys.stderr)
             sys.exit(1)
         files_from = Path(sys.argv[2])
         root = Path(".")
@@ -4812,21 +4812,21 @@ def main() -> None:
         out = root / _GRAPHIFY_OUT
         out.mkdir(parents=True, exist_ok=True)
         if cached_nodes or cached_edges or cached_hyperedges:
-            (out / ".graphify_cached.json").write_text(
+            (out / ".mapmmd_cached.json").write_text(
                 json.dumps({"nodes": cached_nodes, "edges": cached_edges, "hyperedges": cached_hyperedges},
                            ensure_ascii=False),
                 encoding="utf-8",
             )
-        (out / ".graphify_uncached.txt").write_text("\n".join(uncached), encoding="utf-8")
+        (out / ".mapmmd_uncached.txt").write_text("\n".join(uncached), encoding="utf-8")
         print(f"Cache: {len(files) - len(uncached)} hit, {len(uncached)} miss")
 
     elif cmd == "merge-chunks":
-        # graphify merge-chunks <chunk_glob_or_files...> --out <path>
-        # Concatenates .graphify_chunk_*.json files written by semantic subagents.
+        # mapmmd merge-chunks <chunk_glob_or_files...> --out <path>
+        # Concatenates .mapmmd_chunk_*.json files written by semantic subagents.
         # Deduplicates nodes by id (first writer wins). Sums token counts.
         import glob as _glob
         if len(sys.argv) < 3:
-            print("Usage: graphify merge-chunks <chunk_files...> --out <path>", file=sys.stderr)
+            print("Usage: mapmmd merge-chunks <chunk_files...> --out <path>", file=sys.stderr)
             sys.exit(1)
         out_path: Path | None = None
         chunk_args: list[str] = []
@@ -4851,7 +4851,7 @@ def main() -> None:
             try:
                 chunk = json.loads(Path(cf).read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError) as exc:
-                print(f"[graphify merge-chunks] warning: skipping {cf}: {exc}", file=sys.stderr)
+                print(f"[mapmmd merge-chunks] warning: skipping {cf}: {exc}", file=sys.stderr)
                 continue
             for n in chunk.get("nodes", []):
                 if n.get("id") not in seen_ids:
@@ -4869,11 +4869,11 @@ def main() -> None:
         )
 
     elif cmd == "merge-semantic":
-        # graphify merge-semantic --cached <path> --new <path> --out <path>
+        # mapmmd merge-semantic --cached <path> --new <path> --out <path>
         # Merges cached semantic results with freshly-extracted chunk results.
         # Deduplicates nodes by id (cached entries take priority over new ones).
         if len(sys.argv) < 3:
-            print("Usage: graphify merge-semantic --cached <path> --new <path> --out <path>", file=sys.stderr)
+            print("Usage: mapmmd merge-semantic --cached <path> --new <path> --out <path>", file=sys.stderr)
             sys.exit(1)
         cached_path: Path | None = None
         new_path: Path | None = None
@@ -4910,15 +4910,15 @@ def main() -> None:
         print(f"Merged: {len(merged2['nodes'])} nodes, {len(merged2['edges'])} edges")
 
     elif Path(cmd).exists() or cmd in (".", "..") or cmd.startswith(("./", "../", "/", "~")):
-        # User ran `graphify <path>` directly — treat as `graphify extract <path>`.
-        # Common when following the PowerShell note in README (`graphify .`) or
+        # User ran `mapmmd <path>` directly — treat as `mapmmd extract <path>`.
+        # Common when following the PowerShell note in README (`mapmmd .`) or
         # copy-pasting skill invocations without the leading slash.
         sys.argv.insert(2, sys.argv[1])
         sys.argv[1] = "extract"
         main()
     else:
         print(f"error: unknown command '{cmd}'", file=sys.stderr)
-        print("Run 'graphify --help' for usage.", file=sys.stderr)
+        print("Run 'mapmmd --help' for usage.", file=sys.stderr)
         sys.exit(1)
 
 

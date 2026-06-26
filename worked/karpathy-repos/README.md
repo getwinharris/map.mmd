@@ -14,11 +14,11 @@ git clone https://github.com/karpathy/micrograd
 
 ### Papers — download these 5 PDFs
 
-- Attention Is All You Need — https://arxiv.org/abs/1706.03762
-- FlashAttention: Fast and Memory-Efficient Exact Attention — https://arxiv.org/abs/2205.14135
-- FlashAttention-2 — https://arxiv.org/abs/2307.08691
-- Neural Attention Residuals — https://arxiv.org/abs/2505.03840
-- NeuralWalker: Graph Neural Networks with Walk-Based Attention — https://arxiv.org/abs/2502.02593
+- Attention Is All You Need — <https://arxiv.org/abs/1706.03762>
+- FlashAttention: Fast and Memory-Efficient Exact Attention — <https://arxiv.org/abs/2205.14135>
+- FlashAttention-2 — <https://arxiv.org/abs/2307.08691>
+- Neural Attention Residuals — <https://arxiv.org/abs/2505.03840>
+- NeuralWalker: mmd Neural Networks with Walk-Based Attention — <https://arxiv.org/abs/2502.02593>
 
 ### Images — save these 4
 
@@ -49,18 +49,18 @@ raw/
 Install and set up the skill for your platform:
 
 ```bash
-pip install graphifyy
+pip install mapmmdy
 
-graphify install                        # Claude Code
-graphify install --platform codex       # Codex
-graphify install --platform opencode    # OpenCode
-graphify install --platform claw        # OpenClaw
+mapmmd install                        # Claude Code
+mapmmd install --platform codex       # Codex
+mapmmd install --platform opencode    # OpenCode
+mapmmd install --platform claw        # OpenClaw
 ```
 
 Then open your AI coding assistant in this directory and type:
 
 ```
-/graphify ./raw
+/mapmmd ./raw
 ```
 
 ## What to expect

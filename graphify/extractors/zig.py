@@ -1,10 +1,10 @@
-"""Zig extractor (tree-sitter). Moved verbatim from graphify/extract.py."""
+"""Zig extractor (tree-sitter). Moved verbatim from mapmmd/extract.py."""
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-from graphify.extractors.base import _file_stem, _make_id, _read_text
+from mapmmd.extractors.base import _file_stem, _make_id, _read_text
 
 
 def extract_zig(path: Path) -> dict:

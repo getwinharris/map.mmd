@@ -3,10 +3,10 @@ import json
 import networkx as nx
 import pytest
 from pathlib import Path
-from graphify.build import build_from_json
-from graphify.cluster import cluster
-from graphify.analyze import god_nodes, surprising_connections, _is_concept_node, graph_diff, _surprise_score, _file_category, _is_json_key_node, find_import_cycles
-from graphify.extract import _make_id
+from mapmmd.build import build_from_json
+from mapmmd.cluster import cluster
+from mapmmd.analyze import god_nodes, surprising_connections, _is_concept_node, graph_diff, _surprise_score, _file_category, _is_json_key_node, find_import_cycles
+from mapmmd.extract import _make_id
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -62,7 +62,7 @@ def test_surprising_connections_excludes_concept_nodes():
 
 def test_surprising_connections_single_file_uses_community_bridges():
     """Single-file graph: should return cross-community edges, not empty list."""
-    G = nx.Graph()
+    G = nx.mmd()
     # Build a graph with 2 clear communities + 1 bridge edge
     for i in range(5):
         G.add_node(f"a{i}", label=f"A{i}", file_type="code", source_file="single.py",
@@ -89,7 +89,7 @@ def test_surprising_connections_single_file_uses_community_bridges():
 
 def test_surprising_connections_ambiguous_scores_higher_than_extracted():
     """AMBIGUOUS edge should score higher than an otherwise identical EXTRACTED edge."""
-    G = nx.Graph()
+    G = nx.mmd()
     for nid, label, src in [
         ("a", "Alpha", "repo1/model.py"),
         ("b", "Beta", "repo2/train.py"),
@@ -107,7 +107,7 @@ def test_surprising_connections_ambiguous_scores_higher_than_extracted():
 
 
 def test_surprise_score_accepts_precomputed_degrees():
-    G = nx.Graph()
+    G = nx.mmd()
     for nid, label, src in [
         ("hub", "Hub", "repo1/hub.py"),
         ("leaf", "Leaf", "repo2/leaf.py"),
@@ -129,7 +129,7 @@ def test_surprise_score_accepts_precomputed_degrees():
 
 def test_surprising_connections_cross_type_scores_higher():
     """Code↔paper edge should score higher than code↔code edge."""
-    G = nx.Graph()
+    G = nx.mmd()
     for nid, label, src in [
         ("a", "Transformer", "code/model.py"),
         ("b", "FlashAttn", "papers/flash.pdf"),
@@ -148,7 +148,7 @@ def test_surprising_connections_cross_type_scores_higher():
 
 def _make_cross_lang_graph():
     """Helper: Python node in backend/, TypeScript node in frontend/, different communities."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("py_auth", label="AuthError", source_file="backend/auth.py", file_type="code")
     G.add_node("ts_member", label="Member", source_file="frontend/types.ts", file_type="code")
     G.add_node("py_a", label="ServiceA", source_file="backend/service.py", file_type="code")
@@ -209,7 +209,7 @@ def test_cross_language_semantically_similar_not_suppressed():
 
 def test_same_language_inferred_calls_not_suppressed():
     """INFERRED calls within the same language family must not be affected."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("py_a", label="ModuleA", source_file="src/a.py", file_type="code")
     G.add_node("py_b", label="ModuleB", source_file="src/b.py", file_type="code")
     G.add_node("py_c", label="ModuleC", source_file="src/c.py", file_type="code")
@@ -264,13 +264,13 @@ def test_file_category():
 
 
 def test_is_concept_node_empty_source():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("c1", source_file="")
     assert _is_concept_node(G, "c1") is True
 
 
 def test_is_concept_node_real_file():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("n1", source_file="model.py")
     assert _is_concept_node(G, "n1") is False
 
@@ -288,8 +288,8 @@ def test_surprising_connections_have_required_keys():
 # --- graph_diff tests ---
 
 def _make_simple_graph(nodes, edges):
-    """Helper: build a small nx.Graph from node/edge specs."""
-    G = nx.Graph()
+    """Helper: build a small nx.mmd from node/edge specs."""
+    G = nx.mmd()
     for node_id, label in nodes:
         G.add_node(node_id, label=label, source_file="test.py")
     for src, tgt, rel, conf in edges:
@@ -350,7 +350,7 @@ def test_graph_diff_empty_diff():
 # --- code↔doc INFERRED suppression tests ---
 
 def _make_code_doc_graph():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("py_fn", label="ProcessData", source_file="src/processor.py", file_type="code")
     G.add_node("md_doc", label="README Section", source_file="docs/readme.md", file_type="document")
     G.add_node("py_a", label="ServiceA", source_file="src/service.py", file_type="code")
@@ -425,7 +425,7 @@ def test_code_unknown_extension_inferred_calls_suppressed():
     """_file_category falls back to 'doc' for unknown extensions, so INFERRED
     calls/uses to unknown-extension files are suppressed the same as code↔doc."""
     assert _file_category("vendor/random.xyz") == "doc"
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("py_fn", label="Handler", source_file="src/handler.py", file_type="code")
     G.add_node("unk", label="Handler", source_file="vendor/unknown.xyz", file_type="document")
     G.add_node("py_a", label="A", source_file="src/a.py", file_type="code")
@@ -446,7 +446,7 @@ def test_code_unknown_extension_inferred_calls_suppressed():
 
 def test_code_paper_inferred_calls_not_suppressed():
     """Code↔paper INFERRED calls should still surface — it is a meaningful link."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("py_model", label="Transformer", source_file="src/model.py", file_type="code")
     G.add_node("pdf_paper", label="Attention Is All You Need", source_file="papers/vaswani.pdf",
                file_type="paper")
@@ -469,13 +469,13 @@ def test_code_paper_inferred_calls_not_suppressed():
 # --- JSON key node filtering tests ---
 
 def test_is_json_key_node_noise_label():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("j1", label="name", source_file="schema.json")
     assert _is_json_key_node(G, "j1") is True
 
 
 def test_is_json_key_node_non_json_file():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("n1", label="name", source_file="model.py")
     assert _is_json_key_node(G, "n1") is False
 
@@ -500,7 +500,7 @@ def test_god_nodes_excludes_npm_dep_block_keys(dep_key: str) -> None:
     Args:
         dep_key: The npm dependency-block key label to test (parametrized).
     """
-    G = nx.Graph()
+    G = nx.mmd()
     # Real-domain node with a realistic source file.
     G.add_node(
         "real_node",
@@ -560,14 +560,14 @@ def test_god_nodes_excludes_npm_dep_block_keys(dep_key: str) -> None:
 
 
 def test_is_json_key_node_real_label():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("j2", label="UserProfile", source_file="schema.json")
     assert _is_json_key_node(G, "j2") is False
 
 
 def test_god_nodes_excludes_json_noise():
     """god_nodes must not return generic JSON key nodes like 'name' or 'id'."""
-    G = nx.Graph()
+    G = nx.mmd()
     # Add many edges to a real node
     G.add_node("real", label="AuthService", source_file="src/auth.py")
     # Add a noisy JSON key node with high degree
@@ -585,7 +585,7 @@ def test_god_nodes_excludes_json_noise():
 
 def test_god_nodes_filter_is_case_insensitive():
     """JSON-key filter must match regardless of label casing."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("real", label="RealAbstraction", source_file="libs/real.py")
     for i in range(3):
         G.add_node(f"peer{i}", label=f"P{i}", source_file=f"src/p{i}.py")
@@ -607,13 +607,13 @@ def test_god_nodes_filter_is_case_insensitive():
 
 
 def _make_file_node(path: str) -> tuple[str, dict]:
-    """Create a graph node resembling real graphify schema."""
+    """Create a graph node resembling real mapmmd schema."""
     nid = _make_id(path)
     return nid, {"label": Path(path).name, "source_file": path, "file_type": "code"}
 
 
-def _make_cycle_graph_directed() -> nx.DiGraph:
-    G = nx.DiGraph()
+def _make_cycle_graph_directed() -> nx.Dimmd:
+    G = nx.Dimmd()
 
     a_id, a = _make_file_node("src/a.ts")
     b_id, b = _make_file_node("src/b.ts")
@@ -690,7 +690,7 @@ def test_find_import_cycles_skips_nodes_without_source_file():
 
 def test_find_import_cycles_handles_undirected_graph_input():
     Gd = _make_cycle_graph_directed()
-    Gu = nx.Graph()
+    Gu = nx.mmd()
     Gu.add_nodes_from(Gd.nodes(data=True))
     Gu.add_edges_from(Gd.edges(data=True))
     cycles = find_import_cycles(Gu)
@@ -698,7 +698,7 @@ def test_find_import_cycles_handles_undirected_graph_input():
 
 
 def test_find_import_cycles_ignores_non_import_relations():
-    G = nx.DiGraph()
+    G = nx.Dimmd()
     a_id, a = _make_file_node("src/a.ts")
     b_id, b = _make_file_node("src/b.ts")
     G.add_node(a_id, **a)
@@ -710,11 +710,11 @@ def test_find_import_cycles_ignores_non_import_relations():
 
 
 def test_find_import_cycles_empty_graph():
-    assert find_import_cycles(nx.DiGraph()) == []
+    assert find_import_cycles(nx.Dimmd()) == []
 
 
 def test_find_import_cycles_no_cycles():
-    G = nx.DiGraph()
+    G = nx.Dimmd()
     x_id, x = _make_file_node("x.ts")
     y_id, y = _make_file_node("y.ts")
     G.add_node(x_id, **x)

@@ -1,10 +1,10 @@
-"""Tests for graphify.querylog."""
+"""Tests for mapmmd.querylog."""
 import json
 import os
 import pytest
 from pathlib import Path
 
-from graphify.querylog import log_query, nodes_from_result
+from mapmmd.querylog import log_query, nodes_from_result
 
 
 # ---------------------------------------------------------------------------

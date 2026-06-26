@@ -8,9 +8,9 @@ from array import array
 from pathlib import Path
 import networkx as nx
 from networkx.readwrite import json_graph
-from graphify.security import sanitize_label, check_graph_file_size_cap
-from graphify.build import edge_data
-from graphify.paths import default_graph_json as _default_graph_json
+from mapmmd.security import sanitize_label, check_graph_file_size_cap
+from mapmmd.build import edge_data
+from mapmmd.paths import default_graph_json as _default_graph_json
 
 try:
     import jieba as _jieba  # type: ignore[import-untyped]
@@ -18,13 +18,13 @@ except ImportError:
     _jieba = None
 
 
-def _load_graph(graph_path: str) -> nx.Graph:
+def _load_graph(graph_path: str) -> nx.mmd:
     try:
         resolved = Path(graph_path).resolve()
         if resolved.suffix != ".json":
-            raise ValueError(f"Graph path must be a .json file, got: {graph_path!r}")
+            raise ValueError(f"mmd path must be a .json file, got: {graph_path!r}")
         if not resolved.exists():
-            raise FileNotFoundError(f"Graph file not found: {resolved}")
+            raise FileNotFoundError(f"mmd file not found: {resolved}")
         check_graph_file_size_cap(resolved)
         safe = resolved
         data = json.loads(safe.read_text(encoding="utf-8"))
@@ -39,11 +39,11 @@ def _load_graph(graph_path: str) -> nx.Graph:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(1)
     except json.JSONDecodeError as exc:
-        print(f"error: graph.json is corrupted ({exc}). Re-run /graphify to rebuild.", file=sys.stderr)
+        print(f"error: graph.json is corrupted ({exc}). Re-run /mapmmd to rebuild.", file=sys.stderr)
         sys.exit(1)
 
 
-def _communities_from_graph(G: nx.Graph) -> dict[int, list[str]]:
+def _communities_from_graph(G: nx.mmd) -> dict[int, list[str]]:
     """Reconstruct community dict from community property stored on nodes."""
     communities: dict[int, list[str]] = {}
     for node_id, data in G.nodes(data=True):
@@ -111,7 +111,7 @@ _SUBSTRING_MATCH_BONUS = 1.0
 _SOURCE_MATCH_BONUS = 0.5
 
 
-def _compute_idf(G: nx.Graph, terms: list[str]) -> dict[str, float]:
+def _compute_idf(G: nx.mmd, terms: list[str]) -> dict[str, float]:
     """IDF weights for query terms, cached in G.graph['_idf_cache'].
 
     Common terms like 'error' or 'exception' that match hundreds of nodes get
@@ -163,7 +163,7 @@ def _node_search_text(data: dict, nid: str) -> str:
     return "\x00".join((norm_label, label_tokens, str(nid).lower(), source))
 
 
-def _get_trigram_index(G: nx.Graph) -> dict:
+def _get_trigram_index(G: nx.mmd) -> dict:
     """Lazily build and cache a trigram -> node-position postings map on the graph.
 
     Cached on `G.graph` so it auto-invalidates when _maybe_reload() swaps in a
@@ -187,7 +187,7 @@ def _get_trigram_index(G: nx.Graph) -> dict:
     return idx
 
 
-def _trigram_candidates(G: nx.Graph, needles: list[str], *, guard_frac: float = 0.10) -> list[str] | None:
+def _trigram_candidates(G: nx.mmd, needles: list[str], *, guard_frac: float = 0.10) -> list[str] | None:
     """Node IDs whose text could contain any `needle` as a substring, via the
     trigram index — a *superset* the caller then re-scores with the exact predicates.
 
@@ -239,7 +239,7 @@ def _trigram_candidates(G: nx.Graph, needles: list[str], *, guard_frac: float = 
     return [ids[i] for i in sorted(cand)]
 
 
-def _score_nodes(G: nx.Graph, terms: list[str]) -> list[tuple[float, str]]:
+def _score_nodes(G: nx.mmd, terms: list[str]) -> list[tuple[float, str]]:
     scored = []
     norm_terms = [tok for t in terms for tok in _search_tokens(t)]
     idf = _compute_idf(G, norm_terms)
@@ -409,13 +409,13 @@ def _resolve_context_filters(question: str, explicit_filters: list[str] | None =
     return [], None
 
 
-def _filter_graph_by_context(G: nx.Graph, context_filters: list[str] | None) -> nx.Graph:
+def _filter_graph_by_context(G: nx.mmd, context_filters: list[str] | None) -> nx.mmd:
     filters = set(_normalize_context_filters(context_filters))
     if not filters:
         return G
     H = G.__class__()
     H.add_nodes_from(G.nodes(data=True))
-    if isinstance(G, (nx.MultiGraph, nx.MultiDiGraph)):
+    if isinstance(G, (nx.Multimmd, nx.MultiDimmd)):
         for u, v, key, data in G.edges(keys=True, data=True):
             if data.get("context") in filters:
                 H.add_edge(u, v, key=key, **data)
@@ -426,7 +426,7 @@ def _filter_graph_by_context(G: nx.Graph, context_filters: list[str] | None) -> 
     return H
 
 
-def _bfs(G: nx.Graph, start_nodes: list[str], depth: int) -> tuple[set[str], list[tuple]]:
+def _bfs(G: nx.mmd, start_nodes: list[str], depth: int) -> tuple[set[str], list[tuple]]:
     # Compute hub threshold: nodes above this degree are not expanded as transit.
     # p99 of degree distribution, floored at 50 to avoid over-blocking small graphs.
     degrees = [G.degree(n) for n in G.nodes()]
@@ -456,7 +456,7 @@ def _bfs(G: nx.Graph, start_nodes: list[str], depth: int) -> tuple[set[str], lis
     return visited, edges_seen
 
 
-def _dfs(G: nx.Graph, start_nodes: list[str], depth: int) -> tuple[set[str], list[tuple]]:
+def _dfs(G: nx.mmd, start_nodes: list[str], depth: int) -> tuple[set[str], list[tuple]]:
     degrees = [G.degree(n) for n in G.nodes()]
     if degrees:
         degrees_sorted = sorted(degrees)
@@ -482,7 +482,7 @@ def _dfs(G: nx.Graph, start_nodes: list[str], depth: int) -> tuple[set[str], lis
     return visited, edges_seen
 
 
-def _subgraph_to_text(G: nx.Graph, nodes: set[str], edges: list[tuple], token_budget: int = 2000, *, seeds: list[str] | None = None) -> str:
+def _subgraph_to_text(G: nx.mmd, nodes: set[str], edges: list[tuple], token_budget: int = 2000, *, seeds: list[str] | None = None) -> str:
     """Render subgraph as text, cutting at token_budget (approx 3 chars/token).
 
     seeds: exact-match nodes rendered first before the degree-sorted expansion,
@@ -497,7 +497,7 @@ def _subgraph_to_text(G: nx.Graph, nodes: set[str], edges: list[tuple], token_bu
         d = G.nodes[nid]
         # Every LLM-derived field passes through sanitize_label before being
         # concatenated into MCP tool output (F-010): an attacker who controls a
-        # corpus document can otherwise inject ANSI escapes, fake graphify-out
+        # corpus document can otherwise inject ANSI escapes, fake mapmmd-out
         # log lines, or prompt-injection markup into the model's context via
         # source_file / source_location / community.
         line = (
@@ -510,7 +510,7 @@ def _subgraph_to_text(G: nx.Graph, nodes: set[str], edges: list[tuple], token_bu
     for u, v in edges:
         if u in nodes and v in nodes:
             raw = G[u][v]
-            d = next(iter(raw.values()), {}) if isinstance(G, (nx.MultiGraph, nx.MultiDiGraph)) else raw
+            d = next(iter(raw.values()), {}) if isinstance(G, (nx.Multimmd, nx.MultiDimmd)) else raw
             context = d.get("context")
             context_suffix = f" context={sanitize_label(str(context))}" if context else ""
             line = (
@@ -536,7 +536,7 @@ def _subgraph_to_text(G: nx.Graph, nodes: set[str], edges: list[tuple], token_bu
 
 
 def _query_graph_text(
-    G: nx.Graph,
+    G: nx.mmd,
     question: str,
     *,
     mode: str = "bfs",
@@ -563,7 +563,7 @@ def _query_graph_text(
     return header + _subgraph_to_text(traversal_graph, nodes, edges, token_budget)
 
 
-def _find_node(G: nx.Graph, label: str) -> list[str]:
+def _find_node(G: nx.mmd, label: str) -> list[str]:
     """Return node IDs whose label or ID matches the search term (diacritic-insensitive).
 
     Results are ordered by three-tier precedence: exact match, then prefix match,
@@ -661,7 +661,7 @@ def _build_server(graph_path: str):
         from mcp import types
         from mcp.types import AnyUrl
     except ImportError as e:
-        raise ImportError('mcp not installed. Run: pip install "graphifyy[mcp]"') from e
+        raise ImportError('mcp not installed. Run: pip install "mapmmdy[mcp]"') from e
 
     G = _load_graph(graph_path)
     communities = _communities_from_graph(G)
@@ -708,7 +708,7 @@ def _build_server(graph_path: str):
             communities = _communities_from_graph(new_G)
             _reload_state["mtime_ns"], _reload_state["size"] = key
 
-    server = Server("graphify")
+    server = Server("mapmmd")
 
     @server.list_tools()
     async def list_tools() -> list[types.Tool]:
@@ -836,7 +836,7 @@ def _build_server(graph_path: str):
 
     def _tool_query_graph(arguments: dict) -> str:
         import time as _time
-        from graphify import querylog
+        from mapmmd import querylog
         question = arguments["question"]
         mode = arguments.get("mode", "bfs")
         depth = min(int(arguments.get("depth", 3)), 6)
@@ -925,7 +925,7 @@ def _build_server(graph_path: str):
         return "\n".join(lines)
 
     def _tool_god_nodes(arguments: dict) -> str:
-        from graphify.analyze import god_nodes as _god_nodes
+        from mapmmd.analyze import god_nodes as _god_nodes
         nodes = _god_nodes(G, top_n=int(arguments.get("top_n", 10)))
         lines = ["God nodes (most connected):"]
         lines += [f"  {i}. {n['label']} - {n['degree']} edges" for i, n in enumerate(nodes, 1)]
@@ -999,7 +999,7 @@ def _build_server(graph_path: str):
         return prefix + f"Shortest path ({hops} hops):\n  " + " ".join(segments)
 
     def _tool_list_prs(arguments: dict) -> str:
-        from graphify.prs import fetch_prs, fetch_worktrees, format_prs_text, _detect_default_branch
+        from mapmmd.prs import fetch_prs, fetch_worktrees, format_prs_text, _detect_default_branch
         repo = arguments.get("repo") or None
         base = arguments.get("base") or _detect_default_branch(repo)
         try:
@@ -1012,7 +1012,7 @@ def _build_server(graph_path: str):
         return format_prs_text(prs, base)
 
     def _tool_get_pr_impact(arguments: dict) -> str:
-        from graphify.prs import fetch_pr_files, compute_pr_impact, _gh, _parse_ci
+        from mapmmd.prs import fetch_pr_files, compute_pr_impact, _gh, _parse_ci
         number = int(arguments["pr_number"])
         repo = arguments.get("repo") or None
         # Use gh pr view directly — works for any base branch, not just the default
@@ -1032,7 +1032,7 @@ def _build_server(graph_path: str):
             f"PR #{number}: {pr_data['title']}",
             f"CI: {ci}  Review: {pr_data.get('reviewDecision') or 'none'}",
             f"Base: {pr_data['baseRefName']}  Author: {(pr_data.get('author') or {}).get('login', '?')}",
-            f"\nGraph impact: {nodes} nodes across {len(comms)} communities",
+            f"\nmmd impact: {nodes} nodes across {len(comms)} communities",
             f"Communities touched: {comms}",
             f"Files changed ({len(files)}):",
         ]
@@ -1043,7 +1043,7 @@ def _build_server(graph_path: str):
 
     def _tool_triage_prs(arguments: dict) -> str:
         from concurrent.futures import ThreadPoolExecutor, as_completed
-        from graphify.prs import fetch_prs, fetch_worktrees, fetch_pr_files, compute_pr_impact, _STATUS_ORDER, _detect_default_branch
+        from mapmmd.prs import fetch_prs, fetch_worktrees, fetch_pr_files, compute_pr_impact, _STATUS_ORDER, _detect_default_branch
         repo = arguments.get("repo") or None
         base = arguments.get("base") or _detect_default_branch(repo)
         try:
@@ -1097,7 +1097,7 @@ def _build_server(graph_path: str):
     }
 
     def _load_community_labels() -> dict[int, str]:
-        labels_path = Path(graph_path).parent / ".graphify_labels.json"
+        labels_path = Path(graph_path).parent / ".mapmmd_labels.json"
         if labels_path.exists():
             try:
                 return {int(k): v for k, v in json.loads(labels_path.read_text(encoding="utf-8")).items()}
@@ -1108,30 +1108,30 @@ def _build_server(graph_path: str):
     @server.list_resources()
     async def list_resources() -> list[types.Resource]:
         return [
-            types.Resource(uri=AnyUrl("graphify://report"), name="Graph Report", description="Full GRAPH_REPORT.md", mimeType="text/markdown"),
-            types.Resource(uri=AnyUrl("graphify://stats"), name="Graph Stats", description="Node/edge/community counts and confidence breakdown", mimeType="text/plain"),
-            types.Resource(uri=AnyUrl("graphify://god-nodes"), name="God Nodes", description="Top 10 most-connected nodes", mimeType="text/plain"),
-            types.Resource(uri=AnyUrl("graphify://surprises"), name="Surprising Connections", description="Cross-community surprising connections", mimeType="text/plain"),
-            types.Resource(uri=AnyUrl("graphify://audit"), name="Confidence Audit", description="EXTRACTED/INFERRED/AMBIGUOUS edge breakdown", mimeType="text/plain"),
-            types.Resource(uri=AnyUrl("graphify://questions"), name="Suggested Questions", description="Suggested questions for this codebase", mimeType="text/plain"),
+            types.Resource(uri=AnyUrl("mapmmd://report"), name="mmd Report", description="Full GRAPH_REPORT.md", mimeType="text/markdown"),
+            types.Resource(uri=AnyUrl("mapmmd://stats"), name="mmd Stats", description="Node/edge/community counts and confidence breakdown", mimeType="text/plain"),
+            types.Resource(uri=AnyUrl("mapmmd://god-nodes"), name="God Nodes", description="Top 10 most-connected nodes", mimeType="text/plain"),
+            types.Resource(uri=AnyUrl("mapmmd://surprises"), name="Surprising Connections", description="Cross-community surprising connections", mimeType="text/plain"),
+            types.Resource(uri=AnyUrl("mapmmd://audit"), name="Confidence Audit", description="EXTRACTED/INFERRED/AMBIGUOUS edge breakdown", mimeType="text/plain"),
+            types.Resource(uri=AnyUrl("mapmmd://questions"), name="Suggested Questions", description="Suggested questions for this codebase", mimeType="text/plain"),
         ]
 
     @server.read_resource()
     async def read_resource(uri: AnyUrl) -> str:
         _maybe_reload()
         uri_str = str(uri)
-        if uri_str == "graphify://report":
+        if uri_str == "mapmmd://report":
             report_path = Path(graph_path).parent / "GRAPH_REPORT.md"
             if report_path.exists():
                 return report_path.read_text(encoding="utf-8")
-            return "GRAPH_REPORT.md not found. Run graphify extract first."
-        if uri_str == "graphify://stats":
+            return "GRAPH_REPORT.md not found. Run mapmmd extract first."
+        if uri_str == "mapmmd://stats":
             return _tool_graph_stats({})
-        if uri_str == "graphify://god-nodes":
+        if uri_str == "mapmmd://god-nodes":
             return _tool_god_nodes({"top_n": 10})
-        if uri_str == "graphify://surprises":
+        if uri_str == "mapmmd://surprises":
             try:
-                from graphify.analyze import surprising_connections
+                from mapmmd.analyze import surprising_connections
                 surprises = surprising_connections(G, communities, top_n=10)
                 if not surprises:
                     return "No surprising connections found."
@@ -1141,7 +1141,7 @@ def _build_server(graph_path: str):
                 return "\n".join(lines)
             except Exception as exc:
                 return f"Could not compute surprising connections: {exc}"
-        if uri_str == "graphify://audit":
+        if uri_str == "mapmmd://audit":
             confs = [d.get("confidence", "EXTRACTED") for _, _, d in G.edges(data=True)]
             total = len(confs) or 1
             return (
@@ -1150,9 +1150,9 @@ def _build_server(graph_path: str):
                 f"INFERRED: {confs.count('INFERRED')} ({round(confs.count('INFERRED')/total*100)}%)\n"
                 f"AMBIGUOUS: {confs.count('AMBIGUOUS')} ({round(confs.count('AMBIGUOUS')/total*100)}%)\n"
             )
-        if uri_str == "graphify://questions":
+        if uri_str == "mapmmd://questions":
             try:
-                from graphify.analyze import suggest_questions
+                from mapmmd.analyze import suggest_questions
                 community_labels = _load_community_labels()
                 questions = suggest_questions(G, communities, community_labels, top_n=10)
                 if not questions:
@@ -1188,7 +1188,7 @@ def serve(graph_path: str | None = None) -> None:
     try:
         from mcp.server.stdio import stdio_server
     except ImportError as e:
-        raise ImportError('mcp not installed. Run: pip install "graphifyy[mcp]"') from e
+        raise ImportError('mcp not installed. Run: pip install "mapmmdy[mcp]"') from e
     import asyncio
 
     server = _build_server(graph_path)
@@ -1291,7 +1291,7 @@ def _build_http_app(
     except ImportError as e:
         raise ImportError(
             'HTTP transport needs the mcp extra (mcp + starlette + uvicorn). '
-            'Run: pip install "graphifyy[mcp]"'
+            'Run: pip install "mapmmdy[mcp]"'
         ) from e
 
     # A blank key (e.g. --api-key "" or an empty GRAPHIFY_API_KEY) must not be
@@ -1368,7 +1368,7 @@ def serve_http(
     except ImportError as e:
         raise ImportError(
             'HTTP transport needs the mcp extra (mcp + starlette + uvicorn). '
-            'Run: pip install "graphifyy[mcp]"'
+            'Run: pip install "mapmmdy[mcp]"'
         ) from e
 
     api_key = (api_key or "").strip() or None
@@ -1386,7 +1386,7 @@ def serve_http(
 
     auth_note = "api-key required" if api_key else "no auth (set --api-key to require one)"
     print(
-        f"graphify MCP server (streamable-http) on http://{host}:{port}{path} - {auth_note}",
+        f"mapmmd MCP server (streamable-http) on http://{host}:{port}{path} - {auth_note}",
         file=sys.stderr,
     )
     if host in ("0.0.0.0", "::", "") and not api_key:
@@ -1403,14 +1403,14 @@ def _main(argv: list[str] | None = None) -> None:
     import os
 
     parser = argparse.ArgumentParser(
-        prog="python -m graphify.serve",
-        description="Serve a graphify knowledge graph over MCP (stdio or Streamable HTTP).",
+        prog="python -m mapmmd.serve",
+        description="Serve a mapmmd knowledge graph over MCP (stdio or Streamable HTTP).",
     )
     parser.add_argument(
         "graph_path",
         nargs="?",
         default=None,
-        help="Path to graph.json (default: graphify-out/graph.json)",
+        help="Path to graph.json (default: mapmmd-out/graph.json)",
     )
     parser.add_argument(
         "--graph",

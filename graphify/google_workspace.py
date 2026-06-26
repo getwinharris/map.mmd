@@ -3,7 +3,7 @@
 Google Drive for desktop stores native Docs, Sheets, and Slides as small JSON
 shortcut files (.gdoc, .gsheet, .gslides). Those files are pointers, not the
 document content. This module exports them to Markdown sidecars via the
-googleworkspace CLI (`gws`) so Graphify can extract their actual contents.
+googleworkspace CLI (`gws`) so map.mmd can extract their actual contents.
 """
 from __future__ import annotations
 
@@ -194,7 +194,7 @@ def convert_google_workspace_file(
 
     if ext == ".gsheet":
         if xlsx_to_markdown is None:
-            raise RuntimeError("Google Sheets export requires the office extra: pip install graphifyy[office,google]")
+            raise RuntimeError("Google Sheets export requires the office extra: pip install mapmmdy[office,google]")
         with tempfile.NamedTemporaryFile("w+b", suffix=".xlsx", delete=False, dir=out_dir) as tmp:
             tmp_path = Path(tmp.name)
         try:

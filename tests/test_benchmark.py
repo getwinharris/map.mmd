@@ -1,15 +1,15 @@
-"""Tests for graphify/benchmark.py."""
+"""Tests for mapmmd/benchmark.py."""
 from __future__ import annotations
 import json
 import pytest
 import networkx as nx
 from networkx.readwrite import json_graph
 
-from graphify.benchmark import run_benchmark, print_benchmark, _query_subgraph_tokens, _SAMPLE_QUESTIONS, _safe, _hr
+from mapmmd.benchmark import run_benchmark, print_benchmark, _query_subgraph_tokens, _SAMPLE_QUESTIONS, _safe, _hr
 
 
-def _make_graph() -> nx.Graph:
-    G = nx.Graph()
+def _make_graph() -> nx.mmd:
+    G = nx.mmd()
     G.add_node("n1", label="authentication", source_file="auth.py", source_location="L1", community=0)
     G.add_node("n2", label="api_handler", source_file="api.py", source_location="L5", community=0)
     G.add_node("n3", label="main_entry", source_file="main.py", source_location="L1", community=1)
@@ -22,7 +22,7 @@ def _make_graph() -> nx.Graph:
     return G
 
 
-def _write_graph(G: nx.Graph, path) -> None:
+def _write_graph(G: nx.mmd, path) -> None:
     data = json_graph.node_link_data(G, edges="links")
     path.write_text(json.dumps(data))
 
@@ -48,7 +48,7 @@ def test_query_bfs_expands_neighbors():
 
 
 def test_query_keeps_short_non_english_terms():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("frontend", label="前端", source_file="docs/前端.md", source_location="L1", community=0)
     tokens = _query_subgraph_tokens(G, "前端", depth=1)
     assert tokens > 0
@@ -93,7 +93,7 @@ def test_run_benchmark_estimates_corpus_if_no_words(tmp_path):
     assert result["corpus_words"] > 0
 
 def test_run_benchmark_error_on_empty_graph(tmp_path):
-    G = nx.Graph()
+    G = nx.mmd()
     graph_file = tmp_path / "empty.json"
     _write_graph(G, graph_file)
     result = run_benchmark(str(graph_file), corpus_words=1_000)
@@ -178,6 +178,6 @@ def test_run_benchmark_rejects_oversized_graph(monkeypatch, tmp_path):
     G = _make_graph()
     graph_file = tmp_path / "graph.json"
     _write_graph(G, graph_file)
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 8)
+    monkeypatch.setattr("mapmmd.security._MAX_GRAPH_FILE_BYTES", 8)
     with pytest.raises(ValueError, match="exceeds"):
         run_benchmark(str(graph_file))

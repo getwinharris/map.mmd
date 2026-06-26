@@ -1,12 +1,12 @@
-"""Tests for graphify.wiki — Wikipedia-style article generation."""
+"""Tests for mapmmd.wiki — Wikipedia-style article generation."""
 import pytest
 from pathlib import Path
 import networkx as nx
-from graphify.wiki import to_wiki, _index_md, _community_article, _god_node_article
+from mapmmd.wiki import to_wiki, _index_md, _community_article, _god_node_article
 
 
 def _make_graph():
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("n1", label="parse", file_type="code", source_file="parser.py", community=0)
     G.add_node("n2", label="validate", file_type="code", source_file="parser.py", community=0)
     G.add_node("n3", label="render", file_type="code", source_file="renderer.py", community=1)
@@ -127,7 +127,7 @@ def test_article_navigation_footer(tmp_path):
 
 def test_community_article_truncation_notice(tmp_path):
     """Communities with more than 25 nodes show a truncation notice."""
-    G = nx.Graph()
+    G = nx.mmd()
     nodes = [f"n{i}" for i in range(30)]
     for nid in nodes:
         G.add_node(nid, label=f"concept_{nid}", file_type="code", source_file="a.py", community=0)
@@ -142,7 +142,7 @@ def test_community_article_truncation_notice(tmp_path):
 # Regression tests for #925 - cross-community links always empty when node attrs lack community
 def test_cross_community_links_without_node_community_attrs(tmp_path):
     """Cross-community links must work even when nodes have no 'community' attribute (#925)."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("n1", label="parse", file_type="code", source_file="parser.py")
     G.add_node("n2", label="render", file_type="code", source_file="renderer.py")
     G.add_edge("n1", "n2", relation="references", confidence="INFERRED", weight=1.0)
@@ -155,7 +155,7 @@ def test_cross_community_links_without_node_community_attrs(tmp_path):
 
 def test_god_node_article_community_without_node_attr(tmp_path):
     """God node article must show community name even when node has no 'community' attr (#925)."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("n1", label="parse", file_type="code", source_file="parser.py")
     G.add_node("n2", label="validate", file_type="code", source_file="parser.py")
     G.add_edge("n1", "n2", relation="calls", confidence="EXTRACTED", weight=1.0)
@@ -201,7 +201,7 @@ def test_to_wiki_stale_nodes_prints_warning(tmp_path, capsys):
 
 def test_community_article_handles_null_source_file(tmp_path):
     """source_file=None on a node must not crash sorted() with TypeError (#1016)."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("n1", label="parse", file_type="code", source_file=None, community=0)
     G.add_node("n2", label="validate", file_type="code", source_file="parser.py", community=0)
     G.add_edge("n1", "n2", relation="calls", confidence="EXTRACTED", weight=1.0)
@@ -217,7 +217,7 @@ def test_to_wiki_case_only_distinct_labels_dont_overwrite(tmp_path):
     article. The slug-dedup set folds case, so on case-insensitive filesystems
     (macOS/APFS, Windows/NTFS) the second article gets a numeric suffix instead
     of silently overwriting the first."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("n1", label="parse", file_type="code", source_file="a.py", community=0)
     G.add_node("n2", label="render", file_type="code", source_file="b.py", community=1)
     G.add_edge("n1", "n2", relation="calls", confidence="EXTRACTED", weight=1.0)
@@ -236,7 +236,7 @@ def test_to_wiki_god_node_label_case_collides_with_community(tmp_path):
     """Community and god-node articles share one slug-dedup set, so a god-node
     label differing only by case from a community label must still get its own
     file rather than overwriting the community article."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("n1", label="parse", file_type="code", source_file="a.py", community=0)
     G.add_node("n2", label="run", file_type="code", source_file="b.py", community=0)
     G.add_edge("n1", "n2", relation="calls", confidence="EXTRACTED", weight=1.0)

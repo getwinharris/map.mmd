@@ -1,16 +1,16 @@
-"""graphify prs — graph-aware PR dashboard.
+"""mapmmd prs — graph-aware PR dashboard.
 
 Fast terminal overview of open PRs with CI/review state, worktree mapping,
 and optional graph-impact analysis (which communities a PR touches) and
 Opus-powered triage ranking.
 
 Usage:
-  graphify prs                   # dashboard of all open PRs
-  graphify prs <number>          # deep dive on one PR
-  graphify prs --triage          # Opus ranks your review queue
-  graphify prs --worktrees       # show worktree → branch → PR mapping
-  graphify prs --conflicts       # PRs sharing graph communities (merge-order risk)
-  graphify prs --base <branch>   # filter to PRs targeting this base (default: v8)
+  mapmmd prs                   # dashboard of all open PRs
+  mapmmd prs <number>          # deep dive on one PR
+  mapmmd prs --triage          # Opus ranks your review queue
+  mapmmd prs --worktrees       # show worktree → branch → PR mapping
+  mapmmd prs --conflicts       # PRs sharing graph communities (merge-order risk)
+  mapmmd prs --base <branch>   # filter to PRs targeting this base (default: v8)
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import networkx as nx
 
-from graphify.paths import default_graph_json as _default_graph_json
+from mapmmd.paths import default_graph_json as _default_graph_json
 
 
 # ── ANSI colours ─────────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ class PRInfo:
     updated_at: datetime
     expected_base: str = "main"  # set by fetch_prs via _detect_default_branch
     worktree_path: str | None = None
-    # Graph impact — populated when graph.json exists
+    # mmd impact — populated when graph.json exists
     communities_touched: list[int] = field(default_factory=list)
     nodes_affected: int = 0
     files_changed: list[str] = field(default_factory=list)
@@ -237,7 +237,7 @@ def fetch_pr_files(number: int, repo: str | None = None) -> list[str]:
         return []
 
 
-# ── Graph-native impact (used by MCP tools — works on nx.Graph directly) ─────
+# ── mmd-native impact (used by MCP tools — works on nx.mmd directly) ─────
 
 def _path_match(graph_src: str, pr_file: str) -> bool:
     """True if graph_src and pr_file refer to the same file (path-boundary safe)."""
@@ -246,7 +246,7 @@ def _path_match(graph_src: str, pr_file: str) -> bool:
     return graph_src.endswith("/" + pr_file) or pr_file.endswith("/" + graph_src)
 
 
-def compute_pr_impact(files: list[str], G: "nx.Graph") -> tuple[list[int], int]:
+def compute_pr_impact(files: list[str], G: "nx.mmd") -> tuple[list[int], int]:
     """Return (communities_touched, nodes_affected) for a set of changed files.
 
     Builds a file→(communities, count) index first so lookup is O(nodes + files)
@@ -319,12 +319,12 @@ def fetch_worktrees() -> dict[str, str]:
     return mapping
 
 
-# ── Graph impact analysis ─────────────────────────────────────────────────────
+# ── mmd impact analysis ─────────────────────────────────────────────────────
 
 def _load_graph_json(graph_path: Path) -> dict | None:
     if not graph_path.exists():
         return None
-    from graphify.security import check_graph_file_size_cap
+    from mapmmd.security import check_graph_file_size_cap
     try:
         check_graph_file_size_cap(graph_path)
         return json.loads(graph_path.read_text(encoding="utf-8"))
@@ -413,7 +413,7 @@ def render_dashboard(prs: list[PRInfo], base: str = "v8", show_wrong_base: bool 
     actionable.sort(key=lambda p: (_STATUS_ORDER.index(p.status) if p.status in _STATUS_ORDER else 99, p.days_old))
 
     print()
-    print(bold(f"  graphify prs  ·  base: {base}  ·  {len(actionable)} PRs"))
+    print(bold(f"  mapmmd prs  ·  base: {base}  ·  {len(actionable)} PRs"))
     print()
 
     if not actionable:
@@ -534,7 +534,7 @@ def render_pr_detail(pr: PRInfo, repo: str | None = None) -> None:
         print(f"  {dim('worktree:')} {cyan(pr.worktree_path)}")
     if pr.blast_radius:
         print()
-        print(f"  {bold('Graph impact:')}  {pr.blast_radius}")
+        print(f"  {bold('mmd impact:')}  {pr.blast_radius}")
         print(f"  {dim('communities:')} {pr.communities_touched}")
         if pr.files_changed:
             print(f"  {dim('files changed:')} {len(pr.files_changed)}")
@@ -558,7 +558,7 @@ _TRIAGE_MODEL_DEFAULTS: dict[str, str] = {
 
 def _resolve_triage_backend() -> tuple[str, str]:
     """Return (backend, model) using GRAPHIFY_TRIAGE_BACKEND or first available key."""
-    from graphify.llm import BACKENDS, _get_backend_api_key, _default_model_for_backend
+    from mapmmd.llm import BACKENDS, _get_backend_api_key, _default_model_for_backend
 
     explicit = os.environ.get("GRAPHIFY_TRIAGE_BACKEND", "").strip()
     if explicit in BACKENDS:
@@ -583,9 +583,9 @@ def _resolve_triage_backend() -> tuple[str, str]:
 
 def triage_with_opus(prs: list[PRInfo], base: str) -> None:
     try:
-        from graphify.llm import BACKENDS, _get_backend_api_key
+        from mapmmd.llm import BACKENDS, _get_backend_api_key
     except ImportError:
-        print(red("  graphify.llm not available - cannot run triage."), file=sys.stderr)
+        print(red("  mapmmd.llm not available - cannot run triage."), file=sys.stderr)
         sys.exit(1)
 
     candidates = [p for p in prs if p.base_branch == base and p.status not in ("WRONG-BASE", "STALE")]
@@ -725,7 +725,7 @@ def cmd_prs(argv: list[str]) -> None:
     for pr in prs:
         pr.worktree_path = worktrees.get(pr.branch)
 
-    # Graph impact is expensive (concurrent gh pr diff calls) — only fetch when
+    # mmd impact is expensive (concurrent gh pr diff calls) — only fetch when
     # the user actually needs it: deep dive, triage, and conflict detection.
     community_labels: dict[int, list[str]] = {}
     needs_impact = graph_path.exists() and (pr_number is not None or do_triage or do_conflicts)

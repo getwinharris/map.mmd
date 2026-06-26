@@ -1,4 +1,4 @@
-"""Token-reduction benchmark - measures how much context graphify saves vs naive full-corpus approach."""
+"""Token-reduction benchmark - measures how much context mapmmd saves vs naive full-corpus approach."""
 from __future__ import annotations
 import json
 import sys
@@ -6,9 +6,9 @@ from pathlib import Path
 import networkx as nx
 from networkx.readwrite import json_graph
 
-from graphify.build import edge_data
-from graphify.serve import _query_terms
-from graphify.paths import default_graph_json as _default_graph_json
+from mapmmd.build import edge_data
+from mapmmd.serve import _query_terms
+from mapmmd.paths import default_graph_json as _default_graph_json
 
 
 _CHARS_PER_TOKEN = 4  # standard approximation
@@ -37,7 +37,7 @@ def _estimate_tokens(text: str) -> int:
     return max(1, len(text) // _CHARS_PER_TOKEN)
 
 
-def _query_subgraph_tokens(G: nx.Graph, question: str, depth: int = 3) -> int:
+def _query_subgraph_tokens(G: nx.mmd, question: str, depth: int = 3) -> int:
     """Run BFS from best-matching nodes and return estimated tokens in the subgraph context."""
     terms = _query_terms(question)
     scored = []
@@ -90,7 +90,7 @@ def run_benchmark(
     corpus_words: int | None = None,
     questions: list[str] | None = None,
 ) -> dict:
-    """Measure token reduction: corpus tokens vs graphify query tokens.
+    """Measure token reduction: corpus tokens vs mapmmd query tokens.
 
     Args:
         graph_path: path to the built graph
@@ -100,7 +100,7 @@ def run_benchmark(
     Returns dict with: corpus_tokens, avg_query_tokens, reduction_ratio, per_question
     """
     graph_path = graph_path or _default_graph_json()
-    from graphify.security import check_graph_file_size_cap
+    from mapmmd.security import check_graph_file_size_cap
     check_graph_file_size_cap(Path(graph_path))
     data = json.loads(Path(graph_path).read_text(encoding="utf-8"))
     try:
@@ -144,11 +144,11 @@ def print_benchmark(result: dict) -> None:
         print(f"Benchmark error: {result['error']}")
         return
 
-    print(f"\ngraphify token reduction benchmark")
+    print(f"\nmapmmd token reduction benchmark")
     print(_hr(50))
     arrow = _safe("→", "->")
     print(f"  Corpus:          {result['corpus_words']:,} words {arrow} ~{result['corpus_tokens']:,} tokens (naive)")
-    print(f"  Graph:           {result['nodes']:,} nodes, {result['edges']:,} edges")
+    print(f"  mmd:           {result['nodes']:,} nodes, {result['edges']:,} edges")
     print(f"  Avg query cost:  ~{result['avg_query_tokens']:,} tokens")
     print(f"  Reduction:       {result['reduction_ratio']}x fewer tokens per query")
     print(f"\n  Per question:")

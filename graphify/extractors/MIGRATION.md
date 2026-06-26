@@ -1,6 +1,6 @@
 # Migrating a language extractor out of extract.py
 
-`graphify/extract.py` is being split into this package, one language per PR
+`mapmmd/extract.py` is being split into this package, one language per PR
 (upstream issue #1212). This is the playbook for porting ONE language. It is
 written so an AI agent can execute it in a single session.
 
@@ -27,10 +27,10 @@ must move first as its own coordinated batch. Pick a bespoke extractor.
 2. **One language per PR.** Small diffs keep review trivial and avoid
    conflicts with other in-flight ports.
 3. **Facade re-export is mandatory.** `extract.py` must keep exporting every
-   moved name (`from graphify.extractors.<mod> import extract_<lang>  # noqa: F401`
+   moved name (`from mapmmd.extractors.<mod> import extract_<lang>  # noqa: F401`
    in the marked migration block, kept alphabetical). Existing importers
    (`__main__.py`, `watch.py`, `pg_introspect.py`, tests) must not change.
-4. **Never import from `graphify.extract` inside this package.** Import
+4. **Never import from `mapmmd.extract` inside this package.** Import
    direction is strictly extract.py -> extractors/. If you need a helper that
    lives in extract.py, classify it (below) and move it.
 5. **Zero test edits** outside `tests/test_extractors_registry.py`. The
@@ -40,7 +40,7 @@ must move first as its own coordinated batch. Pick a bespoke extractor.
 
 For every `_name` your function references that is defined OUTSIDE it:
 
-- run `grep -c '_name' graphify/extract.py` AFTER your candidate move;
+- run `grep -c '_name' mapmmd/extract.py` AFTER your candidate move;
 - remaining uses > 0 -> **shared**: move it to `base.py` and add it to the
   facade re-import in extract.py;
 - remaining uses = 0 -> **private**: move it into your language module.
@@ -67,13 +67,13 @@ that are not satisfied internally, and verify each header import is used.
 1. Append a failing test to `tests/test_extractors_registry.py`:
    module import + facade identity + registry identity (copy an existing
    `test_<lang>_migrated` as the template).
-2. `grep -n 'def extract_<lang>' graphify/extract.py`; the span ends at the
-   line before the next top-level statement (`^def ` or `^_CONST`). Beware
+2. `grep -n 'def extract_<lang>' mapmmd/extract.py`; the span ends at the
+   line before the next top-level statement (`^def` or `^_CONST`). Beware
    neighbors: top-level constants AFTER your function may belong to the NEXT
    function (e.g. `_CONFIG_JSON_*` sit after where extract_razor used to be
    but were never razor's).
-3. Save the span to a temp file. Create `graphify/extractors/<lang>.py` with
-   module docstring (`"""<Lang> extractor. Moved verbatim from graphify/extract.py."""`),
+3. Save the span to a temp file. Create `mapmmd/extractors/<lang>.py` with
+   module docstring (`"""<Lang> extractor. Moved verbatim from mapmmd/extract.py."""`),
    `from __future__ import annotations`, minimal stdlib imports, base imports,
    then paste the function. Verify byte-identity against the temp file.
 4. Delete the span from extract.py, leaving exactly two blank lines between

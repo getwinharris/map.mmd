@@ -1,9 +1,9 @@
-"""Tests for `graphify extract` CLI dispatch path in graphify.__main__."""
+"""Tests for `mapmmd extract` CLI dispatch path in mapmmd.__main__."""
 from __future__ import annotations
 
 import pytest
 
-import graphify.__main__ as mainmod
+import mapmmd.__main__ as mainmod
 
 
 def _make_corpus(tmp_path):
@@ -23,8 +23,8 @@ def test_extract_exits_nonzero_when_all_semantic_chunks_fail(
     """When every semantic chunk errors (e.g. backend SDK not installed),
     the CLI must exit non-zero instead of silently writing an AST-only graph.
 
-    The bug this guards: `pip install graphifyy` doesn't pull in `anthropic`,
-    so `graphify extract --backend claude` would print per-chunk errors and
+    The bug this guards: `pip install mapmmdy` doesn't pull in `anthropic`,
+    so `mapmmd extract --backend claude` would print per-chunk errors and
     still exit 0 with a graph.json. Callers checking exit status saw success.
     """
     corpus = _make_corpus(tmp_path)
@@ -49,13 +49,13 @@ def test_extract_exits_nonzero_when_all_semantic_chunks_fail(
         }
 
     monkeypatch.setattr(
-        "graphify.llm.extract_corpus_parallel", _all_chunks_failed
+        "mapmmd.llm.extract_corpus_parallel", _all_chunks_failed
     )
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude",
+        ["mapmmd", "extract", str(corpus), "--backend", "claude",
          "--out", str(out_dir)],
     )
 
@@ -73,7 +73,7 @@ def test_extract_exits_nonzero_when_all_semantic_chunks_fail(
 
     # No graph.json should have been written - the failure must abort before
     # the merge/cluster/write phase, not after.
-    assert not (out_dir / "graphify-out" / "graph.json").exists(), (
+    assert not (out_dir / "mapmmd-out" / "graph.json").exists(), (
         "graph.json must not be written when semantic extraction fails"
     )
 
@@ -100,13 +100,13 @@ def test_extract_succeeds_when_at_least_one_chunk_completes(
         }
 
     monkeypatch.setattr(
-        "graphify.llm.extract_corpus_parallel", _one_chunk_succeeded
+        "mapmmd.llm.extract_corpus_parallel", _one_chunk_succeeded
     )
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude",
+        ["mapmmd", "extract", str(corpus), "--backend", "claude",
          "--out", str(out_dir)],
     )
 
@@ -118,7 +118,7 @@ def test_extract_succeeds_when_at_least_one_chunk_completes(
         assert exc.code in (None, 0), f"unexpected exit code {exc.code}"
 
     # graph.json should exist on the happy path
-    assert (out_dir / "graphify-out" / "graph.json").exists(), (
+    assert (out_dir / "mapmmd-out" / "graph.json").exists(), (
         "graph.json must be written on the happy path"
     )
 
@@ -148,7 +148,7 @@ def _clear_backend_keys(monkeypatch):
 def test_extract_codeonly_succeeds_without_api_key(monkeypatch, tmp_path):
     """A code-only corpus must run with no LLM API key.
 
-    Regression: graphify extract validated a backend upfront and exited 1 with
+    Regression: mapmmd extract validated a backend upfront and exited 1 with
     'no LLM API key found' even for a code-only corpus that never calls a model.
     The keyless AST path now runs to a written graph.json (#1122).
     """
@@ -158,7 +158,7 @@ def test_extract_codeonly_succeeds_without_api_key(monkeypatch, tmp_path):
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(corpus), "--out", str(out_dir)],
+        ["mapmmd", "extract", str(corpus), "--out", str(out_dir)],
     )
 
     try:
@@ -166,15 +166,15 @@ def test_extract_codeonly_succeeds_without_api_key(monkeypatch, tmp_path):
     except SystemExit as exc:
         assert exc.code in (None, 0), f"unexpected exit code {exc.code}"
 
-    graph = out_dir / "graphify-out" / "graph.json"
+    graph = out_dir / "mapmmd-out" / "graph.json"
     assert graph.exists(), "code-only extract must write graph.json without a key"
     import json
     assert len(json.loads(graph.read_text()).get("nodes", [])) > 0
 
 
 def test_extract_out_keeps_project_root_clean(monkeypatch, tmp_path):
-    """`extract --out DIR` routes every artifact to DIR/graphify-out/ and the
-    scanned project must not grow a graphify-out/ (or anything else) beside
+    """`extract --out DIR` routes every artifact to DIR/mapmmd-out/ and the
+    scanned project must not grow a mapmmd-out/ (or anything else) beside
     its sources.
 
     Guards the centralized-output workflow: run from the project root with
@@ -190,7 +190,7 @@ def test_extract_out_keeps_project_root_clean(monkeypatch, tmp_path):
     monkeypatch.chdir(corpus)  # run from the project root, like a real user
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", ".", "--out", str(external)],
+        ["mapmmd", "extract", ".", "--out", str(external)],
     )
 
     try:
@@ -198,11 +198,11 @@ def test_extract_out_keeps_project_root_clean(monkeypatch, tmp_path):
     except SystemExit as exc:
         assert exc.code in (None, 0), f"unexpected exit code {exc.code}"
 
-    out = external / "graphify-out"
+    out = external / "mapmmd-out"
     assert (out / "graph.json").exists(), "graph.json must land under --out"
     assert (out / "manifest.json").exists(), "manifest.json must land under --out"
-    assert not (corpus / "graphify-out").exists(), (
-        "scanned project must not grow a graphify-out/ when --out is set"
+    assert not (corpus / "mapmmd-out").exists(), (
+        "scanned project must not grow a mapmmd-out/ when --out is set"
     )
     assert sorted(p.name for p in corpus.iterdir()) == ["auth.py"], (
         "no stray files may appear in the project root"
@@ -221,11 +221,11 @@ def test_extract_without_key_still_errors_when_docs_present(
     out_dir = tmp_path / "out"
     _clear_backend_keys(monkeypatch)
     # Patch detect_backend too so ambient AWS/ollama env can't slip through.
-    monkeypatch.setattr("graphify.llm.detect_backend", lambda: None)
+    monkeypatch.setattr("mapmmd.llm.detect_backend", lambda: None)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(corpus), "--out", str(out_dir)],
+        ["mapmmd", "extract", str(corpus), "--out", str(out_dir)],
     )
 
     with pytest.raises(SystemExit) as exc_info:
@@ -234,4 +234,4 @@ def test_extract_without_key_still_errors_when_docs_present(
     err = capsys.readouterr().err
     assert "no LLM API key found" in err
     assert "code-only corpus needs no key" in err
-    assert not (out_dir / "graphify-out" / "graph.json").exists()
+    assert not (out_dir / "mapmmd-out" / "graph.json").exists()

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-callflow_html.py — Generate call-flow architecture HTML from graphify knowledge graph outputs.
+callflow_html.py — Generate call-flow architecture HTML from mapmmd knowledge graph outputs.
 
-Reads graph.json plus optional GRAPH_REPORT.md, .graphify_labels.json, and sections JSON,
+Reads graph.json plus optional GRAPH_REPORT.md, .mapmmd_labels.json, and sections JSON,
 then produces a self-contained HTML file with:
   - Dark-themed CSS (fixed template)
   - Navigation bar from section list
@@ -12,9 +12,9 @@ then produces a self-contained HTML file with:
   - Auto-generated section intros and key-file cards
 
 Usage:
-  python3 -m graphify export callflow-html
-  python3 -m graphify export callflow-html /path/to/project/graphify-out/graph.json
-  python3 -m graphify export callflow-html --graph /path/to/graph.json --output docs/architecture.html
+  python3 -m mapmmd export callflow-html
+  python3 -m mapmmd export callflow-html /path/to/project/mapmmd-out/graph.json
+  python3 -m mapmmd export callflow-html --graph /path/to/graph.json --output docs/architecture.html
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from html import escape
 
-from graphify.paths import GRAPHIFY_OUT, GRAPHIFY_OUT_NAME
+from mapmmd.paths import GRAPHIFY_OUT, GRAPHIFY_OUT_NAME
 
 
 # ──────────────────────────────────────────────
@@ -136,7 +136,7 @@ def endpoint_id(value) -> str:
 
 
 def normalize_node(raw: dict, index: int) -> dict:
-    """Normalize a graphify node across common graph.json schema variants."""
+    """Normalize a mapmmd node across common graph.json schema variants."""
     node = dict(raw)
     node_id = first_present(
         node,
@@ -199,7 +199,7 @@ def normalize_node(raw: dict, index: int) -> dict:
 
 
 def normalize_edge(raw: dict, index: int) -> dict | None:
-    """Normalize graphify edges while preserving original fields."""
+    """Normalize mapmmd edges while preserving original fields."""
     edge = dict(raw)
     source = endpoint_id(first_present(edge, "source", "src", "from", "from_id", "start", "u"))
     target = endpoint_id(first_present(edge, "target", "dst", "to", "to_id", "end", "v"))
@@ -220,7 +220,7 @@ def normalize_edge(raw: dict, index: int) -> dict | None:
 
 
 def _node_link_payload(data: dict) -> tuple[list, list] | None:
-    """Read current graphify graph.json via NetworkX's node-link parser."""
+    """Read current mapmmd graph.json via NetworkX's node-link parser."""
     if not isinstance(data.get("nodes"), list):
         return None
     if not isinstance(data.get("links"), list) and not isinstance(data.get("edges"), list):
@@ -255,7 +255,7 @@ def _node_link_payload(data: dict) -> tuple[list, list] | None:
 def load_graph(path: str | Path) -> tuple:
     """Load graph.json. Returns normalized (nodes, edges, hyperedges, metadata)."""
     if path:
-        from graphify.security import check_graph_file_size_cap
+        from mapmmd.security import check_graph_file_size_cap
         try:
             check_graph_file_size_cap(Path(path))
         except ValueError as exc:
@@ -296,7 +296,7 @@ def load_graph(path: str | Path) -> tuple:
 
 
 def load_labels(path: str | Path | None) -> dict:
-    """Load community labels from .graphify_labels.json, tolerating wrapper keys."""
+    """Load community labels from .mapmmd_labels.json, tolerating wrapper keys."""
     data = read_json(path, default={})
     if not isinstance(data, dict):
         return {}
@@ -411,26 +411,26 @@ def infer_project_name(graph_path: str, meta: dict) -> str:
     return path.parent.name or "Project"
 
 
-def resolve_graphify_paths(args) -> dict:
-    """Resolve project root, graphify output dir, and optional files."""
+def resolve_mapmmd_paths(args) -> dict:
+    """Resolve project root, mapmmd output dir, and optional files."""
     base = Path(args.project).expanduser() if args.project else Path.cwd()
-    if args.graphify_out:
-        graphify_out = Path(args.graphify_out).expanduser()
+    if args.mapmmd_out:
+        mapmmd_out = Path(args.mapmmd_out).expanduser()
     elif args.graph:
-        graphify_out = Path(args.graph).expanduser().parent
+        mapmmd_out = Path(args.graph).expanduser().parent
     elif (base / "graph.json").exists():
-        graphify_out = base
+        mapmmd_out = base
     else:
-        graphify_out = base / GRAPHIFY_OUT
+        mapmmd_out = base / GRAPHIFY_OUT
 
-    project_root = graphify_out.parent if graphify_out.name == GRAPHIFY_OUT_NAME else base
-    graph = Path(args.graph).expanduser() if args.graph else graphify_out / "graph.json"
-    report = Path(args.report).expanduser() if args.report else graphify_out / "GRAPH_REPORT.md"
-    labels = Path(args.labels).expanduser() if args.labels else graphify_out / ".graphify_labels.json"
+    project_root = mapmmd_out.parent if mapmmd_out.name == GRAPHIFY_OUT_NAME else base
+    graph = Path(args.graph).expanduser() if args.graph else mapmmd_out / "graph.json"
+    report = Path(args.report).expanduser() if args.report else mapmmd_out / "GRAPH_REPORT.md"
+    labels = Path(args.labels).expanduser() if args.labels else mapmmd_out / ".mapmmd_labels.json"
     sections = Path(args.sections).expanduser() if args.sections else None
     return {
         "base": project_root,
-        "graphify_out": graphify_out,
+        "mapmmd_out": mapmmd_out,
         "graph": graph,
         "report": report,
         "labels": labels,
@@ -722,7 +722,7 @@ SECTION_ARCHETYPES = [
     (
         "build-graph",
         "图谱构建",
-        "Graph Build",
+        "mmd Build",
         {
             "build", "graph", "merge", "dedup", "node", "edge", "hyperedge",
             "json", "schema", "normalize", "confidence",
@@ -778,7 +778,7 @@ SECTION_ARCHETYPES = [
     (
         "security-global",
         "安全与全局图",
-        "Security & Global Graph",
+        "Security & Global mmd",
         {
             "security", "safe", "ssrf", "xss", "path", "traversal",
             "global", "prefix", "prune", "repo", "clone",
@@ -971,7 +971,7 @@ def node_degree_scores(edges: list) -> Counter:
 
 
 def node_importance(node: dict) -> float:
-    """Use graphify centrality fields when available."""
+    """Use mapmmd centrality fields when available."""
     for key in ("pagerank", "page_rank", "pageRank", "rank", "centrality", "score"):
         if key in node:
             return to_float(node.get(key), 0.0)
@@ -1335,14 +1335,14 @@ def generate_header(sections: list, meta: dict, lang: str) -> str:
     if lang.startswith("zh"):
         title = f"{project_name} — 完整调用流程与架构文档"
         subtitle = (
-            f"由 graphify 知识图谱生成：{meta.get('node_count', '?')} 个节点、"
+            f"由 mapmmd 知识图谱生成：{meta.get('node_count', '?')} 个节点、"
             f"{meta.get('edge_count', '?')} 条边、{meta.get('community_count', '?')} 个社区。"
             f"Commit: {commit}"
         )
     else:
         title = f"{project_name} — Complete Call Flow & Architecture Documentation"
         subtitle = (
-            f"Generated from graphify knowledge graph: {meta.get('node_count', '?')} nodes, "
+            f"Generated from mapmmd knowledge graph: {meta.get('node_count', '?')} nodes, "
             f"{meta.get('edge_count', '?')} edges, {meta.get('community_count', '?')} communities. "
             f"Commit: {commit}"
         )
@@ -1359,7 +1359,7 @@ def derive_flow_chain(sections: list, classified_edges: dict) -> str:
     section_names = {sec["id"]: sec.get("name", sec["id"]) for sec in sections}
     order = [sec["id"] for sec in sections if sec["id"] != "overview"]
     if not order:
-        return "Graph nodes -> documentation"
+        return "mmd nodes -> documentation"
 
     outgoing = defaultdict(Counter)
     incoming = Counter()
@@ -1483,8 +1483,8 @@ def generate_section_cards(sec: dict, nodes: list, section_edges: list, lang: st
         relation_text = pick_text(lang, "未检测到高置信调用边", "No high-confidence call edges detected")
     note = pick_text(
         lang,
-        f"本节由 graphify 社区聚类生成。关系概况：{relation_text}。图表优先展示高置信、跨节点调用或使用关系，完整节点清单位于表格中。",
-        f"This section comes from graphify community clustering. Relationship summary: {relation_text}. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.",
+        f"本节由 mapmmd 社区聚类生成。关系概况：{relation_text}。图表优先展示高置信、跨节点调用或使用关系，完整节点清单位于表格中。",
+        f"This section comes from mapmmd community clustering. Relationship summary: {relation_text}. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.",
     )
     key_files = pick_text(lang, "关键文件", "Key Files")
     role = pick_text(lang, "覆盖节点", "Coverage")
@@ -1515,7 +1515,7 @@ class CallflowOptions:
         self,
         project: str | Path | None = None,
         *,
-        graphify_out: str | Path | None = None,
+        mapmmd_out: str | Path | None = None,
         graph: str | Path | None = None,
         report: str | Path | None = None,
         labels: str | Path | None = None,
@@ -1528,7 +1528,7 @@ class CallflowOptions:
         max_diagram_edges: int = 24,
     ):
         self.project = str(project) if project is not None else None
-        self.graphify_out = str(graphify_out) if graphify_out is not None else None
+        self.mapmmd_out = str(mapmmd_out) if mapmmd_out is not None else None
         self.graph = str(graph) if graph is not None else None
         self.report = str(report) if report is not None else None
         self.labels = str(labels) if labels is not None else None
@@ -1566,7 +1566,7 @@ def _report_highlights(report_text: str, lang: str) -> str:
     if not keep:
         return ""
 
-    title = pick_text(lang, "图谱报告摘要", "Graph Report Highlights")
+    title = pick_text(lang, "图谱报告摘要", "mmd Report Highlights")
     items = "\n".join(f"      <li>{escape(item)}</li>" for item in keep)
     return f"""<div class="card">
     <h4>{title}</h4>
@@ -1579,7 +1579,7 @@ def _report_highlights(report_text: str, lang: str) -> str:
 def write_callflow_html(
     project: str | Path | None = None,
     *,
-    graphify_out: str | Path | None = None,
+    mapmmd_out: str | Path | None = None,
     graph: str | Path | None = None,
     report: str | Path | None = None,
     labels: str | Path | None = None,
@@ -1592,10 +1592,10 @@ def write_callflow_html(
     max_diagram_edges: int = 24,
     verbose: bool = False,
 ) -> Path:
-    """Generate call-flow architecture HTML from graphify output files."""
+    """Generate call-flow architecture HTML from mapmmd output files."""
     args = CallflowOptions(
         project,
-        graphify_out=graphify_out,
+        mapmmd_out=mapmmd_out,
         graph=graph,
         report=report,
         labels=labels,
@@ -1608,11 +1608,11 @@ def write_callflow_html(
         max_diagram_edges=max_diagram_edges,
     )
 
-    paths = resolve_graphify_paths(args)
+    paths = resolve_mapmmd_paths(args)
     if not paths["graph"].exists():
         raise FileNotFoundError(
-            f"graphify output not found: {paths['graph']}. "
-            "Run graphify first or pass --graph /path/to/graph.json."
+            f"mapmmd output not found: {paths['graph']}. "
+            "Run mapmmd first or pass --graph /path/to/graph.json."
         )
 
     # Load data
@@ -1649,11 +1649,11 @@ def write_callflow_html(
         if not output_path.is_absolute():
             output_path = paths["base"] / output_path
     else:
-        output_path = paths["graphify_out"] / f"{safe_filename(meta['project_name'])}-callflow.html"
+        output_path = paths["mapmmd_out"] / f"{safe_filename(meta['project_name'])}-callflow.html"
 
     if verbose:
         print(f"Loaded: {len(nodes)} nodes, {len(edges)} edges, {len(sections)} sections")
-        print(f"Graph: {paths['graph']}")
+        print(f"mmd: {paths['graph']}")
 
     # Build index
     comm_idx = build_community_index(nodes)
@@ -1776,7 +1776,7 @@ def write_callflow_html(
 
 <div class="grid">
   <div class="card">
-    <h4>Graph</h4>
+    <h4>mmd</h4>
     <table style="width:100%;font-size:0.85rem;">
       <tr><td>Nodes</td><td>{len(nodes)}</td></tr>
       <tr><td>Edges</td><td>{len(edges)}</td></tr>
@@ -1799,7 +1799,7 @@ def write_callflow_html(
     # ── Footer ──
     html.append(f"""<div style="text-align:center; padding:40px 0; color: var(--muted); font-size:0.9rem;">
   <p>{escape(str(meta.get('project_name', 'Project')))} — Architecture Documentation</p>
-  <p>Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')} · graphify callflow-html</p>
+  <p>Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')} · mapmmd callflow-html</p>
 </div>
 """)
 
@@ -1981,13 +1981,13 @@ def write_callflow_html(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate call-flow architecture HTML from graphify knowledge graph outputs"
+        description="Generate call-flow architecture HTML from mapmmd knowledge graph outputs"
     )
-    parser.add_argument("project", nargs="?", default=None, help="Project root or graphify output directory")
-    parser.add_argument("--graphify-out", default=None, help="Path to graphify output directory")
+    parser.add_argument("project", nargs="?", default=None, help="Project root or mapmmd output directory")
+    parser.add_argument("--mapmmd-out", default=None, help="Path to mapmmd output directory")
     parser.add_argument("--graph", default=None, help="Path to graph.json")
     parser.add_argument("--report", default=None, help="Path to GRAPH_REPORT.md")
-    parser.add_argument("--labels", default=None, help="Path to .graphify_labels.json")
+    parser.add_argument("--labels", default=None, help="Path to .mapmmd_labels.json")
     parser.add_argument("--sections", default=None, help="Path to sections JSON file; auto-derived when omitted")
     parser.add_argument("--output", default=None, help="Output HTML path")
     parser.add_argument("--lang", default="auto", help="HTML language: auto, zh-CN, en, etc. (default: auto)")
@@ -2000,7 +2000,7 @@ def main():
     try:
         write_callflow_html(
             args.project,
-            graphify_out=args.graphify_out,
+            mapmmd_out=args.mapmmd_out,
             graph=args.graph,
             report=args.report,
             labels=args.labels,

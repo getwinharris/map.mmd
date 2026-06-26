@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-from graphify.extract import extract_sql
+from mapmmd.extract import extract_sql
 
 
 def _quote_ident(name: str) -> str:
@@ -15,7 +15,7 @@ def introspect_postgres(dsn: str | None = None) -> dict:
     except ModuleNotFoundError:
         raise ImportError(
             "psycopg is required for --postgres. "
-            "Install with: pip install 'graphify[postgres]'"
+            "Install with: pip install 'mapmmd[postgres]'"
         )
 
     try:

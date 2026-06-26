@@ -16,7 +16,7 @@ pytest.importorskip("starlette")
 
 from starlette.testclient import TestClient  # noqa: E402
 
-from graphify import serve as serve_mod  # noqa: E402
+from mapmmd import serve as serve_mod  # noqa: E402
 
 SAMPLE_GRAPH = {
     "directed": True,
@@ -66,7 +66,7 @@ def test_app_builds_and_initialize_succeeds(tmp_path):
         # json_response=True returns a single JSON-RPC envelope.
         payload = resp.json()
         assert payload["jsonrpc"] == "2.0"
-        assert payload["result"]["serverInfo"]["name"] == "graphify"
+        assert payload["result"]["serverInfo"]["name"] == "mapmmd"
 
 
 def test_unknown_path_is_404(tmp_path):
@@ -104,7 +104,7 @@ def test_api_key_bearer_ok(tmp_path):
             json=_INIT_BODY,
         )
         assert resp.status_code == 200
-        assert resp.json()["result"]["serverInfo"]["name"] == "graphify"
+        assert resp.json()["result"]["serverInfo"]["name"] == "mapmmd"
 
 
 def test_api_key_x_api_key_header_ok(tmp_path):
@@ -202,8 +202,8 @@ def test_cli_defaults_to_stdio(monkeypatch):
     monkeypatch.setattr(
         serve_mod, "serve_http", lambda *a, **k: calls.setdefault("http", (a, k))
     )
-    serve_mod._main(["graphify-out/graph.json"])
-    assert calls.get("stdio") == "graphify-out/graph.json"
+    serve_mod._main(["mapmmd-out/graph.json"])
+    assert calls.get("stdio") == "mapmmd-out/graph.json"
     assert "http" not in calls
 
 

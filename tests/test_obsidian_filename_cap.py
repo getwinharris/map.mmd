@@ -3,11 +3,11 @@ to stay under the 255-byte filesystem limit, instead of crashing with
 OSError ENAMETOOLONG on long node labels."""
 import networkx as nx
 
-from graphify.export import to_obsidian, to_canvas
+from mapmmd.export import to_obsidian, to_canvas
 
 
-def _graph(labels: list[str]) -> tuple[nx.Graph, dict[int, list[str]]]:
-    G = nx.Graph()
+def _graph(labels: list[str]) -> tuple[nx.mmd, dict[int, list[str]]]:
+    G = nx.mmd()
     ids = []
     for i, lab in enumerate(labels):
         nid = f"n{i}"

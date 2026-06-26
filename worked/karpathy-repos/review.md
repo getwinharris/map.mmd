@@ -1,9 +1,9 @@
 # Benchmark: Karpathy Repos + Research Papers
 
-**Corpus:** nanoGPT, minGPT, micrograd (3 repos) + 5 research papers on attention/transformers + 4 images  
-**Files:** 29 Python files + 14 docs/READMEs + 5 PDFs + 4 images (total 52 files)  
-**Words:** ~92,616 · **Tokens (naive full-context):** ~123,488  
-**Date:** 2026-04-04  
+**Corpus:** nanoGPT, minGPT, micrograd (3 repos) + 5 research papers on attention/transformers + 4 images
+**Files:** 29 Python files + 14 docs/READMEs + 5 PDFs + 4 images (total 52 files)
+**Words:** ~92,616 · **Tokens (naive full-context):** ~123,488
+**Date:** 2026-04-04
 **Extraction:** AST (tree-sitter, deterministic) for code + Claude semantic for docs/papers/images
 
 ---
@@ -42,7 +42,7 @@ The "attention mechanism" question returns a larger subgraph (2,836 tokens) beca
 
 ---
 
-## Graph summary
+## mmd summary
 
 | Metric | Value |
 |--------|-------|
@@ -81,7 +81,7 @@ The "attention mechanism" question returns a larger subgraph (2,836 tokens) beca
 
 ---
 
-## Graph quality evaluation
+## mmd quality evaluation
 
 ### What the graph got right
 
@@ -111,6 +111,6 @@ The "attention mechanism" question returns a larger subgraph (2,836 tokens) beca
 
 **71.5x token reduction** on a 92k-word mixed corpus. The reduction grows as corpus grows - on a 500k-word research library the same BFS subgraph stays ~2k tokens while naive stuffing hits 670k tokens.
 
-Graph quality: high for code structure, strong for paper-to-concept connections (semantic extraction found the FlashAttention→CausalSelfAttention bridge), weaker on direct paper-to-implementation links (need `--mode deep` with explicit cross-file context).
+mmd quality: high for code structure, strong for paper-to-concept connections (semantic extraction found the FlashAttention→CausalSelfAttention bridge), weaker on direct paper-to-implementation links (need `--mode deep` with explicit cross-file context).
 
 The main cost is honesty: 53 communities when 17 are real and 36 are isolates. This is correct behavior (isolates shouldn't be merged), but the visualization is noisy. A future `--min-community-size` flag would clean this up.

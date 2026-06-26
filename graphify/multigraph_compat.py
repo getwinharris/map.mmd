@@ -1,4 +1,4 @@
-"""Runtime compatibility probe for Graphify MultiDiGraph mode.
+"""Runtime compatibility probe for map.mmd MultiDimmd mode.
 
 Verifies that the current NetworkX runtime supports the behaviors a future
 opt-in --multigraph build will rely on. The probe is BEHAVIOR-based, not
@@ -45,12 +45,12 @@ class MultigraphCapabilityResult:
     def error_message(self) -> str:
         if self.ok:
             return (
-                "Graphify MultiDiGraph capability probe passed "
+                "map.mmd MultiDimmd capability probe passed "
                 f"(Python {self.python_version}, NetworkX {self.networkx_version})."
             )
         failed = "; ".join(f"{check.name}: {check.detail}" for check in self.failed)
         return (
-            "error: --multigraph requires NetworkX keyed MultiDiGraph node-link "
+            "error: --multigraph requires NetworkX keyed MultiDimmd node-link "
             "round-trip support. "
             f"Detected Python {self.python_version}, NetworkX {self.networkx_version}. "
             f"Failed capability check(s): {failed}. "
@@ -70,8 +70,8 @@ def _check(name: str, func: Callable[[], bool | str]) -> CapabilityCheck:
     return CapabilityCheck(name, False, f"unexpected result {detail!r}")
 
 
-def _build_probe_graph() -> nx.MultiDiGraph:
-    graph = nx.MultiDiGraph()
+def _build_probe_graph() -> nx.MultiDimmd:
+    graph = nx.MultiDimmd()
     graph.add_node("a", label="A")
     graph.add_node("b", label="B")
     graph.add_edge("a", "b", key="calls:a.py:L1", relation="calls", source_file="a.py")
@@ -113,7 +113,7 @@ def _probe_node_link_round_trip() -> bool | str:
     if serialized_keys != expected:
         return f"serialized keys {sorted(serialized_keys)} did not match {sorted(expected)}"
     loaded = json_graph.node_link_graph(data, edges="links")
-    if not isinstance(loaded, nx.MultiDiGraph):
+    if not isinstance(loaded, nx.MultiDimmd):
         return f"round-trip graph type was {type(loaded).__name__}"
     if loaded.number_of_edges("a", "b") != 2:
         return f"round-trip edge count was {loaded.number_of_edges('a', 'b')}"
@@ -124,7 +124,7 @@ def _probe_node_link_round_trip() -> bool | str:
 
 
 def _probe_duplicate_key_overwrite_semantics() -> bool | str:
-    graph = nx.MultiDiGraph()
+    graph = nx.MultiDimmd()
     graph.add_edge("x", "y", key="same", marker="first")
     graph.add_edge("x", "y", key="same", marker="second")
     edges = list(graph.edges(keys=True, data=True))
@@ -140,7 +140,7 @@ def _probe_reserved_key_attr_rejected() -> bool | str:
 
     Python forbids passing the same keyword argument twice — once explicitly
     and once via **kwargs. This probe confirms that protection still applies
-    to nx.MultiDiGraph.add_edge: a future loader that builds attrs from JSON
+    to nx.MultiDimmd.add_edge: a future loader that builds attrs from JSON
     will be reliably protected from accidentally setting `key` via attrs while
     also passing `key=` explicitly.
 
@@ -149,7 +149,7 @@ def _probe_reserved_key_attr_rejected() -> bool | str:
     Python version relaxes this rule (extremely unlikely), the probe surfaces
     the regression.
     """
-    graph = nx.MultiDiGraph()
+    graph = nx.MultiDimmd()
     attrs: dict[str, Any] = {"key": "attr-key", "relation": "calls"}
     try:
         graph.add_edge("a", "b", key="schema-key", **attrs)
@@ -159,7 +159,7 @@ def _probe_reserved_key_attr_rejected() -> bool | str:
 
 
 def _probe_remove_edges_from_two_tuple_semantics() -> bool | str:
-    graph = nx.MultiDiGraph()
+    graph = nx.MultiDimmd()
     graph.add_edge("a", "b", key="one")
     graph.add_edge("a", "b", key="two")
     graph.remove_edges_from([("a", "b")])
@@ -173,9 +173,9 @@ def _probe_to_undirected_preserves_multigraph_type() -> bool | str:
     graph = _build_probe_graph()
     undirected = graph.to_undirected()
     undirected_view = graph.to_undirected(as_view=True)
-    if not isinstance(undirected, nx.MultiGraph):
+    if not isinstance(undirected, nx.Multimmd):
         return f"to_undirected() returned {type(undirected).__name__}"
-    if not isinstance(undirected_view, nx.MultiGraph):
+    if not isinstance(undirected_view, nx.Multimmd):
         return f"to_undirected(as_view=True) returned {type(undirected_view).__name__}"
     return True
 

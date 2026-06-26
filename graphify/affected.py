@@ -31,7 +31,7 @@ class AffectedHit:
     via_relation: str
 
 
-def _node_label(graph: nx.Graph, node_id: str) -> str:
+def _node_label(graph: nx.mmd, node_id: str) -> str:
     data = graph.nodes[node_id]
     return str(data.get("label") or node_id)
 
@@ -54,7 +54,7 @@ def _normalize_label(label: str) -> str:
     return unicodedata.normalize("NFC", label).casefold()
 
 
-def resolve_seed(graph: nx.Graph, query: str) -> str | None:
+def resolve_seed(graph: nx.mmd, query: str) -> str | None:
     if query in graph:
         return query
     query_lower = _normalize_label(query)
@@ -94,7 +94,7 @@ def resolve_seed(graph: nx.Graph, query: str) -> str | None:
 
 
 def affected_nodes(
-    graph: nx.Graph,
+    graph: nx.mmd,
     seed: str,
     *,
     relations: Iterable[str] = DEFAULT_AFFECTED_RELATIONS,
@@ -133,7 +133,7 @@ def affected_nodes(
 
 
 def format_affected(
-    graph: nx.Graph,
+    graph: nx.mmd,
     query: str,
     *,
     relations: Iterable[str] = DEFAULT_AFFECTED_RELATIONS,
@@ -162,7 +162,7 @@ def format_affected(
     return "\n".join(lines)
 
 
-def load_graph(path: Path) -> nx.Graph:
+def load_graph(path: Path) -> nx.mmd:
     import json
     from networkx.readwrite import json_graph
 
@@ -170,7 +170,7 @@ def load_graph(path: Path) -> nx.Graph:
     # Force directed so stored caller→callee direction survives the round-trip;
     # mirrors serve.py and __main__.py (#1174).
     raw = {**raw, "directed": True}
-    # Normalize the edge key: graphify's `extract` output uses "edges" while
+    # Normalize the edge key: mapmmd's `extract` output uses "edges" while
     # networkx's node_link_data default is "links". Without this, an edges-keyed
     # graph.json raises an uncaught KeyError: 'links' here — every other loader
     # (__main__.py) already normalizes this (#738; same class as #1198).

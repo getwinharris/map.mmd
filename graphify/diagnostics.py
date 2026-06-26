@@ -1,4 +1,4 @@
-"""Read-only diagnostics for MultiDiGraph readiness."""
+"""Read-only diagnostics for MultiDimmd readiness."""
 
 from __future__ import annotations
 
@@ -162,7 +162,7 @@ def diagnose_extraction(
     extract_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Summarize same-endpoint edge-collapse risk for one JSON graph/extraction dict."""
-    from graphify.build import build_from_json
+    from mapmmd.build import build_from_json
 
     node_ids = _node_ids(extraction)
     raw_edges = _edge_list(extraction)
@@ -226,7 +226,7 @@ def diagnose_extraction(
     post_build_node_count: int | None = None
     try:
         graph_input = deepcopy(extraction)
-        graph: nx.Graph = build_from_json(graph_input, directed=directed, root=root)
+        graph: nx.mmd = build_from_json(graph_input, directed=directed, root=root)
         graph_type = type(graph).__name__
         post_build_edge_count = graph.number_of_edges()
         post_build_node_count = graph.number_of_nodes()
@@ -269,8 +269,8 @@ def diagnose_extraction(
 
 
 def _read_json_file(path: str | Path) -> dict[str, Any]:
-    """Read a JSON graph after applying Graphify's graph-load size cap."""
-    from graphify.security import check_graph_file_size_cap
+    """Read a JSON graph after applying map.mmd's graph-load size cap."""
+    from mapmmd.security import check_graph_file_size_cap
 
     json_path = Path(path)
     check_graph_file_size_cap(json_path)
@@ -333,7 +333,7 @@ def format_diagnostic_json(summary: dict[str, Any]) -> dict[str, Any]:
 def format_diagnostic_report(summary: dict[str, Any]) -> str:
     suppression = summary.get("producer_suppression", {})
     lines = [
-        "[graphify] MultiDiGraph edge-collapse diagnostic",
+        "[mapmmd] MultiDimmd edge-collapse diagnostic",
         f"input: {summary.get('input_path', '<in-memory>')}",
         "input_stage: provided JSON (normal graph.json is post-build)",
         f"effective_directed: {summary.get('effective_directed', '<direct-call>')}",

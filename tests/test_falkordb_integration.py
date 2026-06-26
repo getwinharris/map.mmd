@@ -22,7 +22,7 @@ falkordb = pytest.importorskip("falkordb")
 FIXTURES = Path(__file__).parent / "fixtures"
 HOST = os.environ.get("FALKORDB_HOST", "localhost")
 PORT = int(os.environ.get("FALKORDB_PORT", "6379"))
-GRAPH_NAME = "graphify_test"
+GRAPH_NAME = "mapmmd_test"
 
 
 def _connect():
@@ -51,8 +51,8 @@ def db():
 
 
 def test_push_to_falkordb_creates_expected_graph(db):
-    from graphify.build import build_from_json
-    from graphify.export import push_to_falkordb
+    from mapmmd.build import build_from_json
+    from mapmmd.export import push_to_falkordb
 
     extraction = json.loads((FIXTURES / "extraction.json").read_text())
     G = build_from_json(extraction)
@@ -74,8 +74,8 @@ def test_push_to_falkordb_creates_expected_graph(db):
 
 def test_push_to_falkordb_is_idempotent(db):
     """MERGE-based push is safe to re-run - counts must not grow."""
-    from graphify.build import build_from_json
-    from graphify.export import push_to_falkordb
+    from mapmmd.build import build_from_json
+    from mapmmd.export import push_to_falkordb
 
     extraction = json.loads((FIXTURES / "extraction.json").read_text())
     G = build_from_json(extraction)

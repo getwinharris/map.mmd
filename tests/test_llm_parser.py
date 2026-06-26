@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from graphify import llm
+from mapmmd import llm
 
 
 # ---------- _parse_llm_json: the four canonical failure modes ----------
@@ -103,7 +103,7 @@ def _make_envelope(result_obj: dict) -> str:
 @patch("subprocess.run")
 def test_uses_system_prompt_not_append(mock_run, _which):
     """The hollow-response root cause was --append-system-prompt
-    layering graphify's extraction prompt on top of Claude Code's
+    layering mapmmd's extraction prompt on top of Claude Code's
     default interactive-agent prompt. The fix switches to
     --system-prompt (replace) to eliminate the conflict."""
     mock_run.return_value.returncode = 0

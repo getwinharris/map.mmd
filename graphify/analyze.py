@@ -1,9 +1,9 @@
-"""Graph analysis: god nodes (most connected), surprising connections (cross-community), suggested questions."""
+"""mmd analysis: god nodes (most connected), surprising connections (cross-community), suggested questions."""
 from __future__ import annotations
 from pathlib import Path
 import networkx as nx
 
-from graphify.build import edge_data
+from mapmmd.build import edge_data
 
 # Builtin/mock names that can appear as annotation-derived nodes in pre-existing
 # graphs. Excluded from god-node ranking so they don't displace real abstractions
@@ -52,7 +52,7 @@ def _node_community_map(communities: dict[int, list[str]]) -> dict[str, int]:
     return {n: cid for cid, nodes in communities.items() for n in nodes}
 
 
-def _is_file_node(G: nx.Graph, node_id: str) -> bool:
+def _is_file_node(G: nx.mmd, node_id: str) -> bool:
     """
     Return True if this node is a file-level hub node (e.g. 'client', 'models')
     or an AST method stub (e.g. '.auth_flow()', '.__init__()').
@@ -88,7 +88,7 @@ _JSON_NOISE_LABELS: frozenset[str] = frozenset({
 })
 
 
-def _is_json_key_node(G: nx.Graph, node_id: str) -> bool:
+def _is_json_key_node(G: nx.mmd, node_id: str) -> bool:
     attrs = G.nodes[node_id]
     src = (attrs.get("source_file") or "").lower()
     if not src.endswith(".json"):
@@ -97,7 +97,7 @@ def _is_json_key_node(G: nx.Graph, node_id: str) -> bool:
     return label in _JSON_NOISE_LABELS
 
 
-def god_nodes(G: nx.Graph, top_n: int = 10) -> list[dict]:
+def god_nodes(G: nx.mmd, top_n: int = 10) -> list[dict]:
     """Return the top_n most-connected real entities - the core abstractions.
 
     File-level hub nodes are excluded: they accumulate import/contains edges
@@ -122,7 +122,7 @@ def god_nodes(G: nx.Graph, top_n: int = 10) -> list[dict]:
 
 
 def surprising_connections(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]] | None = None,
     top_n: int = 5,
 ) -> list[dict]:
@@ -153,7 +153,7 @@ def surprising_connections(
         return _cross_community_surprises(G, communities or {}, top_n)
 
 
-def _is_concept_node(G: nx.Graph, node_id: str) -> bool:
+def _is_concept_node(G: nx.mmd, node_id: str) -> bool:
     """
     Return True if this node is a manually-injected semantic concept node
     rather than a real entity found in source code.
@@ -172,7 +172,7 @@ def _is_concept_node(G: nx.Graph, node_id: str) -> bool:
     return False
 
 
-from graphify.detect import CODE_EXTENSIONS, DOC_EXTENSIONS, PAPER_EXTENSIONS, IMAGE_EXTENSIONS
+from mapmmd.detect import CODE_EXTENSIONS, DOC_EXTENSIONS, PAPER_EXTENSIONS, IMAGE_EXTENSIONS
 
 
 def _file_category(path: str) -> str:
@@ -192,7 +192,7 @@ def _top_level_dir(path: str) -> str:
 
 
 def _surprise_score(
-    G: nx.Graph,
+    G: nx.mmd,
     u: str,
     v: str,
     data: dict,
@@ -265,7 +265,7 @@ def _surprise_score(
     return score, reasons
 
 
-def _cross_file_surprises(G: nx.Graph, communities: dict[int, list[str]], top_n: int) -> list[dict]:
+def _cross_file_surprises(G: nx.mmd, communities: dict[int, list[str]], top_n: int) -> list[dict]:
     """
     Cross-file edges between real code/doc entities, ranked by a composite
     surprise score rather than confidence alone.
@@ -329,7 +329,7 @@ def _cross_file_surprises(G: nx.Graph, communities: dict[int, list[str]], top_n:
 
 
 def _cross_community_surprises(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]],
     top_n: int,
 ) -> list[dict]:
@@ -417,7 +417,7 @@ def _cross_community_surprises(
 
 
 def suggest_questions(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]],
     community_labels: dict[int, str],
     top_n: int = 7,
@@ -541,7 +541,7 @@ def suggest_questions(
     return questions[:top_n]
 
 
-def graph_diff(G_old: nx.Graph, G_new: nx.Graph) -> dict:
+def graph_diff(G_old: nx.mmd, G_new: nx.mmd) -> dict:
     """Compare two graph snapshots and return what changed.
 
     Returns:
@@ -568,7 +568,7 @@ def graph_diff(G_old: nx.Graph, G_new: nx.Graph) -> dict:
         for n in removed_node_ids
     ]
 
-    def edge_key(G: nx.Graph, u: str, v: str, data: dict) -> tuple:
+    def edge_key(G: nx.mmd, u: str, v: str, data: dict) -> tuple:
         if G.is_directed():
             return (u, v, data.get("relation", ""))
         return (min(u, v), max(u, v), data.get("relation", ""))
@@ -626,7 +626,7 @@ def graph_diff(G_old: nx.Graph, G_new: nx.Graph) -> dict:
 
 
 def find_import_cycles(
-    G: nx.Graph,
+    G: nx.mmd,
     max_cycle_length: int = 5,
     top_n: int = 20,
 ) -> list[dict]:
@@ -656,7 +656,7 @@ def find_import_cycles(
 
     # Step 1: Build a directed file-level graph from import/re-export edges.
     # IMPORTANT: resolve endpoints using source_file only; never infer from label/id.
-    file_graph = nx.DiGraph()
+    file_graph = nx.Dimmd()
 
     for u, v, data in G.edges(data=True):
         rel = data.get("relation", "")
@@ -670,7 +670,7 @@ def find_import_cycles(
         u_file = _endpoint_source_file(u)
         v_file = _endpoint_source_file(v)
 
-        # Works for both DiGraph and Graph inputs:
+        # Works for both Dimmd and mmd inputs:
         # orient edge from edge.source_file endpoint to the opposite endpoint.
         if u_file == src_file_attr:
             tgt_file = v_file

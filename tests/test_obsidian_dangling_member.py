@@ -4,12 +4,12 @@ when a community's member list contains an id that has no backing node in G
 ids). Such dangling members must be skipped, not abort the whole vault export."""
 import networkx as nx
 
-from graphify.export import to_obsidian
+from mapmmd.export import to_obsidian
 
 
 def _graph_with_dangling_member():
     """Two real nodes plus a community that references a third, non-existent id."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("n0", label="Alpha", file_type="code", source_file="a.py")
     G.add_node("n1", label="Beta", file_type="code", source_file="b.py")
     G.add_edge("n0", "n1", relation="calls", confidence="EXTRACTED")
@@ -40,7 +40,7 @@ def test_obsidian_dangling_community_member_does_not_crash(tmp_path):
 
 def test_obsidian_community_of_only_dangling_members(tmp_path):
     """A community whose members are all dangling should still not crash."""
-    G = nx.Graph()
+    G = nx.mmd()
     G.add_node("n0", label="Alpha", file_type="code", source_file="a.py")
     comms = {0: ["n0"], 1: ["ghost_a", "ghost_b"]}
     n = to_obsidian(G, comms, str(tmp_path))

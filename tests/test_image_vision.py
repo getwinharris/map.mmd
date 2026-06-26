@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from graphify import llm
+from mapmmd import llm
 
 # A 1x1 PNG is unnecessary — the renderers never decode pixels, they only base64
 # the bytes — so any non-empty byte string stands in for image content.
@@ -50,7 +50,7 @@ def test_pdf_routed_through_pypdf_not_readtext(tmp_path, monkeypatch):
     # prompt.
     pdf = tmp_path / "paper.pdf"
     pdf.write_bytes(b"%PDF-1.4 RAWBINARYGARBAGE\x00\xff")
-    import graphify.detect as detect
+    import mapmmd.detect as detect
     monkeypatch.setattr(detect, "extract_pdf_text", lambda p: "EXTRACTED PDF TEXT")
     out = llm._read_files([pdf], tmp_path)
     assert "EXTRACTED PDF TEXT" in out

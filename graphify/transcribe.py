@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from graphify.paths import out_path as _out_path
+from mapmmd.paths import out_path as _out_path
 
 
 VIDEO_EXTENSIONS = {'.mp4', '.mov', '.webm', '.mkv', '.avi', '.m4v', '.mp3', '.wav', '.m4a', '.ogg'}
@@ -27,7 +27,7 @@ def _get_whisper():
     except ImportError as exc:
         raise ImportError(
             "Video transcription requires faster-whisper. "
-            "Run: pip install 'graphifyy[video]'"
+            "Run: pip install 'mapmmdy[video]'"
         ) from exc
 
 
@@ -38,7 +38,7 @@ def _get_yt_dlp():
     except ImportError as exc:
         raise ImportError(
             "YouTube/URL download requires yt-dlp. "
-            "Run: pip install 'graphifyy[video]'"
+            "Run: pip install 'mapmmdy[video]'"
         ) from exc
 
 
@@ -53,7 +53,7 @@ def download_audio(url: str, output_dir: Path) -> Path:
     Returns the path to the downloaded audio file (.m4a or .opus).
     Uses cached file if already downloaded.
     """
-    from graphify.security import validate_url
+    from mapmmd.security import validate_url
     validate_url(url)  # blocks private IPs, bad schemes before yt-dlp runs
     yt_dlp = _get_yt_dlp()
     output_dir.mkdir(parents=True, exist_ok=True)

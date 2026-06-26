@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import networkx as nx
 
-from graphify.multigraph_compat import (
+from mapmmd.multigraph_compat import (
     CapabilityCheck,
     MultigraphCapabilityResult,
     probe_multigraph_capabilities,
@@ -41,13 +41,13 @@ def test_failure_message_is_actionable() -> None:
 
     message = result.error_message()
 
-    assert "--multigraph requires NetworkX keyed MultiDiGraph node-link" in message
+    assert "--multigraph requires NetworkX keyed MultiDimmd node-link" in message
     assert "Default simple graph mode remains available" in message
     assert "node_link_edges_links_round_trip: boom" in message
 
 
 def test_networkx_duplicate_key_overwrite_trap_is_real() -> None:
-    graph = nx.MultiDiGraph()
+    graph = nx.MultiDimmd()
 
     graph.add_edge("a", "b", key="same", relation="first")
     graph.add_edge("a", "b", key="same", relation="second")

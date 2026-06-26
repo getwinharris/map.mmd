@@ -1,4 +1,4 @@
-"""Tests for graphify/prs.py."""
+"""Tests for mapmmd/prs.py."""
 from __future__ import annotations
 
 import subprocess
@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 import networkx as nx
 import pytest
 
-from graphify.prs import (
+from mapmmd.prs import (
     PRInfo,
     _classify,
     _parse_ci,
@@ -151,9 +151,9 @@ class TestPathMatch:
 # ── compute_pr_impact ─────────────────────────────────────────────────────────
 
 class TestComputePrImpact:
-    def _make_graph(self) -> nx.Graph:
+    def _make_graph(self) -> nx.mmd:
         """3 nodes across 2 communities, 2 distinct source files."""
-        G = nx.Graph()
+        G = nx.mmd()
         G.add_node("n1", source_file="src/auth/api.py", community=0)
         G.add_node("n2", source_file="src/auth/api.py", community=0)
         G.add_node("n3", source_file="src/utils/helpers.py", community=1)
@@ -187,7 +187,7 @@ class TestComputePrImpact:
 
     def test_no_double_counting_when_basename_matches_multiple_paths(self):
         # "api.py" should NOT match both src/auth/api.py AND src/admin/api.py
-        G = nx.Graph()
+        G = nx.mmd()
         G.add_node("a1", source_file="src/auth/api.py", community=0)
         G.add_node("a2", source_file="src/admin/api.py", community=1)
         comms, nodes = compute_pr_impact(["src/auth/api.py"], G)
@@ -198,7 +198,7 @@ class TestComputePrImpact:
     def test_no_double_counting_same_graph_file_matched_by_two_pr_files(self):
         # If PR diff lists both "api.py" and "src/auth/api.py", the graph node
         # for src/auth/api.py should only be counted once
-        G = nx.Graph()
+        G = nx.mmd()
         G.add_node("n1", source_file="src/auth/api.py", community=0)
         G.add_node("n2", source_file="src/auth/api.py", community=0)
         comms, nodes = compute_pr_impact(["src/auth/api.py", "api.py"], G)
@@ -223,7 +223,7 @@ class TestFetchWorktrees:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = porcelain
-        with patch("graphify.prs.subprocess.run", return_value=mock_result):
+        with patch("mapmmd.prs.subprocess.run", return_value=mock_result):
             mapping = fetch_worktrees()
         assert mapping == {
             "main": "/home/user/proj",
@@ -246,7 +246,7 @@ class TestFetchWorktrees:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = porcelain
-        with patch("graphify.prs.subprocess.run", return_value=mock_result):
+        with patch("mapmmd.prs.subprocess.run", return_value=mock_result):
             mapping = fetch_worktrees()
         # Only feature-x should be mapped, and it should point to its own worktree
         assert mapping == {"feature-x": "/home/user/proj-feature"}
@@ -256,7 +256,7 @@ class TestFetchWorktrees:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = ""
-        with patch("graphify.prs.subprocess.run", return_value=mock_result):
+        with patch("mapmmd.prs.subprocess.run", return_value=mock_result):
             mapping = fetch_worktrees()
         assert mapping == {}
 
@@ -264,13 +264,13 @@ class TestFetchWorktrees:
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stdout = ""
-        with patch("graphify.prs.subprocess.run", return_value=mock_result):
+        with patch("mapmmd.prs.subprocess.run", return_value=mock_result):
             mapping = fetch_worktrees()
         assert mapping == {}
 
     def test_subprocess_failure_returns_empty_dict(self):
         with patch(
-            "graphify.prs.subprocess.run",
+            "mapmmd.prs.subprocess.run",
             side_effect=FileNotFoundError("git not found"),
         ):
             mapping = fetch_worktrees()
@@ -333,7 +333,7 @@ class TestFormatPrsText:
 class TestDetectDefaultBranch:
     def test_gh_returns_main(self):
         with patch(
-            "graphify.prs._gh",
+            "mapmmd.prs._gh",
             return_value={"defaultBranchRef": {"name": "main"}},
         ):
             assert _detect_default_branch() == "main"
@@ -342,8 +342,8 @@ class TestDetectDefaultBranch:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = "refs/remotes/origin/develop\n"
-        with patch("graphify.prs._gh", return_value=None), patch(
-            "graphify.prs.subprocess.run", return_value=mock_result
+        with patch("mapmmd.prs._gh", return_value=None), patch(
+            "mapmmd.prs.subprocess.run", return_value=mock_result
         ):
             assert _detect_default_branch() == "develop"
 
@@ -351,8 +351,8 @@ class TestDetectDefaultBranch:
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stdout = ""
-        with patch("graphify.prs._gh", return_value=None), patch(
-            "graphify.prs.subprocess.run", return_value=mock_result
+        with patch("mapmmd.prs._gh", return_value=None), patch(
+            "mapmmd.prs.subprocess.run", return_value=mock_result
         ):
             assert _detect_default_branch() == "main"
 
@@ -361,14 +361,14 @@ class TestDetectDefaultBranch:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = "refs/remotes/origin/trunk\n"
-        with patch("graphify.prs._gh", return_value={}), patch(
-            "graphify.prs.subprocess.run", return_value=mock_result
+        with patch("mapmmd.prs._gh", return_value={}), patch(
+            "mapmmd.prs.subprocess.run", return_value=mock_result
         ):
             assert _detect_default_branch() == "trunk"
 
     def test_git_timeout_returns_main(self):
-        with patch("graphify.prs._gh", return_value=None), patch(
-            "graphify.prs.subprocess.run",
+        with patch("mapmmd.prs._gh", return_value=None), patch(
+            "mapmmd.prs.subprocess.run",
             side_effect=subprocess.TimeoutExpired("git", 5),
         ):
             assert _detect_default_branch() == "main"

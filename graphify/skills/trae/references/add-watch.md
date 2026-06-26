@@ -1,15 +1,15 @@
-# graphify reference: add a URL and watch a folder
+# mapmmd reference: add a URL and watch a folder
 
-Load this when the user ran `/graphify add <url>` or passed `--watch`. Neither is part of the default build.
+Load this when the user ran `/mapmmd add <url>` or passed `--watch`. Neither is part of the default build.
 
-## For /graphify add
+## For /mapmmd add
 
 Fetch a URL and add it to the corpus, then update the graph.
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
+$(cat mapmmd-out/.mapmmd_python) -c "
 import sys
-from graphify.ingest import ingest
+from mapmmd.ingest import ingest
 from pathlib import Path
 
 try:
@@ -27,7 +27,8 @@ except RuntimeError as e:
 Replace `URL` with the actual URL, `AUTHOR` with the user's name if provided, `CONTRIBUTOR` likewise. If the command exits with an error, tell the user what went wrong - do not silently continue. After a successful save, automatically run the `--update` pipeline on `./raw` to merge the new file into the existing graph.
 
 Supported URL types (auto-detected):
-- YouTube / any video URL → audio downloaded via yt-dlp, transcribed to `.txt` on next run (requires `pip install 'graphifyy[video]'`)
+
+- YouTube / any video URL → audio downloaded via yt-dlp, transcribed to `.txt` on next run (requires `pip install 'mapmmdy[video]'`)
 - Twitter/X → fetched via oEmbed, saved as `.md` with tweet text and author
 - arXiv → abstract + metadata saved as `.md`
 - PDF → downloaded as `.pdf`
@@ -41,16 +42,16 @@ Supported URL types (auto-detected):
 Start a background watcher that monitors a folder and auto-updates the graph when files change.
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify.watch INPUT_PATH --debounce 3
+$(cat mapmmd-out/.mapmmd_python) -m mapmmd.watch INPUT_PATH --debounce 3
 ```
 
 Replace INPUT_PATH with the folder to watch. Behavior depends on what changed:
 
 - **Code files only (.py, .ts, .go, etc.):** re-runs AST extraction + rebuild + cluster immediately, no LLM needed. `graph.json` and `GRAPH_REPORT.md` are updated automatically.
-- **Docs, papers, or images:** writes a `graphify-out/needs_update` flag and prints a notification to run `/graphify --update` (LLM semantic re-extraction required).
+- **Docs, papers, or images:** writes a `mapmmd-out/needs_update` flag and prints a notification to run `/mapmmd --update` (LLM semantic re-extraction required).
 
 Debounce (default 3s): waits until file activity stops before triggering, so a wave of parallel agent writes doesn't trigger a rebuild per file.
 
 Press Ctrl+C to stop.
 
-For agentic workflows: run `--watch` in a background terminal. Code changes from agent waves are picked up automatically between waves. If agents are also writing docs or notes, you'll need a manual `/graphify --update` after those waves.
+For agentic workflows: run `--watch` in a background terminal. Code changes from agent waves are picked up automatically between waves. If agents are also writing docs or notes, you'll need a manual `/mapmmd --update` after those waves.

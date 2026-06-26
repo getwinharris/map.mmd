@@ -5,19 +5,22 @@ Call the Agent tool multiple times IN THE SAME RESPONSE - one call per chunk. Th
 **IMPORTANT - subagent type:** Always use `subagent_type="general-purpose"`. Do NOT use `Explore` - it is read-only and cannot write chunk files to disk, which silently drops extraction results. General-purpose has Write and Bash access which the subagent needs.
 
 Concrete example for 3 chunks:
+
 ```
 [Agent tool call 1: files 1-15, subagent_type="general-purpose"]
 [Agent tool call 2: files 16-30, subagent_type="general-purpose"]
 [Agent tool call 3: files 31-45, subagent_type="general-purpose"]
 ```
+
 All three in one message. Not three separate messages.
 
 Each subagent receives this exact prompt (substitute FILE_LIST, CHUNK_NUM, TOTAL_CHUNKS, DEEP_MODE, and CHUNK_PATH).
 
 CHUNK_PATH must be an **absolute** path — derive it before dispatching:
+
 ```bash
-PROJECT_ROOT=$(pwd)  # cwd — where Part C globs graphify-out/ (NOT .graphify_root/scan dir, #1392)
-# Then for chunk N: CHUNK_PATH="${PROJECT_ROOT}/graphify-out/.graphify_chunk_0N.json"
+PROJECT_ROOT=$(pwd)  # cwd — where Part C globs mapmmd-out/ (NOT .mapmmd_root/scan dir, #1392)
+# Then for chunk N: CHUNK_PATH="${PROJECT_ROOT}/mapmmd-out/.mapmmd_chunk_0N.json"
 ```
 
 Subagent prompt template:

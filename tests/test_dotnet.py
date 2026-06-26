@@ -2,7 +2,7 @@
 from pathlib import Path
 import tempfile
 import pytest
-from graphify.extract import extract_sln, extract_slnx, extract_csproj, extract_xaml, extract_razor
+from mapmmd.extract import extract_sln, extract_slnx, extract_csproj, extract_xaml, extract_razor
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -252,12 +252,12 @@ def test_razor_missing_file():
 # ── dispatch & detect integration ────────────────────────────────────────────
 
 def test_dispatch_table():
-    from graphify.extract import _get_extractor
+    from mapmmd.extract import _get_extractor
     for ext in (".sln", ".slnx", ".csproj", ".fsproj", ".vbproj", ".xaml", ".razor", ".cshtml"):
         assert _get_extractor(Path(f"foo{ext}")) is not None, f"{ext} not in dispatch"
 
 
 def test_code_extensions():
-    from graphify.detect import CODE_EXTENSIONS
+    from mapmmd.detect import CODE_EXTENSIONS
     for ext in (".sln", ".slnx", ".csproj", ".fsproj", ".vbproj", ".xaml", ".razor", ".cshtml"):
         assert ext in CODE_EXTENSIONS, f"{ext} missing"

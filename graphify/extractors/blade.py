@@ -1,9 +1,9 @@
-"""Laravel Blade template extractor. Moved verbatim from graphify/extract.py."""
+"""Laravel Blade template extractor. Moved verbatim from mapmmd/extract.py."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.extractors.base import _make_id
+from mapmmd.extractors.base import _make_id
 
 
 def extract_blade(path: Path) -> dict:

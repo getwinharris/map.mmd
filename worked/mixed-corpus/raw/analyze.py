@@ -1,4 +1,4 @@
-"""Graph analysis: god nodes (most connected), surprising connections (cross-community), suggested questions."""
+"""mmd analysis: god nodes (most connected), surprising connections (cross-community), suggested questions."""
 from __future__ import annotations
 import networkx as nx
 
@@ -8,7 +8,7 @@ def _node_community_map(communities: dict[int, list[str]]) -> dict[str, int]:
     return {n: cid for cid, nodes in communities.items() for n in nodes}
 
 
-def _is_file_node(G: nx.Graph, node_id: str) -> bool:
+def _is_file_node(G: nx.mmd, node_id: str) -> bool:
     """
     Return True if this node is a file-level hub node (e.g. 'client', 'models')
     or an AST method stub (e.g. '.auth_flow()', '.__init__()').
@@ -32,7 +32,7 @@ def _is_file_node(G: nx.Graph, node_id: str) -> bool:
     return False
 
 
-def god_nodes(G: nx.Graph, top_n: int = 10) -> list[dict]:
+def god_nodes(G: nx.mmd, top_n: int = 10) -> list[dict]:
     """Return the top_n most-connected real entities - the core abstractions.
 
     File-level hub nodes are excluded: they accumulate import/contains edges
@@ -55,7 +55,7 @@ def god_nodes(G: nx.Graph, top_n: int = 10) -> list[dict]:
 
 
 def surprising_connections(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]] | None = None,
     top_n: int = 5,
 ) -> list[dict]:
@@ -86,7 +86,7 @@ def surprising_connections(
         return _cross_community_surprises(G, communities or {}, top_n)
 
 
-def _is_concept_node(G: nx.Graph, node_id: str) -> bool:
+def _is_concept_node(G: nx.mmd, node_id: str) -> bool:
     """
     Return True if this node is a manually-injected semantic concept node
     rather than a real entity found in source code.
@@ -128,7 +128,7 @@ def _top_level_dir(path: str) -> str:
 
 
 def _surprise_score(
-    G: nx.Graph,
+    G: nx.mmd,
     u: str,
     v: str,
     data: dict,
@@ -178,7 +178,7 @@ def _surprise_score(
     return score, reasons
 
 
-def _cross_file_surprises(G: nx.Graph, communities: dict[int, list[str]], top_n: int) -> list[dict]:
+def _cross_file_surprises(G: nx.mmd, communities: dict[int, list[str]], top_n: int) -> list[dict]:
     """
     Cross-file edges between real code/doc entities, ranked by a composite
     surprise score rather than confidence alone.
@@ -237,7 +237,7 @@ def _cross_file_surprises(G: nx.Graph, communities: dict[int, list[str]], top_n:
 
 
 def _cross_community_surprises(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]],
     top_n: int,
 ) -> list[dict]:
@@ -319,7 +319,7 @@ def _cross_community_surprises(
 
 
 def suggest_questions(
-    G: nx.Graph,
+    G: nx.mmd,
     communities: dict[int, list[str]],
     community_labels: dict[int, str],
     top_n: int = 7,
@@ -435,7 +435,7 @@ def suggest_questions(
     return questions[:top_n]
 
 
-def graph_diff(G_old: nx.Graph, G_new: nx.Graph) -> dict:
+def graph_diff(G_old: nx.mmd, G_new: nx.mmd) -> dict:
     """Compare two graph snapshots and return what changed.
 
     Returns:
@@ -462,7 +462,7 @@ def graph_diff(G_old: nx.Graph, G_new: nx.Graph) -> dict:
         for n in removed_node_ids
     ]
 
-    def edge_key(G: nx.Graph, u: str, v: str, data: dict) -> tuple:
+    def edge_key(G: nx.mmd, u: str, v: str, data: dict) -> tuple:
         return (u, v, data.get("relation", ""))
 
     old_edge_keys = {

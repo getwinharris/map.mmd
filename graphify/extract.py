@@ -14,17 +14,17 @@ from .cache import load_cached, save_cached
 from .mcp_ingest import extract_mcp_config, is_mcp_config_path
 from .manifest_ingest import extract_package_manifest, is_package_manifest_path
 
-# --- migrated to graphify/extractors/ (see graphify/extractors/MIGRATION.md) ---
-from graphify.extractors.base import (  # noqa: F401
+# --- migrated to mapmmd/extractors/ (see mapmmd/extractors/MIGRATION.md) ---
+from mapmmd.extractors.base import (  # noqa: F401
     _LANGUAGE_BUILTIN_GLOBALS,
     _file_stem,
     _make_id,
     _read_text,
 )
-from graphify.extractors.blade import extract_blade  # noqa: F401
-from graphify.extractors.elixir import extract_elixir  # noqa: F401
-from graphify.extractors.razor import extract_razor  # noqa: F401
-from graphify.extractors.zig import extract_zig  # noqa: F401
+from mapmmd.extractors.blade import extract_blade  # noqa: F401
+from mapmmd.extractors.elixir import extract_elixir  # noqa: F401
+from mapmmd.extractors.razor import extract_razor  # noqa: F401
+from mapmmd.extractors.zig import extract_zig  # noqa: F401
 
 _RECURSION_LIMIT = 10_000
 
@@ -9440,7 +9440,7 @@ _MD_REF_DEF_RE = re.compile(r'^\s{0,3}\[[^\]]+\]:\s*<?([^\s>]+)>?')
 # Obsidian-style wikilink: [[target]] / [[target|alias]] / [[target#anchor]].
 _MD_WIKILINK_RE = re.compile(r'(?<!\!)\[\[([^\]|#]+)(?:[#|][^\]]*)?\]\]')
 
-# Extensions graphify creates document file nodes for. A link to one of these
+# Extensions mapmmd creates document file nodes for. A link to one of these
 # resolves to that file's node; links to code/assets are skipped (left to the
 # language extractors).
 _MD_LINKABLE_EXTS = {".md", ".mdx", ".qmd", ".markdown", ".rst", ".txt"}
@@ -9643,7 +9643,7 @@ def _pascal_project_root(from_path: Path) -> Path:
 
 
 def _pascal_resolve_unit(from_path: Path, unit_name: str) -> str:
-    """Resolve a Pascal unit name to the graphify node ID of its source file.
+    """Resolve a Pascal unit name to the mapmmd node ID of its source file.
 
     Scans all Pascal files under the project root (the highest ancestor that
     directly contains .pas/.dpr files) and returns _make_id(str(matched_path)).
@@ -10532,7 +10532,7 @@ def _check_tree_sitter_version() -> None:
         import tree_sitter as _ts
         raise RuntimeError(
             f"tree-sitter {getattr(_ts, '__version__', 'unknown')} is too old. "
-            f"graphify requires tree-sitter >= 0.23.0 (Language API v2). "
+            f"mapmmd requires tree-sitter >= 0.23.0 (Language API v2). "
             f"Run: pip install --upgrade tree-sitter"
         )
 
@@ -10562,7 +10562,7 @@ def extract_bash(path: Path) -> dict:
     function_bodies: list[tuple[str, Any]] = []
     defined_functions: set[str] = set()
 
-    from graphify.security import sanitize_metadata  # module-level cached import
+    from mapmmd.security import sanitize_metadata  # module-level cached import
 
     def add_node(nid: str, label: str, line: int, kind: str = "code") -> None:
         if nid and nid not in seen_ids:
@@ -12483,9 +12483,9 @@ def extract(
 
     Args:
         paths: files to extract from
-        cache_root: explicit root for graphify-out/cache/ (overrides the
+        cache_root: explicit root for mapmmd-out/cache/ (overrides the
             inferred common path prefix). Pass Path('.') when running on a
-            subdirectory so the cache stays at ./graphify-out/cache/.
+            subdirectory so the cache stays at ./mapmmd-out/cache/.
         parallel: if True and there are >= _PARALLEL_THRESHOLD uncached files,
             use ProcessPoolExecutor for multi-core extraction.
         max_workers: max subprocess count. Defaults to cpu_count (or the
@@ -12851,9 +12851,9 @@ def collect_files(target: Path, *, follow_symlinks: bool = False, root: Path | N
     if target.is_file():
         return [target]
     _EXTENSIONS = set(_DISPATCH.keys())
-    from graphify.detect import _is_ignored, _is_noise_dir, _load_graphifyignore
+    from mapmmd.detect import _is_ignored, _is_noise_dir, _load_mapmmdignore
     ignore_root = root if root is not None else target
-    patterns = _load_graphifyignore(ignore_root)
+    patterns = _load_mapmmdignore(ignore_root)
     # Shared across all _is_ignored calls in this scan so ancestor-directory
     # results are memoised instead of re-evaluated per file.
     ignore_cache: dict[Path, bool] = {}
@@ -12903,7 +12903,7 @@ def collect_files(target: Path, *, follow_symlinks: bool = False, root: Path | N
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python -m graphify.extract <file_or_dir> ...", file=sys.stderr)
+        print("Usage: python -m mapmmd.extract <file_or_dir> ...", file=sys.stderr)
         sys.exit(1)
 
     paths: list[Path] = []

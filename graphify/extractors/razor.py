@@ -1,10 +1,10 @@
-"""ASP.NET Razor component extractor. Moved verbatim from graphify/extract.py."""
+"""ASP.NET Razor component extractor. Moved verbatim from mapmmd/extract.py."""
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
-from graphify.extractors.base import _file_stem, _make_id
+from mapmmd.extractors.base import _file_stem, _make_id
 
 
 def extract_razor(path: Path) -> dict:

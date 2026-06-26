@@ -1,10 +1,10 @@
-"""Tests for the Terraform/HCL extractor (graphify/extract.py, issue #187)."""
+"""Tests for the Terraform/HCL extractor (mapmmd/extract.py, issue #187)."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.build import build_from_json
-from graphify.extract import extract_terraform
+from mapmmd.build import build_from_json
+from mapmmd.extract import extract_terraform
 
 
 def _write(tmp_path: Path, name: str, body: str) -> Path:

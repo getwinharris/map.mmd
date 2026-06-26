@@ -1,9 +1,9 @@
-# DO NOT import from graphify.extract here — direction is extract.py → extractors/ only.
+# DO NOT import from mapmmd.extract here — direction is extract.py → extractors/ only.
 from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.ids import make_id
+from mapmmd.ids import make_id
 
 # Language built-in globals that AST may classify as call targets when used as
 # constructors or coercion functions (e.g. String(x), Number(x), Boolean(x)).
