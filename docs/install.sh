@@ -5,7 +5,7 @@ set -euo pipefail
 # Landing page: https://getwinharris.github.io/map.mmd
 # Repository:   https://github.com/getwinharris/map.mmd
 
-REQUIREMENTS=("curl" "pipx")
+REQUIREMENTS=("pipx")
 
 echo "==> mapmmd installer"
 echo ""
@@ -20,7 +20,7 @@ for cmd in "${REQUIREMENTS[@]}"; do
 done
 
 echo "==> Installing mapmmdy via pipx..."
-pipx install mapmmdy
+pipx install --force mapmmdy
 
 echo ""
 echo "==> Done!"
