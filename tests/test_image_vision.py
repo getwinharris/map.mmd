@@ -134,9 +134,9 @@ def test_capability_flags(monkeypatch):
         assert llm._backend_supports_vision(b), b
     assert not llm._backend_supports_vision("deepseek")
     # ollama is opt-in via env (default model is text-only)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_VISION", raising=False)
+    monkeypatch.delenv("MAPMMD_OLLAMA_VISION", raising=False)
     assert not llm._backend_supports_vision("ollama")
-    monkeypatch.setenv("GRAPHIFY_OLLAMA_VISION", "1")
+    monkeypatch.setenv("MAPMMD_OLLAMA_VISION", "1")
     assert llm._backend_supports_vision("ollama")
 
 

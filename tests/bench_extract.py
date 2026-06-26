@@ -8,7 +8,7 @@ Defaults to the current directory if no path is given.
 Clears the AST cache between runs so every file is re-extracted.
 
 Example output:
-    === map.mmd AST Extraction Benchmark ===
+    === mapmmd AST Extraction Benchmark ===
     Files:        1,247
     Languages:    Python (412), TypeScript (389), Go (201), ...
 
@@ -119,7 +119,7 @@ def main() -> None:
         print(f"Error: {target} does not exist", file=sys.stderr)
         sys.exit(1)
 
-    print("=== map.mmd AST Extraction Benchmark ===\n")
+    print("=== mapmmd AST Extraction Benchmark ===\n")
     print(f"Scanning {target} ...", flush=True)
 
     paths = collect_files(target)

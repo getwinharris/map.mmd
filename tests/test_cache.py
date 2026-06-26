@@ -351,7 +351,7 @@ def test_legacy_unversioned_ast_entries_not_served(tmp_path):
     cache/ast/) are by definition from an older extractor and must not be
     served — that staleness is exactly what version namespacing fixes."""
     import json
-    from mapmmd.cache import file_hash, _GRAPHIFY_OUT
+    from mapmmd.cache import file_hash, _MAPMMD_OUT
 
     f = tmp_path / "mod.py"
     f.write_text("def f(): pass\n")
@@ -359,7 +359,7 @@ def test_legacy_unversioned_ast_entries_not_served(tmp_path):
     payload = json.dumps({"nodes": [{"id": "stale"}], "edges": []})
 
     # Unversioned cache/ast/{hash}.json (pre-versioning layout)
-    unversioned = tmp_path / _GRAPHIFY_OUT / "cache" / "ast"
+    unversioned = tmp_path / _MAPMMD_OUT / "cache" / "ast"
     unversioned.mkdir(parents=True)
     (unversioned / f"{h}.json").write_text(payload)
     # Legacy flat cache/{hash}.json (pre-0.5.3 layout)

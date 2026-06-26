@@ -74,15 +74,15 @@ Follow these steps in order. Do not skip steps.
 ```bash
 # Detect the correct Python interpreter (handles uv tool, pipx, venv, system installs)
 PYTHON=""
-GRAPHIFY_BIN=$(which mapmmd 2>/dev/null)
+MAPMMD_BIN=$(which mapmmd 2>/dev/null)
 # 1. uv tool installs — most reliable on modern Mac/Linux
 if [ -z "$PYTHON" ] && command -v uv >/dev/null 2>&1; then
     _UV_PY=$(uv tool run mapmmdy python -c "import sys; print(sys.executable)" 2>/dev/null)
     if [ -n "$_UV_PY" ]; then PYTHON="$_UV_PY"; fi
 fi
 # 2. Read shebang from mapmmd binary (pipx and direct pip installs)
-if [ -z "$PYTHON" ] && [ -n "$GRAPHIFY_BIN" ]; then
-    _SHEBANG=$(head -1 "$GRAPHIFY_BIN" | tr -d '#!')
+if [ -z "$PYTHON" ] && [ -n "$MAPMMD_BIN" ]; then
+    _SHEBANG=$(head -1 "$MAPMMD_BIN" | tr -d '#!')
     case "$_SHEBANG" in
         *[!a-zA-Z0-9/_.-]*) ;;
         *) "$_SHEBANG" -c "import mapmmd" 2>/dev/null && PYTHON="$_SHEBANG" ;;
@@ -160,7 +160,7 @@ Read the top god node labels from detect output or analysis, then compose a shor
 - Labels: `transformer, attention, encoder, decoder` -> `"Machine learning research on transformer architectures and attention mechanisms. Use proper punctuation and paragraph breaks."`
 - Labels: `kubernetes, deployment, pod, helm` -> `"DevOps discussion about Kubernetes deployments and Helm charts. Use proper punctuation and paragraph breaks."`
 
-Set it as `GRAPHIFY_WHISPER_PROMPT` in the environment before running the transcription command.
+Set it as `MAPMMD_WHISPER_PROMPT` in the environment before running the transcription command.
 
 **Step 2 - Transcribe:**
 
@@ -172,7 +172,7 @@ from mapmmd.transcribe import transcribe_all
 
 detect = json.loads(Path('mapmmd-out/.mapmmd_detect.json').read_text())
 video_files = detect.get('files', {}).get('video', [])
-prompt = os.environ.get('GRAPHIFY_WHISPER_PROMPT', 'Use proper punctuation and paragraph breaks.')
+prompt = os.environ.get('MAPMMD_WHISPER_PROMPT', 'Use proper punctuation and paragraph breaks.')
 
 transcript_paths = transcribe_all(video_files, initial_prompt=prompt)
 print(json.dumps(transcript_paths))
@@ -186,7 +186,7 @@ After transcription:
 - Print how many transcripts were created: `Transcribed N video file(s) -> treating as docs`
 - If transcription fails for a file, print a warning and continue with the rest
 
-**Whisper model:** Default is `base`. If the user passed `--whisper-model <name>`, set `GRAPHIFY_WHISPER_MODEL=<name>` in the environment before running the command above.
+**Whisper model:** Default is `base`. If the user passed `--whisper-model <name>`, set `MAPMMD_WHISPER_MODEL=<name>` in the environment before running the command above.
 
 ### Step 3 - Extract entities and relationships
 
@@ -876,9 +876,9 @@ Before running any subcommand below (`--update`, `--cluster-only`, `query`, `pat
 
 ```bash
 if [ ! -f mapmmd-out/.mapmmd_python ]; then
-    GRAPHIFY_BIN=$(which mapmmd 2>/dev/null)
-    if [ -n "$GRAPHIFY_BIN" ]; then
-        PYTHON=$(head -1 "$GRAPHIFY_BIN" | tr -d '#!')
+    MAPMMD_BIN=$(which mapmmd 2>/dev/null)
+    if [ -n "$MAPMMD_BIN" ]; then
+        PYTHON=$(head -1 "$MAPMMD_BIN" | tr -d '#!')
         case "$PYTHON" in *[!a-zA-Z0-9/_.-]*) PYTHON="python3" ;; esac
     else
         PYTHON="python3"

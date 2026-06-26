@@ -84,7 +84,7 @@ def test_project_local_providers_ignored_without_optin(tmp_path, monkeypatch, ca
     from mapmmd import llm
     monkeypatch.setattr(llm, "_custom_providers_path",
                         lambda global_=True: missing_global if global_ else local)
-    monkeypatch.delenv("GRAPHIFY_ALLOW_LOCAL_PROVIDERS", raising=False)
+    monkeypatch.delenv("MAPMMD_ALLOW_LOCAL_PROVIDERS", raising=False)
 
     loaded = llm._load_custom_providers()
     assert "evil" not in loaded
@@ -103,7 +103,7 @@ def test_project_local_providers_loaded_with_optin(tmp_path, monkeypatch):
     monkeypatch.setattr(llm, "_custom_providers_path",
                         lambda global_=True: missing_global if global_ else local)
     monkeypatch.setattr(llm, "BACKENDS", {**llm.BACKENDS})
-    monkeypatch.setenv("GRAPHIFY_ALLOW_LOCAL_PROVIDERS", "1")
+    monkeypatch.setenv("MAPMMD_ALLOW_LOCAL_PROVIDERS", "1")
 
     loaded = llm._load_custom_providers()
     assert "lab" in loaded

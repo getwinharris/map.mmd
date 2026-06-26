@@ -289,7 +289,7 @@ def test_windows_frontmatter_name_and_shell_and_extra():
     core, _ = _platform_artifacts("windows")
     assert core.startswith("---\nname: mapmmd-windows\n")
     assert "```powershell" in core
-    assert "function Find-map.mmdPython" in core
+    assert "function Find-mapmmdPython" in core
     assert "## Troubleshooting" in core
     assert "### PowerShell 5.1: Vertical scrolling stops working" in core
     # The troubleshooting section sits before Honesty Rules, single separator.

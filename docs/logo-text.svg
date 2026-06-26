@@ -3,7 +3,7 @@
      height="74"
      viewBox="0 0 300 74"
      role="img"
-     aria-label="map.mmd logo">
+     aria-label="mapmmd logo">
 
   <defs>
     <linearGradient id="mapGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -38,6 +38,6 @@
           font-size="36"
           font-weight="700"
           fill="#FFFFFF"
-          letter-spacing="-0.8">map.mmd</text>
+          letter-spacing="-0.8">mapmmd</text>
   </g>
 </svg>

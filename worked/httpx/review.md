@@ -1,4 +1,4 @@
-# map.mmd Evaluation - httpx Corpus (2026-04-03)
+# mapmmd Evaluation - httpx Corpus (2026-04-03)
 
 **Evaluator:** Claude Sonnet 4.6 (analytical simulation - Bash execution unavailable)
 **Corpus:** 6-file synthetic httpx-like Python codebase (~2,800 words)

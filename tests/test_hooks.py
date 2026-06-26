@@ -255,7 +255,7 @@ def test_hooks_use_cross_platform_detach(name, script):
 
 
 def _launcher_payload(script: str) -> str:
-    """Extract the `python -c "<payload>"` the hook hands to GRAPHIFY_PYTHON.
+    """Extract the `python -c "<payload>"` the hook hands to MAPMMD_PYTHON.
 
     The launcher is the only `-c` invocation whose body begins with
     `import os, subprocess, sys` (the interpreter-detection probes in
@@ -304,9 +304,9 @@ def test_rebuild_bodies_read_mapmmd_root(name, body):
     repo top (#1173). Both bodies read <output-dir>/.mapmmd_root and pass the
     recovered root to _rebuild_code instead of the bare Path('.')."""
     assert ".mapmmd_root" in body, f"{name} ignores .mapmmd_root (#1173)"
-    # The output dir is resolved from GRAPHIFY_OUT at hook-run time, not hardcoded
+    # The output dir is resolved from MAPMMD_OUT at hook-run time, not hardcoded
     # to mapmmd-out/, so a renamed output dir is still found (#1423).
-    assert "GRAPHIFY_OUT" in body, f"{name} ignores the GRAPHIFY_OUT override (#1423)"
+    assert "MAPMMD_OUT" in body, f"{name} ignores the MAPMMD_OUT override (#1423)"
     # The recovered root is what gets rebuilt, not a hardcoded cwd.
     assert "_rebuild_code(_root" in body, f"{name} does not pass the recovered root"
     # Quote-safe inside the shell-double-quoted launcher: single quotes only.
@@ -321,10 +321,10 @@ def test_rebuild_bodies_with_mapmmd_root_are_valid_python():
 
 
 def test_detached_launch_targets_mapmmd_python():
-    """The launcher must run via the resolved $GRAPHIFY_PYTHON, not a bare
+    """The launcher must run via the resolved $MAPMMD_PYTHON, not a bare
     `python`, so it uses the same interpreter the detection block selected."""
     snippet = _detached_launch(_REBUILD_BODY_COMMIT)
-    assert snippet.startswith('"$GRAPHIFY_PYTHON" -c "')
+    assert snippet.startswith('"$MAPMMD_PYTHON" -c "')
     assert "nohup" not in snippet
 
 

@@ -181,11 +181,11 @@ def test_validate_graph_path_default_base_discovers_output_dir(tmp_path):
     assert validate_graph_path(str(graph)) == graph.resolve()
 
 def test_validate_graph_path_default_base_honours_mapmmd_out_override(tmp_path, monkeypatch):
-    """The base=None discovery must honour GRAPHIFY_OUT, not the hardcoded
+    """The base=None discovery must honour MAPMMD_OUT, not the hardcoded
     'mapmmd-out' literal — otherwise a renamed output dir validates against the
     wrong base or raises spuriously (#1423)."""
-    monkeypatch.setattr("mapmmd.security.GRAPHIFY_OUT_NAME", "custom-out")
-    monkeypatch.setattr("mapmmd.security.GRAPHIFY_OUT", "custom-out")
+    monkeypatch.setattr("mapmmd.security.MAPMMD_OUT_NAME", "custom-out")
+    monkeypatch.setattr("mapmmd.security.MAPMMD_OUT", "custom-out")
     out = tmp_path / "custom-out"
     out.mkdir()
     graph = out / "graph.json"

@@ -38,8 +38,8 @@ def test_build_whisper_prompt_no_nodes():
 
 
 def test_build_whisper_prompt_env_override(monkeypatch):
-    """GRAPHIFY_WHISPER_PROMPT env var short-circuits LLM call."""
-    monkeypatch.setenv("GRAPHIFY_WHISPER_PROMPT", "Custom domain hint.")
+    """MAPMMD_WHISPER_PROMPT env var short-circuits LLM call."""
+    monkeypatch.setenv("MAPMMD_WHISPER_PROMPT", "Custom domain hint.")
     prompt = build_whisper_prompt([{"label": "Python"}, {"label": "FastAPI"}])
     assert prompt == "Custom domain hint."
 
@@ -48,7 +48,7 @@ def test_build_whisper_prompt_returns_topic_string():
     """Returns a topic-based prompt from god node labels — no LLM call."""
     god_nodes = [{"label": "neural networks"}, {"label": "transformers"}, {"label": "attention"}]
     with patch.dict(os.environ, {}, clear=False):
-        os.environ.pop("GRAPHIFY_WHISPER_PROMPT", None)
+        os.environ.pop("MAPMMD_WHISPER_PROMPT", None)
         prompt = build_whisper_prompt(god_nodes)
     assert "neural networks" in prompt.lower() or "transformers" in prompt.lower()
     assert "punctuation" in prompt.lower()

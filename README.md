@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://mapmmdlabs.ai"><img src="https://raw.githubusercontent.com/getwinharris/mapmmd/v4/docs/logo-text.svg" width="260" height="64" alt="map.mmd"/></a>
+  <a href="https://mapmmdlabs.ai"><img src="https://raw.githubusercontent.com/getwinharris/mapmmd/v4/docs/logo-text.svg" width="260" height="64" alt="mapmmd"/></a>
 </p>
 
 
@@ -219,7 +219,7 @@ To remove mapmmd from all platforms at once: `mapmmd uninstall` (add `--purge` t
 
 ---
 
-**Kilo Code** installs the map.mmd skill to `~/.config/kilo/skills/mapmmd/SKILL.md` and a native `/mapmmd` command to `~/.config/kilo/command/mapmmd.md`. `mapmmd kilo install` also writes `AGENTS.md` plus a native **`tool.execute.before` plugin** (`.kilo/plugins/mapmmd.js` + `.kilo/kilo.json` or `.kilo/kilo.jsonc` registration) so Kilo gets the same always-on graph reminder behavior through native `.kilo` config.
+**Kilo Code** installs the mapmmd skill to `~/.config/kilo/skills/mapmmd/SKILL.md` and a native `/mapmmd` command to `~/.config/kilo/command/mapmmd.md`. `mapmmd kilo install` also writes `AGENTS.md` plus a native **`tool.execute.before` plugin** (`.kilo/plugins/mapmmd.js` + `.kilo/kilo.json` or `.kilo/kilo.jsonc` registration) so Kilo gets the same always-on graph reminder behavior through native `.kilo` config.
 
 **Cursor** writes `.cursor/rules/mapmmd.mdc` with `alwaysApply: true` — Cursor includes it in every conversation automatically, no hook needed.
 
@@ -263,7 +263,7 @@ gws auth login -s drive
 mapmmd extract ./docs --google-workspace
 ```
 
-You can also set `GRAPHIFY_GOOGLE_WORKSPACE=1`. map.mmd exports shortcuts into
+You can also set `MAPMMD_GOOGLE_WORKSPACE=1`. mapmmd exports shortcuts into
 `mapmmd-out/converted/` as Markdown sidecars, then extracts those files.
 
 ---
@@ -372,7 +372,7 @@ The MCP server gives your assistant structured access: `query_graph`, `get_node`
 | `--transport {stdio,http}` | `stdio` | Transport to serve on |
 | `--host` | `127.0.0.1` | HTTP bind host (use `0.0.0.0` to expose beyond localhost) |
 | `--port` | `8080` | HTTP bind port |
-| `--api-key` | env `GRAPHIFY_API_KEY` | Require `Authorization: Bearer <key>` (or `X-API-Key`) |
+| `--api-key` | env `MAPMMD_API_KEY` | Require `Authorization: Bearer <key>` (or `X-API-Key`) |
 | `--path` | `/mcp` | HTTP mount path |
 | `--json-response` | off | Return plain JSON instead of SSE streams |
 | `--stateless` | off | No per-session state (for load-balanced / CI deployments) |
@@ -411,25 +411,25 @@ These are only needed for **headless / CI extraction** (`mapmmd extract`). When 
 | `MOONSHOT_API_KEY` | Kimi Code backend | `--backend kimi` |
 | `OLLAMA_BASE_URL` | Ollama local inference URL | `--backend ollama` (default: `http://localhost:11434`) |
 | `OLLAMA_MODEL` | Ollama model name | `--backend ollama` (default: auto-detect) |
-| `GRAPHIFY_OLLAMA_NUM_CTX` | Override Ollama KV-cache window size | optional — auto-sized by default |
-| `GRAPHIFY_OLLAMA_KEEP_ALIVE` | Minutes to keep Ollama model loaded | optional — set `0` to unload after each chunk |
+| `MAPMMD_OLLAMA_NUM_CTX` | Override Ollama KV-cache window size | optional — auto-sized by default |
+| `MAPMMD_OLLAMA_KEEP_ALIVE` | Minutes to keep Ollama model loaded | optional — set `0` to unload after each chunk |
 | `AZURE_OPENAI_API_KEY` | Azure OpenAI Service backend | `--backend azure` |
 | `AZURE_OPENAI_ENDPOINT` | Azure resource endpoint URL | `--backend azure` (required alongside API key) |
 | `AZURE_OPENAI_API_VERSION` | Azure API version override | optional — default `2024-12-01-preview` |
-| `AZURE_OPENAI_DEPLOYMENT` or `GRAPHIFY_AZURE_MODEL` | Azure deployment name | optional — default `gpt-4o` |
+| `AZURE_OPENAI_DEPLOYMENT` or `MAPMMD_AZURE_MODEL` | Azure deployment name | optional — default `gpt-4o` |
 | `AWS_*` / `~/.aws/credentials` | AWS Bedrock — standard credential chain | `--backend bedrock` (no API key, uses IAM) |
-| `GRAPHIFY_MAX_WORKERS` | AST parallelism thread count | optional — also `--max-workers` flag |
-| `GRAPHIFY_MAX_OUTPUT_TOKENS` | Raise output cap for dense corpora | optional — e.g. `32768` for large files |
-| `GRAPHIFY_API_TIMEOUT` | Per-call timeout in seconds for HTTP, claude-cli, and Anthropic SDK backends (default: 600) | optional — also `--api-timeout` flag |
-| `GRAPHIFY_FORCE` | Force graph rebuild even with fewer nodes | optional — also `--force` flag |
-| `GRAPHIFY_GOOGLE_WORKSPACE` | Auto-enable Google Workspace export | optional — set to `1` |
-| `GRAPHIFY_TRIAGE_BACKEND` | Backend for `mapmmd prs --triage` | optional — auto-detected from available keys |
-| `GRAPHIFY_TRIAGE_MODEL` | Model override for triage | optional — e.g. `claude-opus-4-7` |
-| `GRAPHIFY_QUERY_LOG` | Override query log path (default: `~/.cache/mapmmd-queries.log`) | optional — set to empty or `/dev/null` to silence |
-| `GRAPHIFY_QUERY_LOG_DISABLE` | Set to `1` to disable query logging entirely | optional |
-| `GRAPHIFY_QUERY_LOG_RESPONSES` | Set to `1` to also log full subgraph responses (off by default) | optional |
-| `GRAPHIFY_MAX_GRAPH_BYTES` | Override the 512 MiB graph.json size cap — e.g. `700MB`, `2GB`, or plain bytes | optional — useful for very large corpora |
-| `GRAPHIFY_LLM_TEMPERATURE` | Override LLM temperature for semantic extraction — e.g. `0.7`, or `none` to omit | optional — auto-omitted for o1/o3/o4/gpt-5 reasoning models |
+| `MAPMMD_MAX_WORKERS` | AST parallelism thread count | optional — also `--max-workers` flag |
+| `MAPMMD_MAX_OUTPUT_TOKENS` | Raise output cap for dense corpora | optional — e.g. `32768` for large files |
+| `MAPMMD_API_TIMEOUT` | Per-call timeout in seconds for HTTP, claude-cli, and Anthropic SDK backends (default: 600) | optional — also `--api-timeout` flag |
+| `MAPMMD_FORCE` | Force graph rebuild even with fewer nodes | optional — also `--force` flag |
+| `MAPMMD_GOOGLE_WORKSPACE` | Auto-enable Google Workspace export | optional — set to `1` |
+| `MAPMMD_TRIAGE_BACKEND` | Backend for `mapmmd prs --triage` | optional — auto-detected from available keys |
+| `MAPMMD_TRIAGE_MODEL` | Model override for triage | optional — e.g. `claude-opus-4-7` |
+| `MAPMMD_QUERY_LOG` | Override query log path (default: `~/.cache/mapmmd-queries.log`) | optional — set to empty or `/dev/null` to silence |
+| `MAPMMD_QUERY_LOG_DISABLE` | Set to `1` to disable query logging entirely | optional |
+| `MAPMMD_QUERY_LOG_RESPONSES` | Set to `1` to also log full subgraph responses (off by default) | optional |
+| `MAPMMD_MAX_GRAPH_BYTES` | Override the 512 MiB graph.json size cap — e.g. `700MB`, `2GB`, or plain bytes | optional — useful for very large corpora |
+| `MAPMMD_LLM_TEMPERATURE` | Override LLM temperature for semantic extraction — e.g. `0.7`, or `none` to omit | optional — auto-omitted for o1/o3/o4/gpt-5 reasoning models |
 
 ---
 
@@ -440,7 +440,7 @@ These are only needed for **headless / CI extraction** (`mapmmd extract`). When 
 - **Docs, PDFs, images** — sent to your AI assistant for semantic extraction (via the `/mapmmd` skill, using whatever model your IDE session runs). Headless `mapmmd extract` requires `GEMINI_API_KEY` / `GOOGLE_API_KEY` (Gemini), `MOONSHOT_API_KEY` (Kimi), `ANTHROPIC_API_KEY` (Claude), `OPENAI_API_KEY` (OpenAI), `DEEPSEEK_API_KEY` (DeepSeek), a running Ollama instance (`OLLAMA_BASE_URL`), AWS credentials via the standard provider chain (Bedrock - no API key needed, uses IAM), or the `claude` CLI binary (Claude Code - no API key needed, uses your Claude subscription). The `--dedup-llm` flag uses the same key.
 - **Data residency** — `mapmmd extract` auto-detects which provider to use based on which API key is set (priority: Gemini → Kimi → Claude → OpenAI → DeepSeek → Azure → Bedrock → Ollama). For code with data-residency requirements, use `--backend ollama` (fully local) or pass an explicit `--backend` flag. Kimi (`MOONSHOT_API_KEY`) routes to Moonshot AI servers in China.
 - No telemetry, no usage tracking, no analytics.
-- **Query logging** — every `mapmmd query`, `mapmmd path`, `mapmmd explain`, and MCP `query_graph` call is logged to `~/.cache/mapmmd-queries.log` in JSON Lines format (timestamp, question, corpus, nodes returned, duration). Full subgraph responses are **not** stored by default. Set `GRAPHIFY_QUERY_LOG_DISABLE=1` to opt out, or `GRAPHIFY_QUERY_LOG=/dev/null` to silence without disabling the code path.
+- **Query logging** — every `mapmmd query`, `mapmmd path`, `mapmmd explain`, and MCP `query_graph` call is logged to `~/.cache/mapmmd-queries.log` in JSON Lines format (timestamp, question, corpus, nodes returned, duration). Full subgraph responses are **not** stored by default. Set `MAPMMD_QUERY_LOG_DISABLE=1` to opt out, or `MAPMMD_QUERY_LOG=/dev/null` to silence without disabling the code path.
 
 ---
 
@@ -460,7 +460,7 @@ Your shell's PATH doesn't include the Python scripts directory. Use `uv` or `pip
 PowerShell treats a leading `/` as a path separator. Use `mapmmd .` (no slash) on Windows.
 
 **mmd has fewer nodes after `--update` or rebuild**
-If a refactor deleted files, the old nodes linger. Pass `--force` (or set `GRAPHIFY_FORCE=1`) to overwrite even when the rebuild has fewer nodes.
+If a refactor deleted files, the old nodes linger. Pass `--force` (or set `MAPMMD_FORCE=1`) to overwrite even when the rebuild has fewer nodes.
 
 **mmd has duplicate nodes for the same entity (ghost duplicates)**
 Ghost duplicates (same symbol appearing twice — once from AST extraction with a source location, once from semantic extraction without) are now automatically merged at build time. If you see this in a graph built before v0.8.33, run a full re-extract to clean up:
@@ -473,14 +473,14 @@ mapmmd extract . --force
 The KV-cache window is auto-sized but may be too large for your GPU. Reduce it:
 
 ```bash
-GRAPHIFY_OLLAMA_NUM_CTX=8192 mapmmd extract ./docs --backend ollama --token-budget 4000
+MAPMMD_OLLAMA_NUM_CTX=8192 mapmmd extract ./docs --backend ollama --token-budget 4000
 ```
 
 **`LLM returned invalid JSON` / `Unterminated string` warnings**
 The model's JSON response hit its output-token limit and was cut off mid-string. mapmmd auto-recovers (it splits the chunk and re-extracts the halves, and an oversized single document is first sliced at heading/paragraph boundaries so the whole file is still covered), so these warnings are noisy but not data loss. To reduce the churn, raise the output cap or shrink each chunk's output:
 
 ```bash
-GRAPHIFY_MAX_OUTPUT_TOKENS=16384 mapmmd extract . --mode deep   # lift the cap
+MAPMMD_MAX_OUTPUT_TOKENS=16384 mapmmd extract . --mode deep   # lift the cap
 mapmmd extract . --mode deep --token-budget 4000                # smaller input chunks -> smaller output
 ```
 
@@ -604,12 +604,12 @@ mapmmd extract ./docs --backend gemini --model gemini-3.1-pro-preview
 mapmmd extract ./docs --backend ollama       # local Ollama (set OLLAMA_BASE_URL / OLLAMA_MODEL) - no API key needed for loopback
 OPENAI_BASE_URL=http://localhost:8080/v1 OPENAI_MODEL=my-model mapmmd extract ./docs --backend openai   # any OpenAI-compatible server (llama.cpp, vLLM, LM Studio)
 ANTHROPIC_BASE_URL=http://localhost:4000 ANTHROPIC_MODEL=my-model mapmmd extract ./docs --backend claude   # any Anthropic-compatible endpoint (LiteLLM proxy, gateways)
-GRAPHIFY_OLLAMA_NUM_CTX=32768 mapmmd extract ./docs --backend ollama   # override KV-cache window (auto-sized by default)
-GRAPHIFY_OLLAMA_KEEP_ALIVE=0 mapmmd extract ./docs --backend ollama    # unload model after each chunk (saves VRAM on small GPUs)
+MAPMMD_OLLAMA_NUM_CTX=32768 mapmmd extract ./docs --backend ollama   # override KV-cache window (auto-sized by default)
+MAPMMD_OLLAMA_KEEP_ALIVE=0 mapmmd extract ./docs --backend ollama    # unload model after each chunk (saves VRAM on small GPUs)
 mapmmd extract ./docs --backend bedrock      # AWS Bedrock via IAM - no API key, uses AWS credential chain
 mapmmd extract ./docs --backend claude-cli   # route through Claude Code CLI - no API key, uses your Claude subscription
 mapmmd extract ./docs --backend azure        # Azure OpenAI (set AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT)
-mapmmd extract ./docs --max-workers 16       # AST parallelism (also GRAPHIFY_MAX_WORKERS)
+mapmmd extract ./docs --max-workers 16       # AST parallelism (also MAPMMD_MAX_WORKERS)
 mapmmd extract --postgres "postgresql://user:pass@host/db"   # introspect live PostgreSQL schema directly
 mapmmd extract ./my-workspace --cargo        # introspect Rust Cargo workspace dependencies directly
 mapmmd extract ./docs --token-budget 30000   # smaller semantic chunks for local/small models
@@ -621,7 +621,7 @@ mapmmd extract ./docs --no-cluster           # raw extraction only, skip cluster
 mapmmd extract ./docs --force                # overwrite graph.json even if new graph has fewer nodes (use after refactors or to clear ghost duplicates)
 mapmmd extract ./docs --dedup-llm            # LLM tiebreaker for ambiguous entity pairs (uses same API key)
 mapmmd extract ./docs --global --as myrepo   # extract and register into the cross-project global graph
-GRAPHIFY_MAX_OUTPUT_TOKENS=32768 mapmmd extract ./docs --backend claude  # raise output cap for dense corpora
+MAPMMD_MAX_OUTPUT_TOKENS=32768 mapmmd extract ./docs --backend claude  # raise output cap for dense corpora
 
 mapmmd export callflow-html                       # mapmmd-out/<project>-callflow.html
 mapmmd export callflow-html --max-sections 8      # cap generated architecture sections
@@ -640,7 +640,7 @@ mapmmd prs --worktrees                  # worktree → branch → PR mapping
 mapmmd prs --conflicts                  # PRs sharing graph communities (merge-order risk)
 mapmmd prs --base main                  # filter to PRs targeting a specific base branch
 mapmmd prs --repo owner/repo            # run against a different GitHub repo
-GRAPHIFY_TRIAGE_BACKEND=kimi mapmmd prs --triage   # use a specific backend for triage
+MAPMMD_TRIAGE_BACKEND=kimi mapmmd prs --triage   # use a specific backend for triage
 
 mapmmd clone https://github.com/karpathy/nanoGPT
 mapmmd merge-graphs a.json b.json --out merged.json

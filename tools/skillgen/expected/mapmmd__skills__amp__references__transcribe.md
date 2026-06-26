@@ -19,13 +19,13 @@ Read the top god node labels from detect output or analysis, then compose a shor
 - Labels: `transformer, attention, encoder, decoder` → `"Machine learning research on transformer architectures and attention mechanisms. Use proper punctuation and paragraph breaks."`
 - Labels: `kubernetes, deployment, pod, helm` → `"DevOps discussion about Kubernetes deployments and Helm charts. Use proper punctuation and paragraph breaks."`
 
-**Export** it as `GRAPHIFY_WHISPER_PROMPT` (the exact name the transcriber reads — and it must be `export`ed so the child Python process sees it) for the next command.
+**Export** it as `MAPMMD_WHISPER_PROMPT` (the exact name the transcriber reads — and it must be `export`ed so the child Python process sees it) for the next command.
 
 **Step 2 - Transcribe:**
 
 ```bash
-export GRAPHIFY_WHISPER_MODEL=base  # or whatever --whisper-model the user passed (must be exported)
-export GRAPHIFY_WHISPER_PROMPT="<the one-sentence domain hint you composed in Step 1>"
+export MAPMMD_WHISPER_MODEL=base  # or whatever --whisper-model the user passed (must be exported)
+export MAPMMD_WHISPER_PROMPT="<the one-sentence domain hint you composed in Step 1>"
 $(cat mapmmd-out/.mapmmd_python) -c "
 import json, os, sys
 from pathlib import Path
@@ -33,7 +33,7 @@ from mapmmd.transcribe import transcribe_all
 
 detect = json.loads(Path('mapmmd-out/.mapmmd_detect.json').read_text(encoding=\"utf-8\"))
 video_files = detect.get('files', {}).get('video', [])
-prompt = os.environ.get('GRAPHIFY_WHISPER_PROMPT', 'Use proper punctuation and paragraph breaks.')
+prompt = os.environ.get('MAPMMD_WHISPER_PROMPT', 'Use proper punctuation and paragraph breaks.')
 
 transcript_paths = transcribe_all(video_files, initial_prompt=prompt)
 # Write the JSON from Python (NOT a shell '>' redirect): transcribe_all/Whisper
@@ -50,4 +50,4 @@ After transcription:
 - Print how many transcripts were created: `Transcribed N video file(s) -> treating as docs`
 - If transcription fails for a file, print a warning and continue with the rest
 
-**Whisper model:** Default is `base`. If the user passed `--whisper-model <name>`, `export GRAPHIFY_WHISPER_MODEL=<name>` (it must be exported, not just assigned) before running the command above.
+**Whisper model:** Default is `base`. If the user passed `--whisper-model <name>`, `export MAPMMD_WHISPER_MODEL=<name>` (it must be exported, not just assigned) before running the command above.

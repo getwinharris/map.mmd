@@ -459,9 +459,9 @@ def test_backup_same_day_changed_content(tmp_path):
 
 
 def test_backup_env_disable(tmp_path, monkeypatch):
-    """GRAPHIFY_NO_BACKUP=1 disables backup entirely."""
+    """MAPMMD_NO_BACKUP=1 disables backup entirely."""
     from mapmmd.export import backup_if_protected
-    monkeypatch.setenv("GRAPHIFY_NO_BACKUP", "1")
+    monkeypatch.setenv("MAPMMD_NO_BACKUP", "1")
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
     (tmp_path / ".mapmmd_semantic_marker").write_text("{}")
     assert backup_if_protected(tmp_path) is None

@@ -198,7 +198,7 @@ def test_query_uses_mapmmd_out_env(tmp_path):
     custom_out = tmp_path / "custom-graph"
     out.rename(custom_out)
     env = os.environ.copy()
-    env["GRAPHIFY_OUT"] = custom_out.name
+    env["MAPMMD_OUT"] = custom_out.name
 
     r = _run(["query", "test"], tmp_path, env=env)
 
@@ -207,12 +207,12 @@ def test_query_uses_mapmmd_out_env(tmp_path):
 
 
 def test_extract_writes_to_mapmmd_out_env(tmp_path):
-    """#1423: `mapmmd extract` honours GRAPHIFY_OUT for where it WRITES, not only
+    """#1423: `mapmmd extract` honours MAPMMD_OUT for where it WRITES, not only
     where readers look — previously it hardcoded mapmmd-out/ and ignored the
     override. Code-only corpus, so no LLM backend is needed."""
     (tmp_path / "m.py").write_text("def a():\n    return b()\n\n\ndef b():\n    return 1\n")
     env = os.environ.copy()
-    env["GRAPHIFY_OUT"] = "custom-out"
+    env["MAPMMD_OUT"] = "custom-out"
 
     r = _run(["extract", "."], tmp_path, env=env)
 
@@ -220,7 +220,7 @@ def test_extract_writes_to_mapmmd_out_env(tmp_path):
     assert (tmp_path / "custom-out" / "graph.json").exists(), r.stdout
     assert (tmp_path / "custom-out" / "manifest.json").exists()
     # The default dir must NOT be created when the override is set.
-    assert not (tmp_path / "mapmmd-out").exists(), "extract ignored GRAPHIFY_OUT and wrote mapmmd-out/"
+    assert not (tmp_path / "mapmmd-out").exists(), "extract ignored MAPMMD_OUT and wrote mapmmd-out/"
     # Manifest keys are relative to the scan root (portable) — #1417.
     keys = list(json.loads((tmp_path / "custom-out" / "manifest.json").read_text()).keys())
     assert keys == ["m.py"], keys
@@ -245,7 +245,7 @@ def test_path_uses_mapmmd_out_env(tmp_path):
     custom_out = tmp_path / "custom-graph"
     out.rename(custom_out)
     env = os.environ.copy()
-    env["GRAPHIFY_OUT"] = custom_out.name
+    env["MAPMMD_OUT"] = custom_out.name
 
     r = _run(["path", "Transformer", "LayerNorm"], tmp_path, env=env)
 
@@ -270,7 +270,7 @@ def test_explain_uses_mapmmd_out_env(tmp_path):
     custom_out = tmp_path / "custom-graph"
     out.rename(custom_out)
     env = os.environ.copy()
-    env["GRAPHIFY_OUT"] = custom_out.name
+    env["MAPMMD_OUT"] = custom_out.name
 
     r = _run(["explain", "test"], tmp_path, env=env)
 

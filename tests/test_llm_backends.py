@@ -97,7 +97,7 @@ def test_openai_compat_backends_resolve_full_output_cap(tmp_path, monkeypatch, b
     # output cap silently fell back to 8192 and truncated deep-mode JSON. The
     # dispatch must resolve their configured 16384.
     _clear_backend_env(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_MAX_OUTPUT_TOKENS", raising=False)
+    monkeypatch.delenv("MAPMMD_MAX_OUTPUT_TOKENS", raising=False)
     monkeypatch.setenv(env_key, "test-key")
     source = tmp_path / "note.md"
     source.write_text("# Architecture\n")
@@ -112,7 +112,7 @@ def test_openai_compat_backends_resolve_full_output_cap(tmp_path, monkeypatch, b
 def test_gemini_model_can_be_overridden_by_env(tmp_path, monkeypatch):
     _clear_backend_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_API_KEY", "google-key")
-    monkeypatch.setenv("GRAPHIFY_GEMINI_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("MAPMMD_GEMINI_MODEL", "gemini-3.1-pro-preview")
     source = tmp_path / "note.md"
     source.write_text("# Architecture\n")
     result = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1}
@@ -466,8 +466,8 @@ def _install_capturing_openai(monkeypatch):
 
 def test_ollama_extra_body_sets_num_ctx_and_keep_alive(monkeypatch):
     captured = _install_capturing_openai(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_NUM_CTX", raising=False)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_KEEP_ALIVE", raising=False)
+    monkeypatch.delenv("MAPMMD_OLLAMA_NUM_CTX", raising=False)
+    monkeypatch.delenv("MAPMMD_OLLAMA_KEEP_ALIVE", raising=False)
 
     llm._call_openai_compat(
         "http://localhost:11434/v1", "ollama", "qwen2.5-coder:7b",
@@ -487,8 +487,8 @@ def test_ollama_num_ctx_scales_with_small_token_budget(monkeypatch):
     # 131072 forced Ollama to allocate 128k KV-cache slots on a 31B model, causing
     # VRAM exhaustion by chunk 4. num_ctx must now reflect actual chunk size.
     captured = _install_capturing_openai(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_NUM_CTX", raising=False)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_KEEP_ALIVE", raising=False)
+    monkeypatch.delenv("MAPMMD_OLLAMA_NUM_CTX", raising=False)
+    monkeypatch.delenv("MAPMMD_OLLAMA_KEEP_ALIVE", raising=False)
 
     # Simulate an 8k-token chunk: ~32k chars of content
     small_chunk_msg = "x" * 32_000
@@ -510,8 +510,8 @@ def test_ollama_num_ctx_scales_with_small_token_budget(monkeypatch):
 
 def test_ollama_num_ctx_env_override(monkeypatch):
     captured = _install_capturing_openai(monkeypatch)
-    monkeypatch.setenv("GRAPHIFY_OLLAMA_NUM_CTX", "65536")
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_KEEP_ALIVE", raising=False)
+    monkeypatch.setenv("MAPMMD_OLLAMA_NUM_CTX", "65536")
+    monkeypatch.delenv("MAPMMD_OLLAMA_KEEP_ALIVE", raising=False)
 
     llm._call_openai_compat(
         "http://localhost:11434/v1", "ollama", "qwen2.5-coder:7b",
@@ -571,8 +571,8 @@ def test_call_openai_compat_explicit_extra_body_skips_ollama_auto_derive(monkeyp
     # An explicit extra_body means "I own this request shape" — Ollama's
     # num_ctx auto-derive (a default) must step aside or we'd clobber it.
     captured = _install_capturing_openai(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_NUM_CTX", raising=False)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_KEEP_ALIVE", raising=False)
+    monkeypatch.delenv("MAPMMD_OLLAMA_NUM_CTX", raising=False)
+    monkeypatch.delenv("MAPMMD_OLLAMA_KEEP_ALIVE", raising=False)
 
     llm._call_openai_compat(
         "http://localhost:11434/v1", "ollama", "qwen2.5-coder:7b",
@@ -599,7 +599,7 @@ def test_extract_corpus_parallel_ollama_runs_serially(tmp_path, monkeypatch):
         call_order.append(len(chunk))
         return _ok(nodes=[{"id": f.stem} for f in chunk])
 
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_PARALLEL", raising=False)
+    monkeypatch.delenv("MAPMMD_OLLAMA_PARALLEL", raising=False)
 
     with patch("mapmmd.llm.extract_files_direct", side_effect=fake_extract):
         with patch("mapmmd.llm.ThreadPoolExecutor") as mock_pool:
@@ -617,7 +617,7 @@ def test_extract_corpus_parallel_ollama_parallel_env_restores_concurrency(tmp_pa
     for f in files:
         f.write_text("hello")
 
-    monkeypatch.setenv("GRAPHIFY_OLLAMA_PARALLEL", "1")
+    monkeypatch.setenv("MAPMMD_OLLAMA_PARALLEL", "1")
 
     with patch("mapmmd.llm.extract_files_direct", return_value=_ok()):
         with patch("mapmmd.llm.ThreadPoolExecutor") as mock_pool:
@@ -705,7 +705,7 @@ def _install_fake_azure_openai(monkeypatch, fake_resp):
 
 def test_call_azure_uses_correct_client_params_and_max_completion_tokens(monkeypatch):
     monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview")
-    monkeypatch.delenv("GRAPHIFY_API_TIMEOUT", raising=False)
+    monkeypatch.delenv("MAPMMD_API_TIMEOUT", raising=False)
 
     fake_resp = _fake_openai_response(
         '{"nodes":[{"id":"a"}],"edges":[],"hyperedges":[]}',
@@ -753,7 +753,7 @@ def test_estimate_cost_azure_no_keyerror():
 
 # ---------------------------------------------------------------------------
 # Temperature resolution (#1191): omit temperature for reasoning models
-# (o1/o3/o4/gpt-5) and honour GRAPHIFY_LLM_TEMPERATURE.
+# (o1/o3/o4/gpt-5) and honour MAPMMD_LLM_TEMPERATURE.
 # ---------------------------------------------------------------------------
 
 
@@ -774,30 +774,30 @@ def test_model_requires_default_temperature_false_for_normal_models(model):
 
 
 def test_resolve_temperature_default_for_normal_model(monkeypatch):
-    monkeypatch.delenv("GRAPHIFY_LLM_TEMPERATURE", raising=False)
+    monkeypatch.delenv("MAPMMD_LLM_TEMPERATURE", raising=False)
     assert llm._resolve_temperature(0, "gpt-4.1-mini") == 0
 
 
 def test_resolve_temperature_omitted_for_reasoning_model(monkeypatch):
-    monkeypatch.delenv("GRAPHIFY_LLM_TEMPERATURE", raising=False)
+    monkeypatch.delenv("MAPMMD_LLM_TEMPERATURE", raising=False)
     assert llm._resolve_temperature(0, "o3-mini") is None
     assert llm._resolve_temperature(0, "gpt-5") is None
 
 
 def test_resolve_temperature_env_var_numeric_overrides(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_LLM_TEMPERATURE", "0.7")
+    monkeypatch.setenv("MAPMMD_LLM_TEMPERATURE", "0.7")
     assert llm._resolve_temperature(0, "gpt-4.1-mini") == 0.7
     # env var wins even for a reasoning model (explicit user choice)
     assert llm._resolve_temperature(0, "o3-mini") == 0.7
 
 
 def test_resolve_temperature_env_var_none_omits(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_LLM_TEMPERATURE", "none")
+    monkeypatch.setenv("MAPMMD_LLM_TEMPERATURE", "none")
     assert llm._resolve_temperature(0, "gpt-4.1-mini") is None
 
 
 def test_resolve_temperature_env_var_invalid_falls_back(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_LLM_TEMPERATURE", "hot")
+    monkeypatch.setenv("MAPMMD_LLM_TEMPERATURE", "hot")
     # bad value -> backend default for a normal model, still omitted for reasoning
     assert llm._resolve_temperature(0, "gpt-4.1-mini") == 0
     assert llm._resolve_temperature(0, "o3-mini") is None
@@ -807,9 +807,9 @@ def test_openai_compat_omits_temperature_for_o3_model(tmp_path, monkeypatch):
     # Regression for #1191: with a reasoning model the request must not carry a
     # `temperature` key at all, or the API returns HTTP 400.
     _clear_backend_env(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_LLM_TEMPERATURE", raising=False)
+    monkeypatch.delenv("MAPMMD_LLM_TEMPERATURE", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-    monkeypatch.setenv("GRAPHIFY_OPENAI_MODEL", "o3-mini")
+    monkeypatch.setenv("MAPMMD_OPENAI_MODEL", "o3-mini")
     captured = _install_capturing_openai(monkeypatch)
     (tmp_path / "f.py").write_text("x = 1\n")
 
@@ -823,8 +823,8 @@ def test_openai_compat_omits_temperature_for_o3_model(tmp_path, monkeypatch):
 
 def test_openai_compat_sends_temperature_for_normal_model(tmp_path, monkeypatch):
     _clear_backend_env(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_LLM_TEMPERATURE", raising=False)
-    monkeypatch.delenv("GRAPHIFY_OPENAI_MODEL", raising=False)
+    monkeypatch.delenv("MAPMMD_LLM_TEMPERATURE", raising=False)
+    monkeypatch.delenv("MAPMMD_OPENAI_MODEL", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     captured = _install_capturing_openai(monkeypatch)
     (tmp_path / "f.py").write_text("x = 1\n")
@@ -836,8 +836,8 @@ def test_openai_compat_sends_temperature_for_normal_model(tmp_path, monkeypatch)
 
 def test_openai_compat_env_var_temperature_applied(tmp_path, monkeypatch):
     _clear_backend_env(monkeypatch)
-    monkeypatch.setenv("GRAPHIFY_LLM_TEMPERATURE", "0.3")
-    monkeypatch.delenv("GRAPHIFY_OPENAI_MODEL", raising=False)
+    monkeypatch.setenv("MAPMMD_LLM_TEMPERATURE", "0.3")
+    monkeypatch.delenv("MAPMMD_OPENAI_MODEL", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     captured = _install_capturing_openai(monkeypatch)
     (tmp_path / "f.py").write_text("x = 1\n")

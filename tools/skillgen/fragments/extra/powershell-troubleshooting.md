@@ -2,7 +2,7 @@
 
 ### PowerShell 5.1: Vertical scrolling stops working
 
-If vertical scrolling breaks in PowerShell after running mapmmd, this is caused by ANSI escape sequences from the `graspologic` library. map.mmd v0.3.10+ suppresses this output, but if you still see the issue:
+If vertical scrolling breaks in PowerShell after running mapmmd, this is caused by ANSI escape sequences from the `graspologic` library. mapmmd v0.3.10+ suppresses this output, but if you still see the issue:
 
 1. **Upgrade mapmmd**: `pip install --upgrade mapmmdy`
 2. **Use Windows Terminal** instead of the legacy PowerShell console — Windows Terminal handles ANSI codes correctly

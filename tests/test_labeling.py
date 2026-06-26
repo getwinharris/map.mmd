@@ -365,6 +365,6 @@ def test_label_communities_forces_serial_for_ollama(monkeypatch):
     G, communities = _many_communities(8)
     fake_batch, state = _peak_tracker()
     monkeypatch.setattr("mapmmd.llm._label_batch_with_retry", fake_batch)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_PARALLEL", raising=False)
+    monkeypatch.delenv("MAPMMD_OLLAMA_PARALLEL", raising=False)
     label_communities(G, communities, backend="ollama", batch_size=1, max_concurrency=8)
     assert state["peak"] == 1, "ollama must be forced serial"

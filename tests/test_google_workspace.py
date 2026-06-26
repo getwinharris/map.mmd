@@ -122,8 +122,8 @@ def test_run_gws_export_does_not_send_resource_key_as_query_param(tmp_path, monk
 
 
 def test_google_workspace_enabled_env(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_GOOGLE_WORKSPACE", "yes")
+    monkeypatch.setenv("MAPMMD_GOOGLE_WORKSPACE", "yes")
     assert gw.google_workspace_enabled()
 
-    monkeypatch.setenv("GRAPHIFY_GOOGLE_WORKSPACE", "0")
+    monkeypatch.setenv("MAPMMD_GOOGLE_WORKSPACE", "0")
     assert not gw.google_workspace_enabled()

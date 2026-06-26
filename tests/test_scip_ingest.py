@@ -1103,7 +1103,7 @@ def test_relationship_target_unknown_emits_stub_node():
 
 
 def test_relationship_edges_survive_validate_extraction_and_build():
-    """Result passes map.mmd's validate_extraction and build_from_json keeps the edges."""
+    """Result passes mapmmd's validate_extraction and build_from_json keeps the edges."""
     from mapmmd.build import build_from_json
     from mapmmd.validate import validate_extraction
 

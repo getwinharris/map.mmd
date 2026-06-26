@@ -1,4 +1,4 @@
-# map.mmd Evaluation - Mixed Corpus (2026-04-04)
+# mapmmd Evaluation - Mixed Corpus (2026-04-04)
 
 **Evaluator:** Claude Sonnet 4.6 (live execution)
 **Corpus:** 3 Python files + 1 markdown paper + 1 Arabic PNG image

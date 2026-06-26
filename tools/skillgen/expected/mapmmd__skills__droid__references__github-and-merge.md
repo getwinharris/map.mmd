@@ -25,7 +25,7 @@ mapmmd merge-graphs \
   --out mapmmd-out/cross-repo-graph.json
 ```
 
-map.mmd clones into `~/.mapmmd/repos/<owner>/<repo>` and reuses existing clones on repeat runs. Each node in the merged graph carries a `repo` attribute so you can filter by origin.
+mapmmd clones into `~/.mapmmd/repos/<owner>/<repo>` and reuses existing clones on repeat runs. Each node in the merged graph carries a `repo` attribute so you can filter by origin.
 
 **Multiple local subfolders (monorepo or multi-service layout):**
 

@@ -1,9 +1,9 @@
 ```powershell
 # Detect Python with mapmmd — uv/pipx-aware (fixes #831)
 New-Item -ItemType Directory -Force -Path mapmmd-out | Out-Null
-$GRAPHIFY_PYTHON = $null
+$MAPMMD_PYTHON = $null
 
-function Find-map.mmdPython {
+function Find-mapmmdPython {
     # 1. uv tool install — 'uv tool dir' is authoritative, respects UV_TOOL_DIR automatically
     if (Get-Command uv -ErrorAction SilentlyContinue) {
         $uvDir = (uv tool dir 2>$null).Trim()
@@ -38,20 +38,20 @@ function Find-map.mmdPython {
 }
 
 # Try to find the right Python (uv → pipx → active env)
-$GRAPHIFY_PYTHON = Find-map.mmdPython
+$MAPMMD_PYTHON = Find-mapmmdPython
 
 # Not found — install then re-detect
-if (-not $GRAPHIFY_PYTHON) {
+if (-not $MAPMMD_PYTHON) {
     if (Get-Command uv -ErrorAction SilentlyContinue) {
         uv tool install --upgrade mapmmdy -q 2>&1 | Select-Object -Last 3
     } else {
         pip install mapmmdy -q 2>&1 | Select-Object -Last 3
     }
-    $GRAPHIFY_PYTHON = Find-map.mmdPython
+    $MAPMMD_PYTHON = Find-mapmmdPython
 }
 
 # Save interpreter path — all subsequent steps read this
-$GRAPHIFY_PYTHON | Out-File -FilePath mapmmd-out\.mapmmd_python -Encoding utf8 -NoNewline
+$MAPMMD_PYTHON | Out-File -FilePath mapmmd-out\.mapmmd_python -Encoding utf8 -NoNewline
 # Save scan root so `mapmmd update` (no args) knows where to look next time
 (Resolve-Path INPUT_PATH).Path | Out-File -FilePath mapmmd-out\.mapmmd_root -Encoding utf8 -NoNewline
 ```

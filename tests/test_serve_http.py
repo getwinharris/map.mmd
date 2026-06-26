@@ -226,7 +226,7 @@ def test_cli_http_passes_flags(monkeypatch):
 
 def test_cli_api_key_from_env(monkeypatch):
     captured = {}
-    monkeypatch.setenv("GRAPHIFY_API_KEY", "from-env")
+    monkeypatch.setenv("MAPMMD_API_KEY", "from-env")
     monkeypatch.setattr(serve_mod, "serve_http", lambda gp, **k: captured.update(**k))
     serve_mod._main(["g.json", "--transport", "http"])
     assert captured["api_key"] == "from-env"
