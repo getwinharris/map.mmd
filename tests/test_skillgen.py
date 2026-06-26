@@ -658,9 +658,9 @@ def test_audit_reads_each_host_against_its_own_v8_body():
 
     This is the structural fix: a per-host body, so a drop on one host surfaces.
     """
-    assert gen._v8_baseline_ref("claude") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:mapmmd/skill.md"
-    assert gen._v8_baseline_ref("trae") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:mapmmd/skill-trae.md"
-    assert gen._v8_baseline_ref("vscode") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:mapmmd/skill-vscode.md"
+    assert gen._v8_baseline_ref("claude") == "7f25ac1:mapmmd/skill.md"
+    assert gen._v8_baseline_ref("trae") == "7f25ac1:mapmmd/skill-trae.md"
+    assert gen._v8_baseline_ref("vscode") == "7f25ac1:mapmmd/skill-vscode.md"
 
 
 def test_audit_catches_an_induced_per_host_drop():
@@ -848,7 +848,7 @@ def test_amp_audit_coverage_passes_against_its_own_v8():
     confirms every heading single-homes in amp's core + references.
     """
     platforms = gen.load_platforms()
-    assert gen._v8_baseline_ref("amp") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:mapmmd/skill-amp.md"
+    assert gen._v8_baseline_ref("amp") == "7f25ac1:mapmmd/skill-amp.md"
     problems = gen.audit_coverage(platforms["amp"])
     assert problems == [], "\n".join(problems)
 
@@ -904,6 +904,6 @@ def test_agents_body_matches_amp_modulo_hooks_wording():
 def test_agents_audit_baseline_is_amps_v8_body():
     """`agents` is a post-v8 platform, so its audit baseline is amp's v8 body."""
     platforms = gen.load_platforms()
-    assert gen._v8_baseline_ref("agents") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:mapmmd/skill-amp.md"
+    assert gen._v8_baseline_ref("agents") == "7f25ac1:mapmmd/skill-amp.md"
     problems = gen.audit_coverage(platforms["agents"])
     assert problems == [], "\n".join(problems)

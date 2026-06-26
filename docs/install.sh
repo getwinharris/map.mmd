@@ -5,7 +5,7 @@ set -euo pipefail
 # Landing page: https://getwinharris.github.io/map.mmd
 # Repository:   https://github.com/getwinharris/map.mmd
 
-REQUIREMENTS=("curl" "pipx")
+REQUIREMENTS=("pipx")
 
 echo "==> mapmmd installer"
 echo ""
@@ -19,8 +19,13 @@ for cmd in "${REQUIREMENTS[@]}"; do
   fi
 done
 
-echo "==> Installing mapmmdy via pipx..."
-pipx install mapmmdy
+if pipx list --short 2>/dev/null | grep -q "^mapmmdy "; then
+  echo "==> Upgrading existing mapmmdy installation..."
+  pipx upgrade mapmmdy
+else
+  echo "==> Installing mapmmdy via pipx..."
+  pipx install mapmmdy
+fi
 
 echo ""
 echo "==> Done!"

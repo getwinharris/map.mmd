@@ -55,7 +55,7 @@ PLATFORMS_TOML = SKILLGEN_DIR / "platforms.toml"
 # original monolith bodies / inline constants, so a symbolic ref would compare
 # the split against itself (vacuous) or fail to find the old constants. The SHA
 # is an ancestor of origin/v8 and is fetched under the CI `fetch-depth: 0`.
-_V8_BASELINE_SHA = "47042beb05d1f6dd2186c0c499ae2840ce604ead"
+_V8_BASELINE_SHA = "7f25ac1"
 
 def _v8_baseline_ref(platform_key: str) -> str:
     """The git ref for a split host's own pre-split skill body."""
