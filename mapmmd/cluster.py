@@ -19,7 +19,7 @@ def _suppress_output():
     return contextlib.redirect_stdout(io.StringIO())
 
 
-def _partition(G: nx.mmd, resolution: float = 1.0) -> dict[str, int]:
+def _partition(G: nx.Graph, resolution: float = 1.0) -> dict[str, int]:
     """Run community detection. Returns {node_id: community_id}.
 
     Tries Leiden (graspologic) first — best quality.
@@ -31,7 +31,7 @@ def _partition(G: nx.mmd, resolution: float = 1.0) -> dict[str, int]:
     Output from graspologic is suppressed to prevent ANSI escape codes
     from corrupting terminal scroll buffers on Windows PowerShell 5.1.
     """
-    stable = nx.mmd()
+    stable = nx.Graph()
     stable.add_nodes_from(sorted(G.nodes(), key=str))
     edge_rows = sorted(
         G.edges(data=True),
@@ -84,7 +84,7 @@ _COHESION_SPLIT_MIN_SIZE = 50    # only cohesion-split if community has at least
 
 
 def cluster(
-    G: nx.mmd,
+    G: nx.Graph,
     resolution: float = 1.0,
     exclude_hubs_percentile: float | None = None,
 ) -> dict[int, list[str]]:
@@ -188,7 +188,7 @@ def cluster(
     return {i: sorted(nodes) for i, nodes in enumerate(final_communities)}
 
 
-def _split_community(G: nx.mmd, nodes: list[str]) -> list[list[str]]:
+def _split_community(G: nx.Graph, nodes: list[str]) -> list[list[str]]:
     """Run a second Leiden pass on a community subgraph to split it further."""
     subgraph = G.subgraph(nodes)
     if subgraph.number_of_edges() == 0:
@@ -206,7 +206,7 @@ def _split_community(G: nx.mmd, nodes: list[str]) -> list[list[str]]:
         return [sorted(nodes)]
 
 
-def cohesion_score(G: nx.mmd, community_nodes: list[str]) -> float:
+def cohesion_score(G: nx.Graph, community_nodes: list[str]) -> float:
     """Ratio of actual intra-community edges to maximum possible."""
     n = len(community_nodes)
     if n <= 1:
@@ -217,7 +217,7 @@ def cohesion_score(G: nx.mmd, community_nodes: list[str]) -> float:
     return actual / possible if possible > 0 else 0.0
 
 
-def score_all(G: nx.mmd, communities: dict[int, list[str]]) -> dict[int, float]:
+def score_all(G: nx.Graph, communities: dict[int, list[str]]) -> dict[int, float]:
     return {cid: cohesion_score(G, nodes) for cid, nodes in communities.items()}
 
 

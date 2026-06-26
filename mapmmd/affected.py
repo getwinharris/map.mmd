@@ -31,7 +31,7 @@ class AffectedHit:
     via_relation: str
 
 
-def _node_label(graph: nx.mmd, node_id: str) -> str:
+def _node_label(graph: nx.Graph, node_id: str) -> str:
     data = graph.nodes[node_id]
     return str(data.get("label") or node_id)
 
@@ -54,7 +54,7 @@ def _normalize_label(label: str) -> str:
     return unicodedata.normalize("NFC", label).casefold()
 
 
-def resolve_seed(graph: nx.mmd, query: str) -> str | None:
+def resolve_seed(graph: nx.Graph, query: str) -> str | None:
     if query in graph:
         return query
     query_lower = _normalize_label(query)
@@ -94,7 +94,7 @@ def resolve_seed(graph: nx.mmd, query: str) -> str | None:
 
 
 def affected_nodes(
-    graph: nx.mmd,
+    graph: nx.Graph,
     seed: str,
     *,
     relations: Iterable[str] = DEFAULT_AFFECTED_RELATIONS,
@@ -133,7 +133,7 @@ def affected_nodes(
 
 
 def format_affected(
-    graph: nx.mmd,
+    graph: nx.Graph,
     query: str,
     *,
     relations: Iterable[str] = DEFAULT_AFFECTED_RELATIONS,
@@ -162,7 +162,7 @@ def format_affected(
     return "\n".join(lines)
 
 
-def load_graph(path: Path) -> nx.mmd:
+def load_graph(path: Path) -> nx.Graph:
     import json
     from networkx.readwrite import json_graph
 

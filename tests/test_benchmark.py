@@ -8,8 +8,8 @@ from networkx.readwrite import json_graph
 from mapmmd.benchmark import run_benchmark, print_benchmark, _query_subgraph_tokens, _SAMPLE_QUESTIONS, _safe, _hr
 
 
-def _make_graph() -> nx.mmd:
-    G = nx.mmd()
+def _make_graph() -> nx.Graph:
+    G = nx.Graph()
     G.add_node("n1", label="authentication", source_file="auth.py", source_location="L1", community=0)
     G.add_node("n2", label="api_handler", source_file="api.py", source_location="L5", community=0)
     G.add_node("n3", label="main_entry", source_file="main.py", source_location="L1", community=1)
@@ -22,7 +22,7 @@ def _make_graph() -> nx.mmd:
     return G
 
 
-def _write_graph(G: nx.mmd, path) -> None:
+def _write_graph(G: nx.Graph, path) -> None:
     data = json_graph.node_link_data(G, edges="links")
     path.write_text(json.dumps(data))
 
@@ -48,7 +48,7 @@ def test_query_bfs_expands_neighbors():
 
 
 def test_query_keeps_short_non_english_terms():
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_node("frontend", label="前端", source_file="docs/前端.md", source_location="L1", community=0)
     tokens = _query_subgraph_tokens(G, "前端", depth=1)
     assert tokens > 0
@@ -93,7 +93,7 @@ def test_run_benchmark_estimates_corpus_if_no_words(tmp_path):
     assert result["corpus_words"] > 0
 
 def test_run_benchmark_error_on_empty_graph(tmp_path):
-    G = nx.mmd()
+    G = nx.Graph()
     graph_file = tmp_path / "empty.json"
     _write_graph(G, graph_file)
     result = run_benchmark(str(graph_file), corpus_words=1_000)

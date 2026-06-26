@@ -27,8 +27,8 @@ from mapmmd.serve import (
 )
 
 
-def _make_graph() -> nx.mmd:
-    G = nx.mmd()
+def _make_graph() -> nx.Graph:
+    G = nx.Graph()
     G.add_node("n1", label="extract", source_file="extract.py", source_location="L10", community=0)
     G.add_node("n2", label="cluster", source_file="cluster.py", source_location="L5", community=0)
     G.add_node("n3", label="build", source_file="build.py", source_location="L1", community=1)
@@ -52,7 +52,7 @@ def test_communities_from_graph_basic():
     assert "n3" in communities[1]
 
 def test_communities_from_graph_no_community_attr():
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_node("a", label="foo")  # no community attr
     communities = _communities_from_graph(G)
     assert communities == {}
@@ -101,7 +101,7 @@ def test_score_nodes_multiword_exact_label_outranks_superset():
     arbitrary node-id sort, and a wrong/disconnected endpoint was chosen. The
     full-query tier in _score_nodes must make the exact label win strictly.
     """
-    G = nx.mmd()
+    G = nx.Graph()
     # Reproduce the real graph: norm_label keeps punctuation (strip_diacritics +
     # lower, NOT tokenized), so the ':' survives. A tokenized query can never
     # equal that, which is exactly why the first-cut fix was a no-op for
@@ -129,7 +129,7 @@ def test_find_node_ignores_trailing_punctuation():
 
 
 def test_find_node_matches_full_punctuated_unicode_label():
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_node("n1", label="Skill /auditar — Auditoría inquisitiva de enlaces")
 
     assert _find_node(G, "Skill /auditar — Auditoría inquisitiva de enlaces") == ["n1"]
@@ -143,11 +143,11 @@ def _force_full_scan(monkeypatch):
     monkeypatch.setattr("mapmmd.serve._trigram_candidates", lambda *a, **k: None)
 
 
-def _make_big_graph(n: int = 150) -> nx.mmd:
+def _make_big_graph(n: int = 150) -> nx.Graph:
     """A graph large enough that the selectivity guard lets the fast-path fire for
     rare terms and fall back for common ones. Most labels share the 'item'/'node'
     stem (common), plus a few distinctive rare labels and one punctuated label."""
-    G = nx.mmd()
+    G = nx.Graph()
     for i in range(n):
         G.add_node(f"id{i}", label=f"item node {i}", source_file=f"pkg/item_{i}.py")
     G.add_node("rareA", label="ZebraQuokkaWidget", source_file="zoo/zqw.py")
@@ -260,7 +260,7 @@ def test_query_terms_filters_only_short_english_terms(monkeypatch):
 
 
 def test_query_graph_text_keeps_short_non_english_terms():
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_node("frontend", label="前端", source_file="docs/前端.md", source_location="L1", community=0)
     text = _query_graph_text(G, "前端", mode="bfs", depth=1)
     assert "No matching nodes found." not in text
@@ -418,7 +418,7 @@ def test_load_graph_accepts_under_cap(monkeypatch, tmp_path):
 
 def _write_graph(path, nodes: list[str]) -> None:
     """Write a minimal graph.json with the given node IDs."""
-    G = nx.Dimmd()
+    G = nx.DiGraph()
     for n in nodes:
         G.add_node(n, label=n, community=0)
     data = json_graph.node_link_data(G, edges="links")
@@ -470,9 +470,9 @@ def test_load_graph_cache_key_changes_with_content(tmp_path):
 
 # --- IDF weighting tests (#897) ---
 
-def _make_noisy_graph() -> nx.mmd:
+def _make_noisy_graph() -> nx.Graph:
     """20 error-handler nodes + 1 rare identifier: FooBarService."""
-    G = nx.mmd()
+    G = nx.Graph()
     for i in range(20):
         G.add_node(f"err{i}", label=f"error_handler_{i}", source_file=f"err{i}.py", community=0)
         if i > 0:
@@ -522,7 +522,7 @@ def test_idf_rare_term_gets_high_weight():
 def test_idf_common_term_gets_low_weight():
     """A term matching most nodes should get IDF < 1."""
     import math
-    G = nx.mmd()
+    G = nx.Graph()
     # 'handle' in every node label
     for i in range(20):
         G.add_node(f"n{i}", label=f"handle_{i}", source_file=f"f{i}.py")
@@ -586,7 +586,7 @@ def test_query_graph_text_parameter_type_context_filter_changes_traversal():
     import networkx as nx
     from mapmmd.serve import _query_graph_text
 
-    graph = nx.mmd()
+    graph = nx.Graph()
     graph.add_node("process", label="process", source_file="sample.cs", source_location="L20")
     graph.add_node("payload", label="Payload", source_file="sample.cs", source_location="L5")
     graph.add_node("other", label="PayloadFactory", source_file="sample.cs", source_location="L40")
@@ -665,7 +665,7 @@ def test_query_terms_chinese_no_jieba_fallback(monkeypatch):
 
 def test_score_nodes_chinese_substring_match():
     """Searching for '路由' should match a node with label containing '路由'."""
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_node("n1", label="路由桥接核对表", source_file="doc.md", community=0)
     G.add_node("n2", label="其他内容", source_file="doc.md", community=0)
     scored = _score_nodes(G, ["路由"])
@@ -676,7 +676,7 @@ def test_score_nodes_chinese_substring_match():
 
 def test_query_text_chinese_finds_routing_nodes():
     """Full pipeline: '页面路由' should find nodes with '路由' in label."""
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_node("parent", label="页面路由规范", source_file="doc.md", source_location="L1", community=0)
     G.add_node("child", label="路由桥接核对表", source_file="doc.md", source_location="L10", community=0)
     G.add_edge("parent", "child", relation="contains", confidence="EXTRACTED")

@@ -226,7 +226,7 @@ def diagnose_extraction(
     post_build_node_count: int | None = None
     try:
         graph_input = deepcopy(extraction)
-        graph: nx.mmd = build_from_json(graph_input, directed=directed, root=root)
+        graph: nx.Graph = build_from_json(graph_input, directed=directed, root=root)
         graph_type = type(graph).__name__
         post_build_edge_count = graph.number_of_edges()
         post_build_node_count = graph.number_of_nodes()

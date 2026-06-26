@@ -18,7 +18,7 @@ except ImportError:
     _jieba = None
 
 
-def _load_graph(graph_path: str) -> nx.mmd:
+def _load_graph(graph_path: str) -> nx.Graph:
     try:
         resolved = Path(graph_path).resolve()
         if resolved.suffix != ".json":
@@ -43,7 +43,7 @@ def _load_graph(graph_path: str) -> nx.mmd:
         sys.exit(1)
 
 
-def _communities_from_graph(G: nx.mmd) -> dict[int, list[str]]:
+def _communities_from_graph(G: nx.Graph) -> dict[int, list[str]]:
     """Reconstruct community dict from community property stored on nodes."""
     communities: dict[int, list[str]] = {}
     for node_id, data in G.nodes(data=True):
@@ -111,7 +111,7 @@ _SUBSTRING_MATCH_BONUS = 1.0
 _SOURCE_MATCH_BONUS = 0.5
 
 
-def _compute_idf(G: nx.mmd, terms: list[str]) -> dict[str, float]:
+def _compute_idf(G: nx.Graph, terms: list[str]) -> dict[str, float]:
     """IDF weights for query terms, cached in G.graph['_idf_cache'].
 
     Common terms like 'error' or 'exception' that match hundreds of nodes get
@@ -163,7 +163,7 @@ def _node_search_text(data: dict, nid: str) -> str:
     return "\x00".join((norm_label, label_tokens, str(nid).lower(), source))
 
 
-def _get_trigram_index(G: nx.mmd) -> dict:
+def _get_trigram_index(G: nx.Graph) -> dict:
     """Lazily build and cache a trigram -> node-position postings map on the graph.
 
     Cached on `G.graph` so it auto-invalidates when _maybe_reload() swaps in a
@@ -187,7 +187,7 @@ def _get_trigram_index(G: nx.mmd) -> dict:
     return idx
 
 
-def _trigram_candidates(G: nx.mmd, needles: list[str], *, guard_frac: float = 0.10) -> list[str] | None:
+def _trigram_candidates(G: nx.Graph, needles: list[str], *, guard_frac: float = 0.10) -> list[str] | None:
     """Node IDs whose text could contain any `needle` as a substring, via the
     trigram index — a *superset* the caller then re-scores with the exact predicates.
 
@@ -239,7 +239,7 @@ def _trigram_candidates(G: nx.mmd, needles: list[str], *, guard_frac: float = 0.
     return [ids[i] for i in sorted(cand)]
 
 
-def _score_nodes(G: nx.mmd, terms: list[str]) -> list[tuple[float, str]]:
+def _score_nodes(G: nx.Graph, terms: list[str]) -> list[tuple[float, str]]:
     scored = []
     norm_terms = [tok for t in terms for tok in _search_tokens(t)]
     idf = _compute_idf(G, norm_terms)
@@ -409,13 +409,13 @@ def _resolve_context_filters(question: str, explicit_filters: list[str] | None =
     return [], None
 
 
-def _filter_graph_by_context(G: nx.mmd, context_filters: list[str] | None) -> nx.mmd:
+def _filter_graph_by_context(G: nx.Graph, context_filters: list[str] | None) -> nx.Graph:
     filters = set(_normalize_context_filters(context_filters))
     if not filters:
         return G
     H = G.__class__()
     H.add_nodes_from(G.nodes(data=True))
-    if isinstance(G, (nx.Multimmd, nx.MultiDimmd)):
+    if isinstance(G, (nx.MultiGraph, nx.MultiDiGraph)):
         for u, v, key, data in G.edges(keys=True, data=True):
             if data.get("context") in filters:
                 H.add_edge(u, v, key=key, **data)
@@ -426,7 +426,7 @@ def _filter_graph_by_context(G: nx.mmd, context_filters: list[str] | None) -> nx
     return H
 
 
-def _bfs(G: nx.mmd, start_nodes: list[str], depth: int) -> tuple[set[str], list[tuple]]:
+def _bfs(G: nx.Graph, start_nodes: list[str], depth: int) -> tuple[set[str], list[tuple]]:
     # Compute hub threshold: nodes above this degree are not expanded as transit.
     # p99 of degree distribution, floored at 50 to avoid over-blocking small graphs.
     degrees = [G.degree(n) for n in G.nodes()]
@@ -456,7 +456,7 @@ def _bfs(G: nx.mmd, start_nodes: list[str], depth: int) -> tuple[set[str], list[
     return visited, edges_seen
 
 
-def _dfs(G: nx.mmd, start_nodes: list[str], depth: int) -> tuple[set[str], list[tuple]]:
+def _dfs(G: nx.Graph, start_nodes: list[str], depth: int) -> tuple[set[str], list[tuple]]:
     degrees = [G.degree(n) for n in G.nodes()]
     if degrees:
         degrees_sorted = sorted(degrees)
@@ -482,7 +482,7 @@ def _dfs(G: nx.mmd, start_nodes: list[str], depth: int) -> tuple[set[str], list[
     return visited, edges_seen
 
 
-def _subgraph_to_text(G: nx.mmd, nodes: set[str], edges: list[tuple], token_budget: int = 2000, *, seeds: list[str] | None = None) -> str:
+def _subgraph_to_text(G: nx.Graph, nodes: set[str], edges: list[tuple], token_budget: int = 2000, *, seeds: list[str] | None = None) -> str:
     """Render subgraph as text, cutting at token_budget (approx 3 chars/token).
 
     seeds: exact-match nodes rendered first before the degree-sorted expansion,
@@ -510,7 +510,7 @@ def _subgraph_to_text(G: nx.mmd, nodes: set[str], edges: list[tuple], token_budg
     for u, v in edges:
         if u in nodes and v in nodes:
             raw = G[u][v]
-            d = next(iter(raw.values()), {}) if isinstance(G, (nx.Multimmd, nx.MultiDimmd)) else raw
+            d = next(iter(raw.values()), {}) if isinstance(G, (nx.MultiGraph, nx.MultiDiGraph)) else raw
             context = d.get("context")
             context_suffix = f" context={sanitize_label(str(context))}" if context else ""
             line = (
@@ -536,7 +536,7 @@ def _subgraph_to_text(G: nx.mmd, nodes: set[str], edges: list[tuple], token_budg
 
 
 def _query_graph_text(
-    G: nx.mmd,
+    G: nx.Graph,
     question: str,
     *,
     mode: str = "bfs",
@@ -563,7 +563,7 @@ def _query_graph_text(
     return header + _subgraph_to_text(traversal_graph, nodes, edges, token_budget)
 
 
-def _find_node(G: nx.mmd, label: str) -> list[str]:
+def _find_node(G: nx.Graph, label: str) -> list[str]:
     """Return node IDs whose label or ID matches the search term (diacritic-insensitive).
 
     Results are ordered by three-tier precedence: exact match, then prefix match,

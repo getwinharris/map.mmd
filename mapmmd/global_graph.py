@@ -45,7 +45,7 @@ def _save_manifest(manifest: dict) -> None:
     _GLOBAL_MANIFEST.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
-def _load_global_graph() -> nx.mmd:
+def _load_global_graph() -> nx.Graph:
     if _GLOBAL_GRAPH.exists():
         from mapmmd.security import check_graph_file_size_cap
         check_graph_file_size_cap(_GLOBAL_GRAPH)
@@ -56,10 +56,10 @@ def _load_global_graph() -> nx.mmd:
             return _jg.node_link_graph(data, edges="links")
         except TypeError:
             return _jg.node_link_graph(data)
-    return nx.mmd()
+    return nx.Graph()
 
 
-def _save_global_graph(G: nx.mmd) -> None:
+def _save_global_graph(G: nx.Graph) -> None:
     _GLOBAL_DIR.mkdir(parents=True, exist_ok=True)
     try:
         data = _jg.node_link_data(G, edges="links")

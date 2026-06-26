@@ -42,7 +42,7 @@ def _make_graph_with_semantic_edge():
 
 def _make_two_edge_graph():
     """mmd with one semantically_similar_to edge and one references edge, both cross-file."""
-    G = nx.mmd()
+    G = nx.Graph()
     for nid, label, src in [
         ("a", "ValidateInput", "auth/validators.py"),
         ("b", "CheckInput", "api/checks.py"),
@@ -165,7 +165,7 @@ def test_report_semantic_tag_on_correct_line():
 
 def test_report_no_semantic_tag_for_other_relations():
     """Non-semantic edges must not get the [semantically similar] tag."""
-    G = nx.mmd()
+    G = nx.Graph()
     for nid, label, src in [
         ("x", "Alpha", "repo1/a.py"),
         ("y", "Beta", "repo2/b.py"),

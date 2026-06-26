@@ -5,13 +5,13 @@ import networkx as nx
 from .validate import validate_extraction
 
 
-def build_from_json(extraction: dict) -> nx.mmd:
+def build_from_json(extraction: dict) -> nx.Graph:
     errors = validate_extraction(extraction)
     # Dangling edges (stdlib/external imports) are expected - only warn about real schema errors.
     real_errors = [e for e in errors if "does not match any node id" not in e]
     if real_errors:
         print(f"[mapmmd] Extraction warning ({len(real_errors)} issues): {real_errors[0]}", file=sys.stderr)
-    G = nx.mmd()
+    G = nx.Graph()
     for node in extraction.get("nodes", []):
         G.add_node(node["id"], **{k: v for k, v in node.items() if k != "id"})
     node_set = set(G.nodes())
@@ -28,7 +28,7 @@ def build_from_json(extraction: dict) -> nx.mmd:
     return G
 
 
-def build(extractions: list[dict]) -> nx.mmd:
+def build(extractions: list[dict]) -> nx.Graph:
     """Merge multiple extraction results into one graph."""
     combined: dict = {"nodes": [], "edges": [], "input_tokens": 0, "output_tokens": 0}
     for ext in extractions:

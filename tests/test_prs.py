@@ -151,9 +151,9 @@ class TestPathMatch:
 # ── compute_pr_impact ─────────────────────────────────────────────────────────
 
 class TestComputePrImpact:
-    def _make_graph(self) -> nx.mmd:
+    def _make_graph(self) -> nx.Graph:
         """3 nodes across 2 communities, 2 distinct source files."""
-        G = nx.mmd()
+        G = nx.Graph()
         G.add_node("n1", source_file="src/auth/api.py", community=0)
         G.add_node("n2", source_file="src/auth/api.py", community=0)
         G.add_node("n3", source_file="src/utils/helpers.py", community=1)
@@ -187,7 +187,7 @@ class TestComputePrImpact:
 
     def test_no_double_counting_when_basename_matches_multiple_paths(self):
         # "api.py" should NOT match both src/auth/api.py AND src/admin/api.py
-        G = nx.mmd()
+        G = nx.Graph()
         G.add_node("a1", source_file="src/auth/api.py", community=0)
         G.add_node("a2", source_file="src/admin/api.py", community=1)
         comms, nodes = compute_pr_impact(["src/auth/api.py"], G)
@@ -198,7 +198,7 @@ class TestComputePrImpact:
     def test_no_double_counting_same_graph_file_matched_by_two_pr_files(self):
         # If PR diff lists both "api.py" and "src/auth/api.py", the graph node
         # for src/auth/api.py should only be counted once
-        G = nx.mmd()
+        G = nx.Graph()
         G.add_node("n1", source_file="src/auth/api.py", community=0)
         G.add_node("n2", source_file="src/auth/api.py", community=0)
         comms, nodes = compute_pr_impact(["src/auth/api.py", "api.py"], G)

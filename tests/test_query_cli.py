@@ -10,7 +10,7 @@ import mapmmd.__main__ as mainmod
 
 
 def _write_graph(tmp_path):
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_node("n1", label="extract", source_file="extract.py", source_location="L10", community=0)
     G.add_node("n2", label="cluster", source_file="cluster.py", source_location="L5", community=0)
     G.add_node("n3", label="build", source_file="build.py", source_location="L1", community=1)

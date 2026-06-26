@@ -47,7 +47,7 @@ def test_failure_message_is_actionable() -> None:
 
 
 def test_networkx_duplicate_key_overwrite_trap_is_real() -> None:
-    graph = nx.MultiDimmd()
+    graph = nx.MultiDiGraph()
 
     graph.add_edge("a", "b", key="same", relation="first")
     graph.add_edge("a", "b", key="same", relation="second")

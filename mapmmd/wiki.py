@@ -23,7 +23,7 @@ def _safe_filename(name: str) -> str:
     return s[:200] if s else 'unnamed'
 
 
-def _cross_community_links(G: nx.mmd, nodes: list[str], own_cid: int, labels: dict[int, str], node_community: dict[str, int]) -> list[tuple[str, int]]:
+def _cross_community_links(G: nx.Graph, nodes: list[str], own_cid: int, labels: dict[int, str], node_community: dict[str, int]) -> list[tuple[str, int]]:
     """Return (community_label, edge_count) pairs for cross-community connections, sorted descending."""
     counts: dict[str, int] = Counter()
     for nid in nodes:
@@ -35,7 +35,7 @@ def _cross_community_links(G: nx.mmd, nodes: list[str], own_cid: int, labels: di
 
 
 def _community_article(
-    G: nx.mmd,
+    G: nx.Graph,
     cid: int,
     nodes: list[str],
     label: str,
@@ -102,7 +102,7 @@ def _community_article(
     return "\n".join(lines)
 
 
-def _god_node_article(G: nx.mmd, nid: str, labels: dict[int, str], node_community: dict[str, int] | None = None) -> str:
+def _god_node_article(G: nx.Graph, nid: str, labels: dict[int, str], node_community: dict[str, int] | None = None) -> str:
     d = G.nodes[nid]
     node_label = d.get("label", nid)
     src = d.get("source_file", "")
@@ -179,7 +179,7 @@ def _index_md(
 
 
 def to_wiki(
-    G: nx.mmd,
+    G: nx.Graph,
     communities: dict[int, list[str]],
     output_dir: str | Path,
     community_labels: dict[int, str] | None = None,

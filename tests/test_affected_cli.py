@@ -9,7 +9,7 @@ import mapmmd.__main__ as mainmod
 
 
 def _write_graph(tmp_path):
-    graph = nx.Dimmd()
+    graph = nx.DiGraph()
     graph.add_node("target", label="Foo", source_file="pkg/foo.py", source_location="L1")
     graph.add_node("caller", label="X()", source_file="app.py", source_location="L4")
     graph.add_node("barrel", label="__init__.py", source_file="pkg/__init__.py", source_location=None)
@@ -66,7 +66,7 @@ def test_affected_cli_forces_directed_on_undirected_graph(monkeypatch, tmp_path,
     or nothing. Without forcing directed=True, node_link_graph builds an
     undirected mmd, predecessors() collapses, and the reverse traversal breaks.
     """
-    graph = nx.Dimmd()
+    graph = nx.DiGraph()
     graph.add_node("A", label="caller_fn", source_file="a.py", source_location="L1")
     graph.add_node("B", label="callee_fn", source_file="b.py", source_location="L2")
     graph.add_edge("A", "B", relation="calls", context="call", confidence="EXTRACTED")
@@ -98,7 +98,7 @@ def test_affected_cli_loads_edges_keyed_graph(monkeypatch, tmp_path, capsys):
     """mapmmd's `extract` writes graph.json with an "edges" key (not networkx's
     default "links"). affected.load_graph must handle it; before the edges/links
     normalization it raised an uncaught KeyError: 'links' (same class as #1198)."""
-    graph = nx.Dimmd()
+    graph = nx.DiGraph()
     graph.add_node("target", label="Foo", source_file="pkg/foo.py", source_location="L1")
     graph.add_node("caller", label="X()", source_file="app.py", source_location="L4")
     graph.add_edge("caller", "target", relation="calls", context="call", confidence="EXTRACTED")
@@ -127,7 +127,7 @@ def test_affected_cli_loads_edges_keyed_graph(monkeypatch, tmp_path, capsys):
 def test_resolve_seed_bare_name_matches_callable_label():
     from mapmmd.affected import resolve_seed
 
-    graph = nx.Dimmd()
+    graph = nx.DiGraph()
     graph.add_node("a", label="classifyProperty()", source_file="pkg/entity.py")
     graph.add_node("b", label="classifyPropertySafe()", source_file="app/context.py")
 
@@ -138,7 +138,7 @@ def test_resolve_seed_bare_name_matches_callable_label():
 def test_resolve_seed_decorated_query_matches_bare_label():
     from mapmmd.affected import resolve_seed
 
-    graph = nx.Dimmd()
+    graph = nx.DiGraph()
     graph.add_node("a", label="Foo", source_file="pkg/foo.py")
     graph.add_node("b", label="FooBar", source_file="pkg/foobar.py")
 
@@ -150,7 +150,7 @@ def test_resolve_seed_matches_unicode_normalized_label():
 
     from mapmmd.affected import resolve_seed
 
-    graph = nx.Dimmd()
+    graph = nx.DiGraph()
     graph.add_node("a", label="Auditoría", source_file="pkg/auditoria.py")
 
     assert resolve_seed(graph, unicodedata.normalize("NFD", "Auditoría")) == "a"
@@ -159,7 +159,7 @@ def test_resolve_seed_matches_unicode_normalized_label():
 def test_resolve_seed_preserves_distinct_accents():
     from mapmmd.affected import resolve_seed
 
-    graph = nx.Dimmd()
+    graph = nx.DiGraph()
     graph.add_node("a", label="resume", source_file="pkg/resume.py")
     graph.add_node("b", label="résumé", source_file="pkg/resume_accented.py")
 
@@ -169,7 +169,7 @@ def test_resolve_seed_preserves_distinct_accents():
 def test_resolve_seed_bare_name_tie_still_returns_none():
     from mapmmd.affected import resolve_seed
 
-    graph = nx.Dimmd()
+    graph = nx.DiGraph()
     graph.add_node("a", label="dup()", source_file="pkg/one.py")
     graph.add_node("b", label="dup()", source_file="pkg/two.py")
 

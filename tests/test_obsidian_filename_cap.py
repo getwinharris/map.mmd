@@ -6,8 +6,8 @@ import networkx as nx
 from mapmmd.export import to_obsidian, to_canvas
 
 
-def _graph(labels: list[str]) -> tuple[nx.mmd, dict[int, list[str]]]:
-    G = nx.mmd()
+def _graph(labels: list[str]) -> tuple[nx.Graph, dict[int, list[str]]]:
+    G = nx.Graph()
     ids = []
     for i, lab in enumerate(labels):
         nid = f"n{i}"

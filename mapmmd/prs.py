@@ -237,7 +237,7 @@ def fetch_pr_files(number: int, repo: str | None = None) -> list[str]:
         return []
 
 
-# ── mmd-native impact (used by MCP tools — works on nx.mmd directly) ─────
+# ── mmd-native impact (used by MCP tools — works on nx.Graph directly) ─────
 
 def _path_match(graph_src: str, pr_file: str) -> bool:
     """True if graph_src and pr_file refer to the same file (path-boundary safe)."""
@@ -246,7 +246,7 @@ def _path_match(graph_src: str, pr_file: str) -> bool:
     return graph_src.endswith("/" + pr_file) or pr_file.endswith("/" + graph_src)
 
 
-def compute_pr_impact(files: list[str], G: "nx.mmd") -> tuple[list[int], int]:
+def compute_pr_impact(files: list[str], G: "nx.Graph") -> tuple[list[int], int]:
     """Return (communities_touched, nodes_affected) for a set of changed files.
 
     Builds a file→(communities, count) index first so lookup is O(nodes + files)

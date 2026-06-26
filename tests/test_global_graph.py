@@ -12,8 +12,8 @@ from unittest.mock import patch
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 def _make_graph(nodes, edges=None):
-    """Build a simple nx.mmd from node dicts."""
-    G = nx.mmd()
+    """Build a simple nx.Graph from node dicts."""
+    G = nx.Graph()
     for n in nodes:
         nid = n["id"]
         G.add_node(nid, **{k: v for k, v in n.items() if k != "id"})
@@ -68,7 +68,7 @@ def test_prefix_graph_rewrites_edges():
 
 def test_prune_repo_removes_correct_nodes():
     from mapmmd.build import prune_repo_from_graph
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_node("repoA::userservice", repo="repoA", label="UserService")
     G.add_node("repoB::userservice", repo="repoB", label="UserService")
     G.add_node("repoA::auth", repo="repoA", label="Auth")
@@ -81,7 +81,7 @@ def test_prune_repo_removes_correct_nodes():
 
 def test_prune_repo_returns_zero_if_not_present():
     from mapmmd.build import prune_repo_from_graph
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_node("repoA::x", repo="repoA")
     removed = prune_repo_from_graph(G, "repoB")
     assert removed == 0
@@ -270,7 +270,7 @@ def test_merge_graphs_prefixes_ids(tmp_path):
         repo_tag = gp.parent.parent.name
         graphs.append(prefix_graph_for_global(G, repo_tag))
 
-    merged = nx.mmd()
+    merged = nx.Graph()
     for G in graphs:
         merged = nx.compose(merged, G)
 

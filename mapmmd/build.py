@@ -71,7 +71,7 @@ def _norm_source_file(p: str | None, root: str | None = None) -> str | None:
     return p
 
 
-def edge_data(G: nx.mmd, u: str, v: str) -> dict:
+def edge_data(G: nx.Graph, u: str, v: str) -> dict:
     """Return one edge attribute dict for (u, v), tolerating Multimmd.
 
     For Multimmd/MultiDimmd there can be multiple parallel edges;
@@ -79,15 +79,15 @@ def edge_data(G: nx.mmd, u: str, v: str) -> dict:
     relation/confidence for rendering). Fixes #796.
     """
     raw = G[u][v]
-    if isinstance(G, (nx.Multimmd, nx.MultiDimmd)):
+    if isinstance(G, (nx.MultiGraph, nx.MultiDiGraph)):
         return next(iter(raw.values()), {})
     return raw
 
 
-def edge_datas(G: nx.mmd, u: str, v: str) -> list[dict]:
+def edge_datas(G: nx.Graph, u: str, v: str) -> list[dict]:
     """Return every edge attribute dict for (u, v); always a list."""
     raw = G[u][v]
-    if isinstance(G, (nx.Multimmd, nx.MultiDimmd)):
+    if isinstance(G, (nx.MultiGraph, nx.MultiDiGraph)):
         return list(raw.values())
     return [raw]
 
@@ -134,7 +134,7 @@ def dedupe_edges(edges: list[dict]) -> list[dict]:
     return out
 
 
-def build_from_json(extraction: dict, *, directed: bool = False, root: str | Path | None = None) -> nx.mmd:
+def build_from_json(extraction: dict, *, directed: bool = False, root: str | Path | None = None) -> nx.Graph:
     """Build a NetworkX graph from an extraction dict.
 
     directed=True produces a Dimmd that preserves edge direction (source→target).
@@ -180,7 +180,7 @@ def build_from_json(extraction: dict, *, directed: bool = False, root: str | Pat
     real_errors = [e for e in errors if "does not match any node id" not in e]
     if real_errors:
         print(f"[mapmmd] Extraction warning ({len(real_errors)} issues): {real_errors[0]}", file=sys.stderr)
-    G: nx.mmd = nx.Dimmd() if directed else nx.mmd()
+    G: nx.Graph = nx.DiGraph() if directed else nx.Graph()
     for node in extraction.get("nodes", []):
         # Skip dict nodes with a missing or non-hashable id (e.g. a list emitted
         # by a buggy LLM extraction) so NetworkX add_node never raises
@@ -348,7 +348,7 @@ def build_from_json(extraction: dict, *, directed: bool = False, root: str | Pat
         attrs["_tgt"] = tgt
         # When the graph is undirected and the same node pair appears twice with
         # the same relation but opposite directions (e.g. a `calls` b and b `calls` a),
-        # nx.mmd collapses them into one edge. The deterministic sort above means
+        # nx.Graph collapses them into one edge. The deterministic sort above means
         # the lexicographically-later direction would systematically overwrite the
         # earlier one's _src/_tgt, silently flipping the surviving edge's caller
         # and callee. First-seen direction wins instead — drop the redundant
@@ -379,7 +379,7 @@ def build(
     dedup: bool = True,
     dedup_llm_backend: str | None = None,
     root: str | Path | None = None,
-) -> nx.mmd:
+) -> nx.Graph:
     """Merge multiple extraction results into one graph.
 
     directed=True produces a Dimmd that preserves edge direction (source→target).
@@ -473,7 +473,7 @@ def build_merge(
     dedup: bool = True,
     dedup_llm_backend: str | None = None,
     root: str | Path | None = None,
-) -> nx.mmd:
+) -> nx.Graph:
     """Load existing graph.json, merge new chunks into it, and save back.
 
     Re-extracted files REPLACE their prior contribution: any source_file present
@@ -486,7 +486,7 @@ def build_merge(
     graph_path = Path(graph_path if graph_path is not None else _default_graph_json())
     if graph_path.exists():
         # Read JSON directly instead of going through node_link_graph().
-        # The latter rebuilds an undirected nx.mmd and then enumerating
+        # The latter rebuilds an undirected nx.Graph and then enumerating
         # edges() yields endpoints based on node insertion order, which
         # silently flips directional edges (e.g. `calls`) when the callee
         # was inserted before the caller. The _src/_tgt direction-preserving
@@ -598,7 +598,7 @@ def build_merge(
     return G
 
 
-def prefix_graph_for_global(G: nx.mmd, repo_tag: str) -> nx.mmd:
+def prefix_graph_for_global(G: nx.Graph, repo_tag: str) -> nx.Graph:
     """Return a copy of G with all node IDs prefixed with repo_tag::.
 
     Labels are preserved unchanged (for display). A 'local_id' attribute
@@ -614,7 +614,7 @@ def prefix_graph_for_global(G: nx.mmd, repo_tag: str) -> nx.mmd:
     return H
 
 
-def prune_repo_from_graph(G: nx.mmd, repo_tag: str) -> int:
+def prune_repo_from_graph(G: nx.Graph, repo_tag: str) -> int:
     """Remove all nodes tagged with repo_tag from G in-place. Returns count removed."""
     to_remove = [n for n, d in G.nodes(data=True) if d.get("repo") == repo_tag]
     G.remove_nodes_from(to_remove)

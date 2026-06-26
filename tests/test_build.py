@@ -329,7 +329,7 @@ def test_build_from_json_preserves_first_direction_on_bidirectional_pair(tmp_pat
 
     When an extraction emits two `calls` edges between the same pair in
     opposite directions (mutual recursion, callbacks, event handlers, etc.),
-    nx.mmd collapses them into a single undirected edge. The deterministic
+    nx.Graph collapses them into a single undirected edge. The deterministic
     edge sort introduced in #1010 ordered edges by (source, target, relation),
     so the lexicographically-later direction always wrote second and clobbered
     the first edge's _src/_tgt — the surviving edge then exported with caller
@@ -389,7 +389,7 @@ def test_build_from_json_preserves_first_direction_on_bidirectional_pair(tmp_pat
 # on those with `ValueError: not enough values to unpack (expected 3, got 2)`.
 
 def test_edge_data_simple_graph():
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_edge("a", "b", relation="calls", confidence="EXTRACTED")
     d = edge_data(G, "a", "b")
     assert isinstance(d, dict)
@@ -398,7 +398,7 @@ def test_edge_data_simple_graph():
 
 
 def test_edge_datas_simple_graph_returns_singleton_list():
-    G = nx.mmd()
+    G = nx.Graph()
     G.add_edge("a", "b", relation="calls", confidence="EXTRACTED")
     ds = edge_datas(G, "a", "b")
     assert isinstance(ds, list)
@@ -407,7 +407,7 @@ def test_edge_datas_simple_graph_returns_singleton_list():
 
 
 def test_edge_data_multigraph_with_parallel_edges():
-    G = nx.Multimmd()
+    G = nx.MultiGraph()
     G.add_edge("a", "b", relation="calls", confidence="EXTRACTED")
     G.add_edge("a", "b", relation="references", confidence="INFERRED")
     d = edge_data(G, "a", "b")
@@ -417,7 +417,7 @@ def test_edge_data_multigraph_with_parallel_edges():
 
 
 def test_edge_datas_multigraph_returns_all_parallel_edges():
-    G = nx.Multimmd()
+    G = nx.MultiGraph()
     G.add_edge("a", "b", relation="calls", confidence="EXTRACTED")
     G.add_edge("a", "b", relation="references", confidence="INFERRED")
     ds = edge_datas(G, "a", "b")
@@ -428,7 +428,7 @@ def test_edge_datas_multigraph_returns_all_parallel_edges():
 
 
 def test_edge_data_multidigraph():
-    G = nx.MultiDimmd()
+    G = nx.MultiDiGraph()
     G.add_edge("a", "b", relation="calls")
     G.add_edge("a", "b", relation="imports")
     d = edge_data(G, "a", "b")
@@ -458,7 +458,7 @@ def test_edge_data_node_link_multigraph_roundtrip():
         G = json_graph.node_link_graph(data, edges="links")
     except TypeError:
         G = json_graph.node_link_graph(data)
-    assert isinstance(G, nx.Multimmd)
+    assert isinstance(G, nx.MultiGraph)
     # Plain G.edges[u, v] would raise here; the helper must not.
     d = edge_data(G, "a", "b")
     assert isinstance(d, dict)

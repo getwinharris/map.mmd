@@ -13,7 +13,7 @@ def _safe_community_name(label: str) -> str:
 
 
 def generate(
-    G: nx.mmd,
+    G: nx.Graph,
     communities: dict[int, list[str]],
     cohesion_scores: dict[int, float],
     community_labels: dict[int, str],

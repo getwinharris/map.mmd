@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://mapmmdlabs.ai"><img src="https://raw.githubusercontent.com/getwinharris/mapmmd/v4/docs/logo-text.svg" width="260" height="64" alt="mapmmd"/></a>
+  <a href="https://getwinharris.github.io/map.mmd"><img src="https://raw.githubusercontent.com/getwinharris/mapmmd/v4/docs/logo-text.svg" width="260" height="64" alt="mapmmd"/></a>
 </p>
 
 
@@ -676,11 +676,11 @@ mapmmd label ./my-project --backend=openai --model gpt-4o   # force a specific b
 
 ## Built on mapmmd — Penpax
 
-[**Penpax**](https://mapmmdlabs.ai) is the always-on layer built on top of mapmmd — it applies the same graph approach to your entire working life: meetings, browser history, emails, files, and code, updating continuously in the background.
+[**Penpax**](https://getwinharris.github.io/map.mmd) is the always-on layer built on top of mapmmd — it applies the same graph approach to your entire working life: meetings, browser history, emails, files, and code, updating continuously in the background.
 
 Built for people whose work lives across hundreds of conversations and documents they can never fully reconstruct. No cloud, fully on-device.
 
-**Free trial launching soon.** [Join the waitlist →](https://mapmmdlabs.ai)
+**Free trial launching soon.** [Join the waitlist →](https://getwinharris.github.io/map.mmd)
 
 ---
 

@@ -37,7 +37,7 @@ def _estimate_tokens(text: str) -> int:
     return max(1, len(text) // _CHARS_PER_TOKEN)
 
 
-def _query_subgraph_tokens(G: nx.mmd, question: str, depth: int = 3) -> int:
+def _query_subgraph_tokens(G: nx.Graph, question: str, depth: int = 3) -> int:
     """Run BFS from best-matching nodes and return estimated tokens in the subgraph context."""
     terms = _query_terms(question)
     scored = []

@@ -13,7 +13,7 @@ from mapmmd.llm import label_communities, generate_community_labels
 
 
 def _graph():
-    G = nx.mmd()
+    G = nx.Graph()
     # community 0 = ordering, community 1 = payments
     G.add_node("order_place", label="place_order")
     G.add_node("order_repo", label="OrderRepository")
@@ -184,7 +184,7 @@ def test_gods_as_dicts_do_not_crash(monkeypatch):
 
 
 def test_empty_communities_returns_placeholders(monkeypatch):
-    G = nx.mmd()
+    G = nx.Graph()
     called = False
 
     def fake_call(p, *, backend, max_tokens=200):
@@ -207,7 +207,7 @@ def test_empty_communities_returns_placeholders(monkeypatch):
 
 
 def _wide_graph(n_communities: int):
-    G = nx.mmd()
+    G = nx.Graph()
     communities: dict[int, list[str]] = {}
     for cid in range(n_communities):
         a, b = f"c{cid}_a", f"c{cid}_b"
@@ -299,7 +299,7 @@ import time as _time
 
 
 def _many_communities(n):
-    G = nx.mmd()
+    G = nx.Graph()
     comms = {}
     for i in range(n):
         nid = f"n{i}"
