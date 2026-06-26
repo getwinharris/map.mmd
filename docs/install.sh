@@ -19,8 +19,13 @@ for cmd in "${REQUIREMENTS[@]}"; do
   fi
 done
 
-echo "==> Installing mapmmdy via pipx..."
-pipx install --force mapmmdy
+if pipx list --short 2>/dev/null | grep -q "^mapmmdy "; then
+  echo "==> Upgrading existing mapmmdy installation..."
+  pipx upgrade mapmmdy
+else
+  echo "==> Installing mapmmdy via pipx..."
+  pipx install mapmmdy
+fi
 
 echo ""
 echo "==> Done!"
