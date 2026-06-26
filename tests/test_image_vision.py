@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from graphify import llm
+from map_mmd import llm
 
 # A 1x1 PNG is unnecessary — the renderers never decode pixels, they only base64
 # the bytes — so any non-empty byte string stands in for image content.
@@ -50,7 +50,7 @@ def test_pdf_routed_through_pypdf_not_readtext(tmp_path, monkeypatch):
     # prompt.
     pdf = tmp_path / "paper.pdf"
     pdf.write_bytes(b"%PDF-1.4 RAWBINARYGARBAGE\x00\xff")
-    import graphify.detect as detect
+    import map_mmd.detect as detect
     monkeypatch.setattr(detect, "extract_pdf_text", lambda p: "EXTRACTED PDF TEXT")
     out = llm._read_files([pdf], tmp_path)
     assert "EXTRACTED PDF TEXT" in out
@@ -134,9 +134,9 @@ def test_capability_flags(monkeypatch):
         assert llm._backend_supports_vision(b), b
     assert not llm._backend_supports_vision("deepseek")
     # ollama is opt-in via env (default model is text-only)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_VISION", raising=False)
+    monkeypatch.delenv("MAP_MMD_OLLAMA_VISION", raising=False)
     assert not llm._backend_supports_vision("ollama")
-    monkeypatch.setenv("GRAPHIFY_OLLAMA_VISION", "1")
+    monkeypatch.setenv("MAP_MMD_OLLAMA_VISION", "1")
     assert llm._backend_supports_vision("ollama")
 
 

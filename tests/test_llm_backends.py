@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from graphify import llm
+from map_mmd import llm
 
 
 def _clear_backend_env(monkeypatch):
@@ -63,7 +63,7 @@ def test_extract_files_direct_routes_gemini_through_openai_compat(tmp_path, monk
     source.write_text("# Architecture\n\nThe runner emits a snapshot.\n")
     result = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1}
 
-    with patch("graphify.llm._call_openai_compat", return_value=result) as call:
+    with patch("map_mmd.llm._call_openai_compat", return_value=result) as call:
         assert llm.extract_files_direct([source], backend="gemini", root=tmp_path) is result
 
     assert call.call_args.args[:3] == (
@@ -97,13 +97,13 @@ def test_openai_compat_backends_resolve_full_output_cap(tmp_path, monkeypatch, b
     # output cap silently fell back to 8192 and truncated deep-mode JSON. The
     # dispatch must resolve their configured 16384.
     _clear_backend_env(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_MAX_OUTPUT_TOKENS", raising=False)
+    monkeypatch.delenv("MAP_MMD_MAX_OUTPUT_TOKENS", raising=False)
     monkeypatch.setenv(env_key, "test-key")
     source = tmp_path / "note.md"
     source.write_text("# Architecture\n")
     result = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1}
 
-    with patch("graphify.llm._call_openai_compat", return_value=result) as call:
+    with patch("map_mmd.llm._call_openai_compat", return_value=result) as call:
         llm.extract_files_direct([source], backend=backend, root=tmp_path)
 
     assert call.call_args.kwargs["max_completion_tokens"] == 16384
@@ -112,12 +112,12 @@ def test_openai_compat_backends_resolve_full_output_cap(tmp_path, monkeypatch, b
 def test_gemini_model_can_be_overridden_by_env(tmp_path, monkeypatch):
     _clear_backend_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_API_KEY", "google-key")
-    monkeypatch.setenv("GRAPHIFY_GEMINI_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("MAP_MMD_GEMINI_MODEL", "gemini-3.1-pro-preview")
     source = tmp_path / "note.md"
     source.write_text("# Architecture\n")
     result = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1}
 
-    with patch("graphify.llm._call_openai_compat", return_value=result) as call:
+    with patch("map_mmd.llm._call_openai_compat", return_value=result) as call:
         llm.extract_files_direct([source], backend="gemini", root=tmp_path)
 
     assert call.call_args.args[2] == "gemini-3.1-pro-preview"
@@ -145,7 +145,7 @@ def test_extract_files_direct_accepts_str_paths(tmp_path, monkeypatch):
     result = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1}
 
     # str path must not raise AttributeError: 'str' object has no attribute 'suffix'
-    with patch("graphify.llm._call_openai_compat", return_value=result):
+    with patch("map_mmd.llm._call_openai_compat", return_value=result):
         assert llm.extract_files_direct([str(source)], backend="gemini", root=tmp_path) is result
 
 
@@ -158,7 +158,7 @@ def test_extract_corpus_parallel_accepts_str_and_mixed_paths(tmp_path, monkeypat
     f2.write_text("# B\n\nNode two.\n")
     result = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1}
 
-    with patch("graphify.llm._call_openai_compat", return_value=result):
+    with patch("map_mmd.llm._call_openai_compat", return_value=result):
         # all-str, all-Path, and mixed must each pack + run without AttributeError
         for files in ([str(f1), str(f2)], [f1, f2], [str(f1), f2]):
             merged = llm.extract_corpus_parallel(
@@ -171,7 +171,7 @@ def test_corpus_parallel_oversized_markdown_does_not_crash_on_fileslice(tmp_path
     # #1397/#1399 regression: a Markdown file large enough to be sliced into
     # FileSlice units must not crash extract_files_direct's Path() coercion
     # (#1386). The earlier str-path tests used tiny files, so slicing never ran.
-    from graphify.llm import _FILE_CHAR_CAP
+    from map_mmd.llm import _FILE_CHAR_CAP
     _clear_backend_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_API_KEY", "google-key")
     big = tmp_path / "big.md"
@@ -179,7 +179,7 @@ def test_corpus_parallel_oversized_markdown_does_not_crash_on_fileslice(tmp_path
     assert len(big.read_text()) > _FILE_CHAR_CAP  # guarantees slicing kicks in
     result = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1}
 
-    with patch("graphify.llm._call_openai_compat", return_value=result):
+    with patch("map_mmd.llm._call_openai_compat", return_value=result):
         # both a str path and a FileSlice unit must flow through without TypeError
         merged = llm.extract_corpus_parallel(
             [str(big)], backend="gemini", root=tmp_path, max_concurrency=1
@@ -192,7 +192,7 @@ def test_str_path_entry_points_handle_edge_cases(tmp_path, monkeypatch):
     monkeypatch.setenv("GOOGLE_API_KEY", "google-key")
     result = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1}
 
-    with patch("graphify.llm._call_openai_compat", return_value=result):
+    with patch("map_mmd.llm._call_openai_compat", return_value=result):
         # empty list: no chunks, nothing to extract, no crash
         empty = llm.extract_corpus_parallel([], backend="gemini", root=tmp_path)
         assert empty["nodes"] == [] and empty["failed_chunks"] == 0
@@ -254,7 +254,7 @@ def test_adaptive_retry_splits_on_context_exceeded(tmp_path):
             raise RuntimeError("Error 400: Context size has been exceeded.")
         return _ok(nodes=[{"id": f.stem} for f in chunk])
 
-    with patch("graphify.llm.extract_files_direct", side_effect=fake_extract):
+    with patch("map_mmd.llm.extract_files_direct", side_effect=fake_extract):
         result = llm._extract_with_adaptive_retry(
             files, backend="kimi", api_key="k", model="m", root=tmp_path, max_depth=3
         )
@@ -270,7 +270,7 @@ def test_adaptive_retry_gives_up_on_single_file_overflow(tmp_path):
     def fake_extract(*_, **__):
         raise RuntimeError("context_length_exceeded")
 
-    with patch("graphify.llm.extract_files_direct", side_effect=fake_extract):
+    with patch("map_mmd.llm.extract_files_direct", side_effect=fake_extract):
         result = llm._extract_with_adaptive_retry(
             [f], backend="kimi", api_key="k", model="m", root=tmp_path, max_depth=3
         )
@@ -289,7 +289,7 @@ def test_adaptive_retry_re_raises_unrelated_errors(tmp_path):
     def fake_extract(*_, **__):
         raise RuntimeError("rate limit hit")
 
-    with patch("graphify.llm.extract_files_direct", side_effect=fake_extract):
+    with patch("map_mmd.llm.extract_files_direct", side_effect=fake_extract):
         with pytest.raises(RuntimeError, match="rate limit"):
             llm._extract_with_adaptive_retry(
                 [f], backend="kimi", api_key="k", model="m", root=tmp_path, max_depth=3
@@ -466,8 +466,8 @@ def _install_capturing_openai(monkeypatch):
 
 def test_ollama_extra_body_sets_num_ctx_and_keep_alive(monkeypatch):
     captured = _install_capturing_openai(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_NUM_CTX", raising=False)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_KEEP_ALIVE", raising=False)
+    monkeypatch.delenv("MAP_MMD_OLLAMA_NUM_CTX", raising=False)
+    monkeypatch.delenv("MAP_MMD_OLLAMA_KEEP_ALIVE", raising=False)
 
     llm._call_openai_compat(
         "http://localhost:11434/v1", "ollama", "qwen2.5-coder:7b",
@@ -487,8 +487,8 @@ def test_ollama_num_ctx_scales_with_small_token_budget(monkeypatch):
     # 131072 forced Ollama to allocate 128k KV-cache slots on a 31B model, causing
     # VRAM exhaustion by chunk 4. num_ctx must now reflect actual chunk size.
     captured = _install_capturing_openai(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_NUM_CTX", raising=False)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_KEEP_ALIVE", raising=False)
+    monkeypatch.delenv("MAP_MMD_OLLAMA_NUM_CTX", raising=False)
+    monkeypatch.delenv("MAP_MMD_OLLAMA_KEEP_ALIVE", raising=False)
 
     # Simulate an 8k-token chunk: ~32k chars of content
     small_chunk_msg = "x" * 32_000
@@ -510,8 +510,8 @@ def test_ollama_num_ctx_scales_with_small_token_budget(monkeypatch):
 
 def test_ollama_num_ctx_env_override(monkeypatch):
     captured = _install_capturing_openai(monkeypatch)
-    monkeypatch.setenv("GRAPHIFY_OLLAMA_NUM_CTX", "65536")
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_KEEP_ALIVE", raising=False)
+    monkeypatch.setenv("MAP_MMD_OLLAMA_NUM_CTX", "65536")
+    monkeypatch.delenv("MAP_MMD_OLLAMA_KEEP_ALIVE", raising=False)
 
     llm._call_openai_compat(
         "http://localhost:11434/v1", "ollama", "qwen2.5-coder:7b",
@@ -571,8 +571,8 @@ def test_call_openai_compat_explicit_extra_body_skips_ollama_auto_derive(monkeyp
     # An explicit extra_body means "I own this request shape" — Ollama's
     # num_ctx auto-derive (a default) must step aside or we'd clobber it.
     captured = _install_capturing_openai(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_NUM_CTX", raising=False)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_KEEP_ALIVE", raising=False)
+    monkeypatch.delenv("MAP_MMD_OLLAMA_NUM_CTX", raising=False)
+    monkeypatch.delenv("MAP_MMD_OLLAMA_KEEP_ALIVE", raising=False)
 
     llm._call_openai_compat(
         "http://localhost:11434/v1", "ollama", "qwen2.5-coder:7b",
@@ -599,10 +599,10 @@ def test_extract_corpus_parallel_ollama_runs_serially(tmp_path, monkeypatch):
         call_order.append(len(chunk))
         return _ok(nodes=[{"id": f.stem} for f in chunk])
 
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_PARALLEL", raising=False)
+    monkeypatch.delenv("MAP_MMD_OLLAMA_PARALLEL", raising=False)
 
-    with patch("graphify.llm.extract_files_direct", side_effect=fake_extract):
-        with patch("graphify.llm.ThreadPoolExecutor") as mock_pool:
+    with patch("map_mmd.llm.extract_files_direct", side_effect=fake_extract):
+        with patch("map_mmd.llm.ThreadPoolExecutor") as mock_pool:
             result = llm.extract_corpus_parallel(
                 files, backend="ollama", api_key="ollama", model="qwen2.5-coder:7b",
                 root=tmp_path, token_budget=None, chunk_size=2, max_concurrency=4,
@@ -617,10 +617,10 @@ def test_extract_corpus_parallel_ollama_parallel_env_restores_concurrency(tmp_pa
     for f in files:
         f.write_text("hello")
 
-    monkeypatch.setenv("GRAPHIFY_OLLAMA_PARALLEL", "1")
+    monkeypatch.setenv("MAP_MMD_OLLAMA_PARALLEL", "1")
 
-    with patch("graphify.llm.extract_files_direct", return_value=_ok()):
-        with patch("graphify.llm.ThreadPoolExecutor") as mock_pool:
+    with patch("map_mmd.llm.extract_files_direct", return_value=_ok()):
+        with patch("map_mmd.llm.ThreadPoolExecutor") as mock_pool:
             mock_pool.return_value.__enter__ = lambda s: s
             mock_pool.return_value.__exit__ = lambda s, *a: False
             mock_pool.return_value.submit = lambda fn, *a, **kw: type(
@@ -661,7 +661,7 @@ def test_adaptive_retry_bisects_on_hollow_ollama_response(tmp_path):
             }
         return _ok(nodes=[{"id": f.stem} for f in chunk])
 
-    with patch("graphify.llm.extract_files_direct", side_effect=fake_extract):
+    with patch("map_mmd.llm.extract_files_direct", side_effect=fake_extract):
         result = llm._extract_with_adaptive_retry(
             files, backend="ollama", api_key="ollama", model="qwen2.5-coder:7b",
             root=tmp_path, max_depth=3,
@@ -705,7 +705,7 @@ def _install_fake_azure_openai(monkeypatch, fake_resp):
 
 def test_call_azure_uses_correct_client_params_and_max_completion_tokens(monkeypatch):
     monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview")
-    monkeypatch.delenv("GRAPHIFY_API_TIMEOUT", raising=False)
+    monkeypatch.delenv("MAP_MMD_API_TIMEOUT", raising=False)
 
     fake_resp = _fake_openai_response(
         '{"nodes":[{"id":"a"}],"edges":[],"hyperedges":[]}',
@@ -753,7 +753,7 @@ def test_estimate_cost_azure_no_keyerror():
 
 # ---------------------------------------------------------------------------
 # Temperature resolution (#1191): omit temperature for reasoning models
-# (o1/o3/o4/gpt-5) and honour GRAPHIFY_LLM_TEMPERATURE.
+# (o1/o3/o4/gpt-5) and honour MAP_MMD_LLM_TEMPERATURE.
 # ---------------------------------------------------------------------------
 
 
@@ -774,30 +774,30 @@ def test_model_requires_default_temperature_false_for_normal_models(model):
 
 
 def test_resolve_temperature_default_for_normal_model(monkeypatch):
-    monkeypatch.delenv("GRAPHIFY_LLM_TEMPERATURE", raising=False)
+    monkeypatch.delenv("MAP_MMD_LLM_TEMPERATURE", raising=False)
     assert llm._resolve_temperature(0, "gpt-4.1-mini") == 0
 
 
 def test_resolve_temperature_omitted_for_reasoning_model(monkeypatch):
-    monkeypatch.delenv("GRAPHIFY_LLM_TEMPERATURE", raising=False)
+    monkeypatch.delenv("MAP_MMD_LLM_TEMPERATURE", raising=False)
     assert llm._resolve_temperature(0, "o3-mini") is None
     assert llm._resolve_temperature(0, "gpt-5") is None
 
 
 def test_resolve_temperature_env_var_numeric_overrides(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_LLM_TEMPERATURE", "0.7")
+    monkeypatch.setenv("MAP_MMD_LLM_TEMPERATURE", "0.7")
     assert llm._resolve_temperature(0, "gpt-4.1-mini") == 0.7
     # env var wins even for a reasoning model (explicit user choice)
     assert llm._resolve_temperature(0, "o3-mini") == 0.7
 
 
 def test_resolve_temperature_env_var_none_omits(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_LLM_TEMPERATURE", "none")
+    monkeypatch.setenv("MAP_MMD_LLM_TEMPERATURE", "none")
     assert llm._resolve_temperature(0, "gpt-4.1-mini") is None
 
 
 def test_resolve_temperature_env_var_invalid_falls_back(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_LLM_TEMPERATURE", "hot")
+    monkeypatch.setenv("MAP_MMD_LLM_TEMPERATURE", "hot")
     # bad value -> backend default for a normal model, still omitted for reasoning
     assert llm._resolve_temperature(0, "gpt-4.1-mini") == 0
     assert llm._resolve_temperature(0, "o3-mini") is None
@@ -807,9 +807,9 @@ def test_openai_compat_omits_temperature_for_o3_model(tmp_path, monkeypatch):
     # Regression for #1191: with a reasoning model the request must not carry a
     # `temperature` key at all, or the API returns HTTP 400.
     _clear_backend_env(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_LLM_TEMPERATURE", raising=False)
+    monkeypatch.delenv("MAP_MMD_LLM_TEMPERATURE", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-    monkeypatch.setenv("GRAPHIFY_OPENAI_MODEL", "o3-mini")
+    monkeypatch.setenv("MAP_MMD_OPENAI_MODEL", "o3-mini")
     captured = _install_capturing_openai(monkeypatch)
     (tmp_path / "f.py").write_text("x = 1\n")
 
@@ -823,8 +823,8 @@ def test_openai_compat_omits_temperature_for_o3_model(tmp_path, monkeypatch):
 
 def test_openai_compat_sends_temperature_for_normal_model(tmp_path, monkeypatch):
     _clear_backend_env(monkeypatch)
-    monkeypatch.delenv("GRAPHIFY_LLM_TEMPERATURE", raising=False)
-    monkeypatch.delenv("GRAPHIFY_OPENAI_MODEL", raising=False)
+    monkeypatch.delenv("MAP_MMD_LLM_TEMPERATURE", raising=False)
+    monkeypatch.delenv("MAP_MMD_OPENAI_MODEL", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     captured = _install_capturing_openai(monkeypatch)
     (tmp_path / "f.py").write_text("x = 1\n")
@@ -836,8 +836,8 @@ def test_openai_compat_sends_temperature_for_normal_model(tmp_path, monkeypatch)
 
 def test_openai_compat_env_var_temperature_applied(tmp_path, monkeypatch):
     _clear_backend_env(monkeypatch)
-    monkeypatch.setenv("GRAPHIFY_LLM_TEMPERATURE", "0.3")
-    monkeypatch.delenv("GRAPHIFY_OPENAI_MODEL", raising=False)
+    monkeypatch.setenv("MAP_MMD_LLM_TEMPERATURE", "0.3")
+    monkeypatch.delenv("MAP_MMD_OPENAI_MODEL", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     captured = _install_capturing_openai(monkeypatch)
     (tmp_path / "f.py").write_text("x = 1\n")
@@ -849,7 +849,7 @@ def test_openai_compat_env_var_temperature_applied(tmp_path, monkeypatch):
 
 def test_native_extraction_prompt_requests_hyperedges():
     """The native-backend prompt must request hyperedges, like the skill's
-    extraction-spec does — otherwise `graphify extract --backend X` silently
+    extraction-spec does — otherwise `map_mmd extract --backend X` silently
     produces zero hyperedges while the agent path produces them. Guards against
     the two prompts drifting apart again.
     """
@@ -865,7 +865,7 @@ def test_native_extraction_prompt_requests_hyperedges():
 def test_native_extraction_prompt_matches_skill_spec_on_hyperedges():
     """Both extraction paths share the same hyperedge contract (the '3 or more
     nodes … participate together' rule), so a corpus yields the same hyperedge
-    behaviour whether built via the skill or `graphify extract --backend`.
+    behaviour whether built via the skill or `map_mmd extract --backend`.
     """
     spec = (
         Path(__file__).resolve().parents[1]
@@ -886,7 +886,7 @@ import sys as _sys
 def _backend_base_url(backend: str, env_extra: dict) -> str:
     out = subprocess.run(
         [_sys.executable, "-c",
-         f"import graphify.llm as l; print(l.BACKENDS[{backend!r}]['base_url'])"],
+         f"import map_mmd.llm as l; print(l.BACKENDS[{backend!r}]['base_url'])"],
         env={**os.environ, **env_extra}, capture_output=True, text=True, check=True,
     )
     return out.stdout.strip()
@@ -916,7 +916,7 @@ def test_base_url_defaults_without_env(backend, default):
     env = {k: v for k, v in os.environ.items() if k not in cleared}
     out = subprocess.run(
         [_sys.executable, "-c",
-         f"import graphify.llm as l; print(l.BACKENDS[{backend!r}]['base_url'])"],
+         f"import map_mmd.llm as l; print(l.BACKENDS[{backend!r}]['base_url'])"],
         env=env, capture_output=True, text=True, check=True,
     )
     assert out.stdout.strip() == default

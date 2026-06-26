@@ -7,27 +7,27 @@ import time
 from pathlib import Path
 import pytest
 
-from graphify.watch import _notify_only, _WATCHED_EXTENSIONS, _rebuild_lock, _check_shrink
+from map_mmd.watch import _notify_only, _WATCHED_EXTENSIONS, _rebuild_lock, _check_shrink
 
 
 # --- _notify_only ---
 
 def test_notify_only_creates_flag(tmp_path):
     _notify_only(tmp_path)
-    flag = tmp_path / "graphify-out" / "needs_update"
+    flag = tmp_path / "map.mmd-out" / "needs_update"
     assert flag.exists()
     assert flag.read_text() == "1"
 
 def test_notify_only_creates_flag_dir(tmp_path):
-    # graphify-out dir does not exist yet
-    assert not (tmp_path / "graphify-out").exists()
+    # map.mmd-out dir does not exist yet
+    assert not (tmp_path / "map.mmd-out").exists()
     _notify_only(tmp_path)
-    assert (tmp_path / "graphify-out").is_dir()
+    assert (tmp_path / "map.mmd-out").is_dir()
 
 def test_notify_only_idempotent(tmp_path):
     _notify_only(tmp_path)
     _notify_only(tmp_path)
-    flag = tmp_path / "graphify-out" / "needs_update"
+    flag = tmp_path / "map.mmd-out" / "needs_update"
     assert flag.read_text() == "1"
 
 
@@ -60,26 +60,26 @@ def test_watched_extensions_excludes_noise():
 
 def test_check_update_no_flag_returns_true(tmp_path):
     """check_update returns True and is silent when needs_update flag is absent."""
-    from graphify.watch import check_update
+    from map_mmd.watch import check_update
     assert check_update(tmp_path) is True
 
 
 def test_check_update_with_flag_returns_true_and_prints(tmp_path, capsys):
     """check_update returns True and prints notification when flag exists."""
-    from graphify.watch import check_update
-    flag = tmp_path / "graphify-out" / "needs_update"
+    from map_mmd.watch import check_update
+    flag = tmp_path / "map.mmd-out" / "needs_update"
     flag.parent.mkdir(parents=True, exist_ok=True)
     flag.write_text("1")
     result = check_update(tmp_path)
     assert result is True
     out = capsys.readouterr().out
-    assert "graphify --update" in out
+    assert "map_mmd --update" in out
 
 
 def test_check_update_does_not_clear_flag(tmp_path):
     """check_update never removes the needs_update flag (clearing is LLM's job)."""
-    from graphify.watch import check_update
-    flag = tmp_path / "graphify-out" / "needs_update"
+    from map_mmd.watch import check_update
+    flag = tmp_path / "map.mmd-out" / "needs_update"
     flag.parent.mkdir(parents=True, exist_ok=True)
     flag.write_text("1")
     check_update(tmp_path)
@@ -97,7 +97,7 @@ def test_watch_raises_without_watchdog(tmp_path, monkeypatch):
 
     monkeypatch.setattr(builtins, "__import__", mock_import)
 
-    from graphify.watch import watch
+    from map_mmd.watch import watch
     with pytest.raises(ImportError, match="watchdog not installed"):
         watch(tmp_path)
 
@@ -107,7 +107,7 @@ def test_watch_raises_without_watchdog(tmp_path, monkeypatch):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="fcntl-only (POSIX)")
 def test_rebuild_lock_writes_pid_with_newline(tmp_path):
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     lock_path = out / ".rebuild.lock"
     with _rebuild_lock(out) as got:
         assert got is True
@@ -120,7 +120,7 @@ def test_rebuild_lock_writes_pid_with_newline(tmp_path):
 def test_rebuild_lock_removed_after_release(tmp_path):
     """GH-858: lock file must be unlinked once the rebuild completes so
     downstream waiters that poll for its absence unblock promptly."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     lock_path = out / ".rebuild.lock"
     with _rebuild_lock(out) as got:
         assert got is True
@@ -131,7 +131,7 @@ def test_rebuild_lock_removed_after_release(tmp_path):
 def test_rebuild_lock_does_not_accumulate_pids_across_runs(tmp_path):
     """GH-858: each acquisition truncates and rewrites the PID line rather
     than appending, so the file never grows into a digit-concatenation."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     lock_path = out / ".rebuild.lock"
     expected = f"{os.getpid()}\n"
     for _ in range(5):
@@ -141,11 +141,11 @@ def test_rebuild_lock_does_not_accumulate_pids_across_runs(tmp_path):
         assert not lock_path.exists()
 
 
-def test_graphify_root_preserves_relative_when_invoked_with_relative_path(tmp_path, monkeypatch):
-    """#777: ``.graphify_root`` stores the user-supplied path (``.``), not the
-    resolved absolute, so a committed ``graphify-out/.graphify_root`` is
+def test_map_mmd_root_preserves_relative_when_invoked_with_relative_path(tmp_path, monkeypatch):
+    """#777: ``.map_mmd_root`` stores the user-supplied path (``.``), not the
+    resolved absolute, so a committed ``map.mmd-out/.map_mmd_root`` is
     portable across clones and CI runners."""
-    from graphify.watch import _rebuild_code
+    from map_mmd.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -154,33 +154,33 @@ def test_graphify_root_preserves_relative_when_invoked_with_relative_path(tmp_pa
     monkeypatch.chdir(corpus)
     assert _rebuild_code(Path("."), acquire_lock=False) is True
 
-    saved = (corpus / "graphify-out" / ".graphify_root").read_text(encoding="utf-8")
+    saved = (corpus / "map.mmd-out" / ".map_mmd_root").read_text(encoding="utf-8")
     assert saved == ".", (
-        f".graphify_root must preserve the user-supplied path; got {saved!r}"
+        f".map_mmd_root must preserve the user-supplied path; got {saved!r}"
     )
 
 
-def test_graphify_root_preserves_absolute_when_user_supplied(tmp_path):
-    """When the caller supplies an absolute path, ``.graphify_root`` stores
+def test_map_mmd_root_preserves_absolute_when_user_supplied(tmp_path):
+    """When the caller supplies an absolute path, ``.map_mmd_root`` stores
     that absolute form verbatim — preserving explicit-absolute intent."""
-    from graphify.watch import _rebuild_code
+    from map_mmd.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "lib.py").write_text("def f(): pass\n", encoding="utf-8")
     assert _rebuild_code(corpus, acquire_lock=False) is True
 
-    saved = (corpus / "graphify-out" / ".graphify_root").read_text(encoding="utf-8")
+    saved = (corpus / "map.mmd-out" / ".map_mmd_root").read_text(encoding="utf-8")
     assert saved == str(corpus), (
         f"absolute caller path must be preserved as-is; got {saved!r}"
     )
 
 
 def test_rebuild_code_evicts_nodes_from_deleted_files(tmp_path):
-    """#1007: graphify update (_rebuild_code with no changed_paths) must remove
+    """#1007: map_mmd update (_rebuild_code with no changed_paths) must remove
     nodes and edges from files deleted since the last run."""
     import json
-    from graphify.watch import _rebuild_code
+    from map_mmd.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -193,7 +193,7 @@ def test_rebuild_code_evicts_nodes_from_deleted_files(tmp_path):
     )
 
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "map.mmd-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     node_labels_before = {n["label"] for n in data.get("nodes", [])}
     assert "format_date()" in node_labels_before
@@ -208,11 +208,11 @@ def test_rebuild_code_evicts_nodes_from_deleted_files(tmp_path):
 
 
 def test_rebuild_code_evicts_removed_symbol_from_surviving_file(tmp_path):
-    """#1116: graphify update (_rebuild_code with no changed_paths) must prune a
+    """#1116: map_mmd update (_rebuild_code with no changed_paths) must prune a
     symbol removed from a file that still exists — and its inbound call edge —
     without dropping genuine semantic nodes that share the surviving file."""
     import json
-    from graphify.watch import _rebuild_code
+    from map_mmd.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -225,7 +225,7 @@ def test_rebuild_code_evicts_removed_symbol_from_surviving_file(tmp_path):
     )
 
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "map.mmd-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
 
     def labels(d):
@@ -261,7 +261,7 @@ def test_rebuild_code_evicts_removed_symbol_from_surviving_file(tmp_path):
     (corpus / "a.py").write_text("def bar(): pass\n", encoding="utf-8")
 
     # No force=True: a symbol removed from a re-extracted file is a legitimate
-    # shrink, so the shrink-guard must let `graphify update` refresh the graph
+    # shrink, so the shrink-guard must let `map_mmd update` refresh the graph
     # without --force (the lost node belongs to a rebuilt source).
     assert _rebuild_code(corpus, acquire_lock=False) is True
     after_data = json.loads(graph_path.read_text(encoding="utf-8"))
@@ -279,20 +279,20 @@ def test_rebuild_code_evicts_removed_symbol_from_surviving_file(tmp_path):
 
 def test_rebuild_code_preupgrade_marker_less_node_one_cycle_lag(tmp_path):
     """#1118 backward-compat: a graph.json built before #1116 has no `_origin`
-    markers. On the first `graphify update` after upgrading, a symbol removed
+    markers. On the first `map_mmd update` after upgrading, a symbol removed
     from a surviving file is NOT pruned that cycle — its old node carries no
     marker, so the new drop-rule skips it. This is a deliberate one-cycle lag
     (no data loss); it self-heals once the node has been stamped `_origin="ast"`
     (which a full re-extraction does for every surviving symbol)."""
     import json
-    from graphify.watch import _rebuild_code
+    from map_mmd.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "a.py").write_text("def bar(): pass\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "map.mmd-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
 
     def labels(d):
@@ -340,7 +340,7 @@ def test_rebuild_code_preupgrade_marker_less_node_one_cycle_lag(tmp_path):
 def test_rebuild_lock_non_blocking_does_not_clobber_holder(tmp_path):
     """GH-858: a non-blocking caller that fails to acquire the lock must not
     truncate the holder's PID payload."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     lock_path = out / ".rebuild.lock"
     with _rebuild_lock(out) as outer:
         assert outer is True
@@ -352,8 +352,8 @@ def test_rebuild_lock_non_blocking_does_not_clobber_holder(tmp_path):
 
 
 def test_rebuild_code_is_idempotent_when_cluster_ids_flap(tmp_path, monkeypatch):
-    from graphify import cluster as cluster_mod
-    from graphify.watch import _rebuild_code
+    from map_mmd import cluster as cluster_mod
+    from map_mmd.watch import _rebuild_code
 
     src = tmp_path / "app.py"
     src.write_text("def alpha():\n    return 1\n\ndef beta():\n    return alpha()\n", encoding="utf-8")
@@ -371,8 +371,8 @@ def test_rebuild_code_is_idempotent_when_cluster_ids_flap(tmp_path, monkeypatch)
     monkeypatch.setattr(cluster_mod, "score_all", lambda _G, comm: {cid: 1.0 for cid in comm})
 
     assert _rebuild_code(tmp_path)
-    graph_path = tmp_path / "graphify-out" / "graph.json"
-    report_path = tmp_path / "graphify-out" / "GRAPH_REPORT.md"
+    graph_path = tmp_path / "map.mmd-out" / "graph.json"
+    report_path = tmp_path / "map.mmd-out" / "GRAPH_REPORT.md"
     first_graph = graph_path.read_text(encoding="utf-8")
     first_report = report_path.read_text(encoding="utf-8")
 
@@ -385,8 +385,8 @@ def test_rebuild_code_is_idempotent_when_cluster_ids_flap(tmp_path, monkeypatch)
 
 
 def test_rebuild_code_skips_cluster_when_topology_unchanged(tmp_path, monkeypatch):
-    from graphify import cluster as cluster_mod
-    from graphify.watch import _rebuild_code
+    from map_mmd import cluster as cluster_mod
+    from map_mmd.watch import _rebuild_code
 
     src = tmp_path / "app.py"
     src.write_text("def alpha():\n    return 1\n\ndef beta():\n    return alpha()\n", encoding="utf-8")
@@ -407,7 +407,7 @@ def test_rebuild_code_skips_cluster_when_topology_unchanged(tmp_path, monkeypatc
     assert calls["n"] == 1
 
 
-# --- .graphifyignore honored in watch handler (gh-928) ---
+# --- .map_mmdignore honored in watch handler (gh-928) ---
 
 
 def _watchdog_available() -> bool:
@@ -419,17 +419,17 @@ def _watchdog_available() -> bool:
 
 
 @pytest.mark.skipif(not _watchdog_available(), reason="watchdog not installed")
-def test_watch_handler_honors_graphifyignore(tmp_path, monkeypatch):
+def test_watch_handler_honors_map_mmdignore(tmp_path, monkeypatch):
     """gh-928: the watch Handler must short-circuit paths matching
-    .graphifyignore so busy volumes (node_modules churn, build artefacts,
+    .map_mmdignore so busy volumes (node_modules churn, build artefacts,
     Time Machine writes, …) don't wake the rebuild pipeline.
     """
     import threading
-    from graphify import watch as watch_mod
+    from map_mmd import watch as watch_mod
 
     watch_root = tmp_path / ".hidden-parent" / "corpus"
     watch_root.mkdir(parents=True)
-    (watch_root / ".graphifyignore").write_text("node_modules/\nbuild/\n", encoding="utf-8")
+    (watch_root / ".map_mmdignore").write_text("node_modules/\nbuild/\n", encoding="utf-8")
     (watch_root / "node_modules").mkdir()
     (watch_root / "build").mkdir()
 
@@ -465,27 +465,27 @@ def test_watch_handler_honors_graphifyignore(tmp_path, monkeypatch):
 
 
 @pytest.mark.skipif(not _watchdog_available(), reason="watchdog not installed")
-def test_watch_loads_graphifyignore_once(tmp_path, monkeypatch):
-    """gh-928: .graphifyignore must be parsed exactly once at watch() startup,
+def test_watch_loads_map_mmdignore_once(tmp_path, monkeypatch):
+    """gh-928: .map_mmdignore must be parsed exactly once at watch() startup,
     not per filesystem event. Otherwise busy volumes re-read the file
     thousands of times per second.
     """
     import threading
-    from graphify import watch as watch_mod
-    from graphify import detect as detect_mod
+    from map_mmd import watch as watch_mod
+    from map_mmd import detect as detect_mod
 
-    (tmp_path / ".graphifyignore").write_text("ignored/\n", encoding="utf-8")
+    (tmp_path / ".map_mmdignore").write_text("ignored/\n", encoding="utf-8")
     (tmp_path / "ignored").mkdir()
 
     calls = {"n": 0}
-    real_loader = detect_mod._load_graphifyignore
+    real_loader = detect_mod._load_map_mmdignore
 
     def counting_loader(root):
         calls["n"] += 1
         return real_loader(root)
 
     # Patch the symbol the watch module imported at module-load time.
-    monkeypatch.setattr(watch_mod, "_load_graphifyignore", counting_loader)
+    monkeypatch.setattr(watch_mod, "_load_map_mmdignore", counting_loader)
     monkeypatch.setattr(watch_mod, "_rebuild_code", lambda p, **kw: True)
     monkeypatch.setattr(watch_mod, "_notify_only", lambda p: None)
 
@@ -497,7 +497,7 @@ def test_watch_loads_graphifyignore_once(tmp_path, monkeypatch):
     for i in range(50):
         (tmp_path / "ignored" / f"f{i}.py").write_text("x\n", encoding="utf-8")
     time.sleep(0.7)
-    assert calls["n"] == 1, f"_load_graphifyignore called {calls['n']} times; expected 1"
+    assert calls["n"] == 1, f"_load_map_mmdignore called {calls['n']} times; expected 1"
 
 
 # --- _check_shrink: silent-corruption guard with explicit-deletion bypass ---
@@ -636,7 +636,7 @@ def test_rebuild_code_prunes_deleted_file_nodes(tmp_path):
     shrink guard and refuses to write; with the fix the deleted file's nodes
     are pruned and graph.json is rewritten.
     """
-    from graphify.watch import _rebuild_code
+    from map_mmd.watch import _rebuild_code
 
     # Set up a minimal "project" with two Python files in a git repo so detect
     # treats it as a real corpus.
@@ -661,7 +661,7 @@ def test_rebuild_code_prunes_deleted_file_nodes(tmp_path):
         os.chdir(tmp_path)
         ok = _rebuild_code(tmp_path, no_cluster=True)
         assert ok is True
-        graph_path = tmp_path / "graphify-out" / "graph.json"
+        graph_path = tmp_path / "map.mmd-out" / "graph.json"
         assert graph_path.exists()
         before = json.loads(graph_path.read_text(encoding="utf-8"))
         before_sources = {n.get("source_file") for n in before.get("nodes", [])}
@@ -689,7 +689,7 @@ def test_rebuild_code_prunes_deleted_file_nodes(tmp_path):
 
 def test_rebuild_code_accepts_repo_relative_changed_path_for_subdir_root(tmp_path):
     """#1348: git-hook paths are repo-root-relative even when the graph root is a subdir."""
-    from graphify.watch import _rebuild_code
+    from map_mmd.watch import _rebuild_code
 
     src = tmp_path / "src"
     src.mkdir()
@@ -700,7 +700,7 @@ def test_rebuild_code_accepts_repo_relative_changed_path_for_subdir_root(tmp_pat
     try:
         os.chdir(tmp_path)
         assert _rebuild_code(Path("src"), no_cluster=True, acquire_lock=False) is True
-        graph_path = src / "graphify-out" / "graph.json"
+        graph_path = src / "map.mmd-out" / "graph.json"
         before = json.loads(graph_path.read_text(encoding="utf-8"))
         assert "old_name()" in {n.get("label") for n in before.get("nodes", [])}
 
@@ -727,9 +727,9 @@ def test_rebuild_code_accepts_repo_relative_changed_path_for_subdir_root(tmp_pat
 def test_queue_and_drain_pending_round_trip(tmp_path):
     """_queue_pending writes one path per line; _drain_pending reads + unlinks
     and returns the same set of paths."""
-    from graphify.watch import _queue_pending, _drain_pending, _PENDING_FILENAME
+    from map_mmd.watch import _queue_pending, _drain_pending, _PENDING_FILENAME
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     paths = [Path("a.py"), Path("sub/b.py"), Path("c.md")]
     _queue_pending(out, paths)
 
@@ -750,9 +750,9 @@ def test_queue_and_drain_pending_round_trip(tmp_path):
 def test_drain_pending_dedupes_and_skips_blank_lines(tmp_path):
     """Repeated appends across concurrent contenders must dedupe; partial
     writes leaving blank lines must not poison the merge."""
-    from graphify.watch import _queue_pending, _drain_pending
+    from map_mmd.watch import _queue_pending, _drain_pending
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     _queue_pending(out, [Path("a.py"), Path("b.py")])
     _queue_pending(out, [Path("b.py"), Path("c.py")])
     # Simulate a torn write leaving an empty line.
@@ -765,9 +765,9 @@ def test_drain_pending_dedupes_and_skips_blank_lines(tmp_path):
 
 def test_queue_pending_noop_on_empty_list(tmp_path):
     """Empty change set must not create an empty .pending_changes file."""
-    from graphify.watch import _queue_pending, _PENDING_FILENAME
+    from map_mmd.watch import _queue_pending, _PENDING_FILENAME
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     _queue_pending(out, [])
     assert not (out / _PENDING_FILENAME).exists()
 
@@ -777,9 +777,9 @@ def test_rebuild_code_queues_on_lock_contention(tmp_path, monkeypatch, capsys):
     """#1059: when the rebuild lock is held, an incremental hook must queue
     its changed_paths to .pending_changes and print 'queued' instead of
     silently dropping the change set."""
-    from graphify.watch import _rebuild_code, _rebuild_lock, _PENDING_FILENAME
+    from map_mmd.watch import _rebuild_code, _rebuild_lock, _PENDING_FILENAME
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     out.mkdir()
 
     # Hold the lock so the next non-blocking attempt fails. Use a real
@@ -811,9 +811,9 @@ def test_rebuild_code_queues_on_lock_contention(tmp_path, monkeypatch, capsys):
 def test_rebuild_code_merges_pending_on_acquire(tmp_path, monkeypatch):
     """#1059: the process that acquires the lock must drain .pending_changes
     and pass the merged change set to the inner rebuild call."""
-    from graphify import watch as watch_mod
+    from map_mmd import watch as watch_mod
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     out.mkdir()
     # Pre-populate the queue as if an earlier contender had dropped its paths.
     watch_mod._queue_pending(out, [Path("queued1.py"), Path("queued2.py")])
@@ -851,10 +851,10 @@ def test_rebuild_code_merges_pending_on_acquire(tmp_path, monkeypatch):
 def test_rebuild_code_drains_late_arrivals(tmp_path, monkeypatch):
     """#1059: after the primary rebuild, the lock-holder must loop and drain
     any paths queued by hooks that arrived mid-rebuild."""
-    from graphify import watch as watch_mod
-    from graphify.watch import _rebuild_code as orig_rebuild
+    from map_mmd import watch as watch_mod
+    from map_mmd.watch import _rebuild_code as orig_rebuild
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     out.mkdir()
 
     inner_calls: list[list[str]] = []
@@ -889,10 +889,10 @@ def test_rebuild_code_full_corpus_skips_pending_queue(tmp_path, monkeypatch):
     """#1059: changed_paths=None means a full-corpus rebuild — the queue
     must not be touched on the failure path because there is nothing
     incremental to preserve."""
-    from graphify import watch as watch_mod
-    from graphify.watch import _rebuild_code as orig_rebuild
+    from map_mmd import watch as watch_mod
+    from map_mmd.watch import _rebuild_code as orig_rebuild
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     out.mkdir()
 
     # Pre-existing queued paths from an earlier incremental hook.
@@ -920,7 +920,7 @@ def test_rebuild_code_full_corpus_skips_pending_queue(tmp_path, monkeypatch):
 
 def test_merge_changed_paths_dedupes_in_order():
     """_merge_changed_paths preserves first-seen order and drops dupes."""
-    from graphify.watch import _merge_changed_paths
+    from map_mmd.watch import _merge_changed_paths
 
     merged = _merge_changed_paths(
         [Path("a.py"), Path("b.py")],

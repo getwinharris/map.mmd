@@ -9,7 +9,7 @@ on:
 
 jobs:
   skillgen-check:
-    # Fast lint-style guard: the skill files under graphify/ are generated from
+    # Fast lint-style guard: the skill files under map_mmd/ are generated from
     # the fragments in tools/skillgen/. This fails if someone hand-edited a
     # generated file or forgot to re-run the generator and bless expected/, and it
     # runs the build-time validators that guard per-host coverage, the file_type
@@ -75,8 +75,8 @@ jobs:
 
       - name: Verify install works end-to-end
         run: |
-          uv run --frozen graphify --help
-          uv run --frozen graphify install
+          uv run --frozen map_mmd --help
+          uv run --frozen map_mmd install
 
   security-scan:
     # The dev deps already include bandit, pip-audit, and safety. Run them in
@@ -99,7 +99,7 @@ jobs:
 
       - name: bandit (static security analysis)
         continue-on-error: true
-        run: uv run --frozen bandit -r graphify -ll
+        run: uv run --frozen bandit -r map_mmd -ll
 
       - name: pip-audit (dependency vulnerabilities)
         continue-on-error: true

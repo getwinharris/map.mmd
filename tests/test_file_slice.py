@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from graphify import llm
-from graphify.file_slice import (
+from map_mmd import llm
+from map_mmd.file_slice import (
     FileSlice,
     bisect_slice,
     expand_oversized_files,

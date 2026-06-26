@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace GraphifyDemo
+namespace MapMmdDemo
 {
     public partial class MainWindow : Window
     {

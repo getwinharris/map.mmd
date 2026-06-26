@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.build import build_from_json
-from graphify.extract import extract
+from map_mmd.build import build_from_json
+from map_mmd.extract import extract
 
 
 def _write(path: Path, text: str) -> Path:

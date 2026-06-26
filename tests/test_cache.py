@@ -1,7 +1,7 @@
-"""Tests for graphify/cache.py."""
+"""Tests for map_mmd/cache.py."""
 import pytest
 from pathlib import Path
-from graphify.cache import file_hash, cache_dir, load_cached, save_cached, cached_files, clear_cache, _body_content
+from map_mmd.cache import file_hash, cache_dir, load_cached, save_cached, cached_files, clear_cache, _body_content
 
 
 @pytest.fixture
@@ -67,10 +67,10 @@ def test_cached_files(tmp_path, cache_root):
 
 
 def test_clear_cache(tmp_file, cache_root):
-    """clear_cache removes all .json files from graphify-out/cache/ (all subdirs)."""
+    """clear_cache removes all .json files from map.mmd-out/cache/ (all subdirs)."""
     save_cached(tmp_file, {"nodes": [], "edges": []}, root=cache_root)
     # Since v0.5.3 entries go into cache/ast/, not the flat cache/ dir
-    cache_base = cache_root / "graphify-out" / "cache"
+    cache_base = cache_root / "map.mmd-out" / "cache"
     assert len(list(cache_base.rglob("*.json"))) > 0
     clear_cache(cache_root)
     assert len(list(cache_base.rglob("*.json"))) == 0
@@ -190,7 +190,7 @@ def test_md_edit_above_hr_changes_hash(tmp_path):
 
 # --- #777: portable cache source_file fields --------------------------------
 # ``save_cached`` relativizes ``source_file`` entries inside the cache file
-# so a committed ``graphify-out/cache/`` is portable across machines and
+# so a committed ``map.mmd-out/cache/`` is portable across machines and
 # CI runners. ``load_cached`` re-absolutizes them so consumers (extract,
 # merge into graph.json) see the same shape that fresh extraction emits.
 
@@ -198,7 +198,7 @@ def test_save_cached_relativizes_source_file(tmp_path):
     """The on-disk cache JSON contains forward-slash relative source_file
     entries — no absolute prefix from the saving machine leaks in."""
     import json
-    from graphify.cache import save_cached, file_hash, cache_dir
+    from map_mmd.cache import save_cached, file_hash, cache_dir
 
     (tmp_path / "src").mkdir()
     src = tmp_path / "src" / "foo.py"
@@ -225,7 +225,7 @@ def test_load_cached_absolutizes_source_file(tmp_path):
     """``load_cached`` returns the same absolute-path shape that a fresh
     extraction produces, so consumers don't need to special-case cache
     hits vs. fresh extraction."""
-    from graphify.cache import save_cached, load_cached
+    from map_mmd.cache import save_cached, load_cached
 
     (tmp_path / "src").mkdir()
     src = tmp_path / "src" / "foo.py"
@@ -243,11 +243,11 @@ def test_load_cached_absolutizes_source_file(tmp_path):
 
 
 def test_load_cached_passes_through_legacy_absolute_source_file(tmp_path):
-    """Cache entries written by an older graphify (with absolute source_file
+    """Cache entries written by an older map_mmd (with absolute source_file
     inside) must still load correctly: the absolutize step is a no-op for
     already-absolute values."""
     import json
-    from graphify.cache import load_cached, file_hash, cache_dir
+    from map_mmd.cache import load_cached, file_hash, cache_dir
 
     (tmp_path / "src").mkdir()
     src = tmp_path / "src" / "foo.py"
@@ -273,7 +273,7 @@ def test_cache_portable_across_roots(tmp_path):
     AND its embedded source_file is stored relative."""
     import json
     import shutil
-    from graphify.cache import save_cached, load_cached, file_hash, cache_dir
+    from map_mmd.cache import save_cached, load_cached, file_hash, cache_dir
 
     repo_a = tmp_path / "repo_a"
     repo_a.mkdir()
@@ -300,8 +300,8 @@ def test_cache_portable_across_roots(tmp_path):
 
 
 # --- AST cache versioning ----------------------------------------------------
-# AST cache entries are the output of graphify's own extractor code, so they
-# are only valid for the graphify version that wrote them. Keying purely on
+# AST cache entries are the output of map_mmd's own extractor code, so they
+# are only valid for the map_mmd version that wrote them. Keying purely on
 # file content meant extractor fixes shipped in a new release kept serving
 # stale pre-fix results. The AST cache is therefore namespaced by package
 # version; the semantic cache is NOT (invalidating it would re-bill LLM
@@ -310,7 +310,7 @@ def test_cache_portable_across_roots(tmp_path):
 def test_ast_cache_invalidated_on_version_bump(tmp_path, monkeypatch):
     """An AST entry written by version X must not be served after upgrading
     to version Y — the file is unchanged but the extractor is not."""
-    import graphify.cache as cache_mod
+    import map_mmd.cache as cache_mod
 
     f = tmp_path / "mod.py"
     f.write_text("def f(): pass\n")
@@ -321,14 +321,14 @@ def test_ast_cache_invalidated_on_version_bump(tmp_path, monkeypatch):
 
     monkeypatch.setattr(cache_mod, "_EXTRACTOR_VERSION", "0.8.1", raising=False)
     assert load_cached(f, root=tmp_path, kind="ast") is None, (
-        "AST cache entry from a previous graphify version must not be served"
+        "AST cache entry from a previous map_mmd version must not be served"
     )
 
 
 def test_ast_cache_version_bump_cleans_stale_entries(tmp_path, monkeypatch):
     """Upgrading removes AST entries left behind by previous versions so the
     cache directory does not grow one full copy per release."""
-    import graphify.cache as cache_mod
+    import map_mmd.cache as cache_mod
 
     f = tmp_path / "mod.py"
     f.write_text("def f(): pass\n")
@@ -347,11 +347,11 @@ def test_ast_cache_version_bump_cleans_stale_entries(tmp_path, monkeypatch):
 
 
 def test_legacy_unversioned_ast_entries_not_served(tmp_path):
-    """Entries written by pre-versioning graphify (flat cache/ or unversioned
+    """Entries written by pre-versioning map_mmd (flat cache/ or unversioned
     cache/ast/) are by definition from an older extractor and must not be
     served — that staleness is exactly what version namespacing fixes."""
     import json
-    from graphify.cache import file_hash, _GRAPHIFY_OUT
+    from map_mmd.cache import file_hash, _MAP_MMD_OUT
 
     f = tmp_path / "mod.py"
     f.write_text("def f(): pass\n")
@@ -359,7 +359,7 @@ def test_legacy_unversioned_ast_entries_not_served(tmp_path):
     payload = json.dumps({"nodes": [{"id": "stale"}], "edges": []})
 
     # Unversioned cache/ast/{hash}.json (pre-versioning layout)
-    unversioned = tmp_path / _GRAPHIFY_OUT / "cache" / "ast"
+    unversioned = tmp_path / _MAP_MMD_OUT / "cache" / "ast"
     unversioned.mkdir(parents=True)
     (unversioned / f"{h}.json").write_text(payload)
     # Legacy flat cache/{hash}.json (pre-0.5.3 layout)
@@ -371,7 +371,7 @@ def test_legacy_unversioned_ast_entries_not_served(tmp_path):
 def test_semantic_cache_survives_version_bump(tmp_path, monkeypatch):
     """The semantic cache is deliberately not versioned: entries are produced
     by the LLM from file contents, and re-extraction costs real money."""
-    import graphify.cache as cache_mod
+    import map_mmd.cache as cache_mod
 
     f = tmp_path / "doc.md"
     f.write_text("# Title\n\nBody.\n")
@@ -395,7 +395,7 @@ def test_save_cached_in_root_symlink_keeps_symlink_name(tmp_path):
     manifest case (cache lookup is content-hashed, not key-matched), but
     keeps the on-disk shape consistent with what callers passed in."""
     import json
-    from graphify.cache import save_cached, file_hash, cache_dir
+    from map_mmd.cache import save_cached, file_hash, cache_dir
 
     (tmp_path / "sub").mkdir()
     target = tmp_path / "sub" / "target.py"

@@ -8,13 +8,13 @@
 
 ## Problem
 
-1. `graphify extract` rebuilds the full graph from scratch every run — re-sends all files to the LLM regardless of what changed. For a 1000-file Markdown corpus updated daily this is expensive.
+1. `map.mmd extract` rebuilds the full graph from scratch every run — re-sends all files to the LLM regardless of what changed. For a 1000-file Markdown corpus updated daily this is expensive.
 
 2. LLM extraction is chunk-by-chunk — the same real-world concept can get different labels across chunks (`AuthManager`, `AuthenticationManager`, `auth_mgr`). No semantic dedup exists beyond exact string normalization.
 
 ---
 
-## Pipeline (every `graphify extract` run)
+## Pipeline (every `map.mmd extract` run)
 
 ```
 detect (full or incremental, auto-detected)
@@ -31,7 +31,7 @@ cluster (full graph, always re-run)
     ↓
 score_all + god_nodes + surprising_connections
     ↓
-write graph.json + .graphify_analysis.json + manifest.json
+write graph.json + .map.mmd_analysis.json + manifest.json
 ```
 
 ---
@@ -39,7 +39,7 @@ write graph.json + .graphify_analysis.json + manifest.json
 ## Feature 1: Incremental Updates
 
 ### Auto-detection
-If `graphify-out/manifest.json` + `graphify-out/graph.json` both exist → incremental mode. No flag needed. First run is always full.
+If `map.mmd-out/manifest.json` + `map.mmd-out/graph.json` both exist → incremental mode. No flag needed. First run is always full.
 
 ### Incremental mode changes
 - `detect_incremental(target)` instead of `detect(target)` — returns `new_files`, `unchanged_files`, `deleted_files`
@@ -55,19 +55,19 @@ If `graphify-out/manifest.json` + `graphify-out/graph.json` both exist → incre
 
 ### Output summary
 ```
-[graphify extract] incremental: 20 changed, 980 cached, 2 deleted
-[graphify extract] graph: 4,821 nodes, 12,304 edges, 43 communities
-[graphify extract] tokens: 18,432 in / 6,201 out, est. cost: $0.08
+[map.mmd extract] incremental: 20 changed, 980 cached, 2 deleted
+[map.mmd extract] graph: 4,821 nodes, 12,304 edges, 43 communities
+[map.mmd extract] tokens: 18,432 in / 6,201 out, est. cost: $0.08
 ```
 
 ### Files changed
-- `graphify/__main__.py` — `elif cmd == "extract":` block only (~5 targeted changes)
+- `map.mmd/__main__.py` — `elif cmd == "extract":` block only (~5 targeted changes)
 
 ---
 
 ## Feature 2: Entity Deduplication
 
-### New module: `graphify/dedup.py`
+### New module: `map.mmd/dedup.py`
 Single responsibility. Called from `build.py` after graph construction. Returns deduplicated `(nodes, edges)`.
 
 ### Pipeline
@@ -85,7 +85,7 @@ Skip fuzzy matching on labels with < 2.5 bits/char entropy. Short ambiguous name
 Each candidate pair verified at ≥ 0.92. Catches typos, plurals, spacing variants. Pairs below threshold discarded.
 
 **Step 5 — Same-community boost**
-Pairs where both nodes share a Leiden community ID get +0.05 score bonus. Graphify-specific advantage — community structure is a strong signal that GraphRAG/LightRAG don't exploit.
+Pairs where both nodes share a Leiden community ID get +0.05 score bonus. map.mmd-specific advantage — community structure is a strong signal that GraphRAG/LightRAG don't exploit.
 
 **Step 6 — Union-find merge**
 Confirmed pairs fed into union-find → connected components → each component merged into one node. Edges rewired to survivor. Self-loops dropped. Prefer shorter non-chunk-suffixed IDs as survivor.
@@ -109,9 +109,9 @@ communities = cluster(G)      # unchanged
 - No `sentence-transformers` / PyTorch dependency
 
 ### Files changed
-- `graphify/dedup.py` — new module, full pipeline
-- `graphify/build.py` — call `deduplicate_entities` after graph construction; wire dormant `deduplicate_by_label`
-- `graphify/__main__.py` — add `--dedup-llm` flag parsing in extract block
+- `map.mmd/dedup.py` — new module, full pipeline
+- `map.mmd/build.py` — call `deduplicate_entities` after graph construction; wire dormant `deduplicate_by_label`
+- `map.mmd/__main__.py` — add `--dedup-llm` flag parsing in extract block
 - `pyproject.toml` — add `datasketch`, `rapidfuzz` to base dependencies
 
 ---
@@ -129,5 +129,5 @@ communities = cluster(G)      # unchanged
 ## Non-goals
 
 - `--dedup embed` (MiniLM cosine) — explicitly excluded, no PyTorch dependency
-- Incremental support for `graphify update` (AST-only) — already handled by existing AST cache
+- Incremental support for `map.mmd update` (AST-only) — already handled by existing AST cache
 - Dedup across different graph.json files (merge two graphs) — separate feature

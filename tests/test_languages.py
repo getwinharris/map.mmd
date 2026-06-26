@@ -2,7 +2,7 @@
 from __future__ import annotations
 from pathlib import Path
 import pytest
-from graphify.extract import (
+from map_mmd.extract import (
     extract_java, extract_c, extract_cpp, extract_ruby,
     extract_csharp, extract_kotlin, extract_scala, extract_php,
     extract_swift, extract_go, extract_julia, extract_js, extract_fortran,
@@ -397,7 +397,7 @@ def test_kotlin_finds_function():
 
 def test_kotlin_emits_in_file_calls():
     """Regression test for the call-walker `simple_identifier` /
-    `identifier` rename — see graphify-kmp's PythonParityTest."""
+    `identifier` rename — see map_mmd-kmp's PythonParityTest."""
     r = extract_kotlin(FIXTURES / "sample.kt")
     calls = _calls(r)
     # In sample.kt: get() and post() both call buildRequest(), and
@@ -634,7 +634,7 @@ def test_swift_no_dangling_edges():
 def test_swift_imports_survive_build():
     # #1327: `import Foundation` / `import UIKit` previously emitted edges to bare
     # module ids with no backing node, so build.py dropped 100% of Swift imports.
-    from graphify.build import build_from_json
+    from map_mmd.build import build_from_json
     r = extract_swift(FIXTURES / "sample.swift")
     import_edges = [e for e in r["edges"] if e["relation"] == "imports"]
     assert import_edges, "extractor should emit Swift import edges"
@@ -742,9 +742,9 @@ def test_swift_extension_across_files_merges_into_canonical_type():
     single Foo node. tree-sitter-swift parses both as `class_declaration` and
     node ids carry the file stem, so without a corpus-level merge each file
     would emit its own Foo."""
-    from graphify.extract import extract
+    from map_mmd.extract import extract
     paths = sorted((FIXTURES / "swift_cross_file").glob("*.swift"))
-    r = extract(paths, cache_root=Path("/tmp/graphify-test-no-cache"))
+    r = extract(paths, cache_root=Path("/tmp/map_mmd-test-no-cache"))
     foo_nodes = [n for n in r["nodes"] if n["label"] == "Foo"]
     assert len(foo_nodes) == 1, f"Foo should appear once, got {len(foo_nodes)}: {[n['id'] for n in foo_nodes]}"
     foo_id = foo_nodes[0]["id"]
@@ -759,7 +759,7 @@ def test_swift_extension_across_files_merges_into_canonical_type():
 
 # ── Elixir ────────────────────────────────────────────────────────────────────
 
-from graphify.extract import extract_elixir
+from map_mmd.extract import extract_elixir
 
 def test_elixir_finds_module():
     r = extract_elixir(FIXTURES / "sample.ex")
@@ -806,7 +806,7 @@ def test_elixir_method_edges():
 
 
 # ── Objective-C ──────────────────────────────────────────────────────────────
-from graphify.extract import extract_objc
+from map_mmd.extract import extract_objc
 
 
 def test_objc_finds_interface():
@@ -1063,7 +1063,7 @@ def test_powershell_no_error():
 
 def test_powershell_psm1_dispatched_and_extracted(tmp_path):
     # #1315: .psm1 modules were never indexed — no dispatch entry, no CODE_EXTENSIONS.
-    from graphify.extract import _get_extractor
+    from map_mmd.extract import _get_extractor
     mod = tmp_path / "Utils.psm1"
     mod.write_text(
         "function Get-Greeting { param([string]$Name) return \"Hi $Name\" }\n",
@@ -1159,7 +1159,7 @@ def test_powershell_dot_source_inside_function_emits_edge():
 
 def test_powershell_psd1_dispatched():
     """_get_extractor should route .psd1 to extract_powershell_manifest."""
-    from graphify.extract import _get_extractor
+    from map_mmd.extract import _get_extractor
     import tempfile, os
     with tempfile.NamedTemporaryFile(suffix=".psd1", delete=False) as f:
         f.write(b"@{ RootModule = 'X.psm1' }")
@@ -1370,7 +1370,7 @@ def test_ts_local_const_does_not_emit_phantom_node(tmp_path):
 
 # ── Markdown ─────────────────────────────────────────────────────────────────
 
-from graphify.extract import extract_markdown
+from map_mmd.extract import extract_markdown
 
 def test_markdown_no_error():
     r = extract_markdown(FIXTURES / "deploy_guide.md")
@@ -1498,7 +1498,7 @@ def test_markdown_link_skips_external_and_images(tmp_path):
 def test_markdown_link_edges_resolve_to_real_nodes(tmp_path):
     """End-to-end: after extract()'s ID remap, link targets are real doc nodes,
     so the hub doc gains edges into existing nodes instead of ghost nodes (#1376)."""
-    from graphify.extract import extract
+    from map_mmd.extract import extract
     pkg = _md_link_fixture(tmp_path)
     paths = sorted(pkg.glob("*.md"))
     res = extract(paths, cache_root=tmp_path, parallel=False)

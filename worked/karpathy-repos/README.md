@@ -49,18 +49,18 @@ raw/
 Install and set up the skill for your platform:
 
 ```bash
-pip install graphifyy
+pip install map-mmd
 
-graphify install                        # Claude Code
-graphify install --platform codex       # Codex
-graphify install --platform opencode    # OpenCode
-graphify install --platform claw        # OpenClaw
+map.mmd install                        # Claude Code
+map.mmd install --platform codex       # Codex
+map.mmd install --platform opencode    # OpenCode
+map.mmd install --platform claw        # OpenClaw
 ```
 
 Then open your AI coding assistant in this directory and type:
 
 ```
-/graphify ./raw
+/map.mmd ./raw
 ```
 
 ## What to expect

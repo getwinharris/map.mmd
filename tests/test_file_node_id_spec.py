@@ -12,7 +12,7 @@ skill.md spec (line ~390):
 """
 from pathlib import Path
 
-from graphify.extract import extract
+from map_mmd.extract import extract
 
 
 def _file_nodes(extraction: dict) -> list[dict]:

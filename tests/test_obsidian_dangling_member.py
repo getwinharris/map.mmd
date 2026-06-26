@@ -4,7 +4,7 @@ when a community's member list contains an id that has no backing node in G
 ids). Such dangling members must be skipped, not abort the whole vault export."""
 import networkx as nx
 
-from graphify.export import to_obsidian
+from map_mmd.export import to_obsidian
 
 
 def _graph_with_dangling_member():

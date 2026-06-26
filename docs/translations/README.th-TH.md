@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/safishamsi/graphify/v4/docs/logo-text.svg" width="260" height="64" alt="Graphify"/>
+  <img src="https://raw.githubusercontent.com/getwinharris/map.mmd/v4/docs/logo-text.svg" width="260" height="64" alt="map.mmd"/>
 </p>
 
 <p align="center">
@@ -7,24 +7,24 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/safishamsi/graphify/actions/workflows/ci.yml"><img src="https://github.com/safishamsi/graphify/actions/workflows/ci.yml/badge.svg?branch=v4" alt="CI"/></a>
-  <a href="https://pypi.org/project/graphifyy/"><img src="https://img.shields.io/pypi/v/graphifyy" alt="PyPI"/></a>
-  <a href="https://pepy.tech/project/graphifyy"><img src="https://static.pepy.tech/badge/graphifyy" alt="Downloads"/></a>
+  <a href="https://github.com/getwinharris/map.mmd/actions/workflows/ci.yml"><img src="https://github.com/getwinharris/map.mmd/actions/workflows/ci.yml/badge.svg?branch=v4" alt="CI"/></a>
+  <a href="https://pypi.org/project/map-mmd/"><img src="https://img.shields.io/pypi/v/map-mmd" alt="PyPI"/></a>
+  <a href="https://pepy.tech/project/map-mmd"><img src="https://static.pepy.tech/badge/map-mmd" alt="Downloads"/></a>
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**ทักษะสำหรับผู้ช่วยเขียนโค้ด AI** พิมพ์ `/graphify` ใน Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro หรือ Google Antigravity — มันจะอ่านไฟล์ของคุณ สร้างกราฟความรู้ และส่งคืนโครงสร้างที่คุณไม่รู้ว่ามีอยู่ ทำความเข้าใจ codebase ได้เร็วขึ้น ค้นหา "ทำไม" เบื้องหลังการตัดสินใจด้านสถาปัตยกรรม
+**ทักษะสำหรับผู้ช่วยเขียนโค้ด AI** พิมพ์ `/map.mmd` ใน Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro หรือ Google Antigravity — มันจะอ่านไฟล์ของคุณ สร้างกราฟความรู้ และส่งคืนโครงสร้างที่คุณไม่รู้ว่ามีอยู่ ทำความเข้าใจ codebase ได้เร็วขึ้น ค้นหา "ทำไม" เบื้องหลังการตัดสินใจด้านสถาปัตยกรรม
 
-มัลติโมดัลอย่างสมบูรณ์ เพิ่มโค้ด, PDF, markdown, ภาพหน้าจอ, ไดอะแกรม, ภาพถ่ายกระดานไวท์บอร์ด, รูปภาพในภาษาอื่น หรือไฟล์วิดีโอและเสียง — graphify ดึงแนวคิดและความสัมพันธ์จากทุกอย่างและเชื่อมต่อกันในกราฟเดียว วิดีโอถูกถอดเสียงในเครื่องด้วย Whisper รองรับ 25 ภาษาการเขียนโปรแกรมผ่าน tree-sitter AST
+มัลติโมดัลอย่างสมบูรณ์ เพิ่มโค้ด, PDF, markdown, ภาพหน้าจอ, ไดอะแกรม, ภาพถ่ายกระดานไวท์บอร์ด, รูปภาพในภาษาอื่น หรือไฟล์วิดีโอและเสียง — map.mmd ดึงแนวคิดและความสัมพันธ์จากทุกอย่างและเชื่อมต่อกันในกราฟเดียว วิดีโอถูกถอดเสียงในเครื่องด้วย Whisper รองรับ 25 ภาษาการเขียนโปรแกรมผ่าน tree-sitter AST
 
-> Andrej Karpathy รักษาโฟลเดอร์ `/raw` ที่เขาวางงานวิจัย, ทวีต, ภาพหน้าจอ และบันทึก graphify คือคำตอบสำหรับปัญหานั้น — **71.5 เท่า** โทเค็นน้อยลงต่อการสืบค้นเมื่อเทียบกับการอ่านไฟล์ดิบ, ยั่งยืนระหว่างเซสชัน
-
-```
-/graphify .
-```
+> Andrej Karpathy รักษาโฟลเดอร์ `/raw` ที่เขาวางงานวิจัย, ทวีต, ภาพหน้าจอ และบันทึก map.mmd คือคำตอบสำหรับปัญหานั้น — **71.5 เท่า** โทเค็นน้อยลงต่อการสืบค้นเมื่อเทียบกับการอ่านไฟล์ดิบ, ยั่งยืนระหว่างเซสชัน
 
 ```
-graphify-out/
+/map.mmd .
+```
+
+```
+map.mmd-out/
 ├── graph.html       กราฟแบบโต้ตอบ — เปิดในเบราว์เซอร์ใดก็ได้
 ├── GRAPH_REPORT.md  โหนดพระเจ้า, การเชื่อมต่อที่น่าประหลาดใจ, คำถามที่แนะนำ
 ├── graph.json       กราฟถาวร — สามารถสืบค้นได้หลายสัปดาห์ต่อมา
@@ -33,7 +33,7 @@ graphify-out/
 
 ## วิธีการทำงาน
 
-graphify ทำงานใน 3 รอบ ก่อนอื่น AST pass แบบ deterministic ดึงโครงสร้างจากไฟล์โค้ดโดยไม่ต้องใช้ LLM จากนั้นไฟล์วิดีโอและเสียงถูกถอดเสียงในเครื่องด้วย faster-whisper สุดท้าย Claude sub-agent ทำงานแบบขนานกันบนเอกสาร, งานวิจัย, รูปภาพ และบทถอดเสียง ผลลัพธ์ถูกรวมเข้ากับกราฟ NetworkX, จัดกลุ่มด้วย Leiden และส่งออกเป็น HTML แบบโต้ตอบ, JSON ที่สืบค้นได้ และรายงานการตรวจสอบ
+map.mmd ทำงานใน 3 รอบ ก่อนอื่น AST pass แบบ deterministic ดึงโครงสร้างจากไฟล์โค้ดโดยไม่ต้องใช้ LLM จากนั้นไฟล์วิดีโอและเสียงถูกถอดเสียงในเครื่องด้วย faster-whisper สุดท้าย Claude sub-agent ทำงานแบบขนานกันบนเอกสาร, งานวิจัย, รูปภาพ และบทถอดเสียง ผลลัพธ์ถูกรวมเข้ากับกราฟ NetworkX, จัดกลุ่มด้วย Leiden และส่งออกเป็น HTML แบบโต้ตอบ, JSON ที่สืบค้นได้ และรายงานการตรวจสอบ
 
 ความสัมพันธ์แต่ละอย่างถูกติดป้าย `EXTRACTED`, `INFERRED` (พร้อมคะแนนความเชื่อมั่น) หรือ `AMBIGUOUS`
 
@@ -42,24 +42,24 @@ graphify ทำงานใน 3 รอบ ก่อนอื่น AST pass แ
 **ข้อกำหนด:** Python 3.10+ และหนึ่งใน: [Claude Code](https://claude.ai/code), [Codex](https://openai.com/codex), [OpenCode](https://opencode.ai), [Cursor](https://cursor.com) และอื่นๆ
 
 ```bash
-uv tool install graphifyy && graphify install
+uv tool install map-mmd && map.mmd install
 # หรือกับ pipx
-pipx install graphifyy && graphify install
+pipx install map-mmd && map.mmd install
 # หรือ pip
-pip install graphifyy && graphify install
+pip install map-mmd && map.mmd install
 ```
 
-> **แพ็กเกจอย่างเป็นทางการ:** แพ็กเกจ PyPI ชื่อ `graphifyy` repository อย่างเป็นทางการเดียวคือ [safishamsi/graphify](https://github.com/safishamsi/graphify)
+> **แพ็กเกจอย่างเป็นทางการ:** แพ็กเกจ PyPI ชื่อ `map-mmd` repository อย่างเป็นทางการเดียวคือ [getwinharris/map.mmd](https://github.com/getwinharris/map.mmd)
 
 ## การใช้งาน
 
 ```
-/graphify .
-/graphify ./raw --update
-/graphify query "อะไรเชื่อม Attention กับ optimizer?"
-/graphify path "DigestAuth" "Response"
-graphify hook install
-graphify update ./src
+/map.mmd .
+/map.mmd ./raw --update
+/map.mmd query "อะไรเชื่อม Attention กับ optimizer?"
+/map.mmd path "DigestAuth" "Response"
+map.mmd hook install
+map.mmd update ./src
 ```
 
 ## สิ่งที่คุณได้รับ
@@ -70,8 +70,8 @@ graphify update ./src
 
 ไฟล์โค้ดถูกประมวลผลในเครื่องผ่าน tree-sitter AST วิดีโอถูกถอดเสียงในเครื่องด้วย faster-whisper ไม่มีการส่งข้อมูลวัดผล
 
-## สร้างบน graphify — Penpax
+## สร้างบน map.mmd — Penpax
 
-[**Penpax**](https://safishamsi.github.io/penpax.ai) คือชั้น enterprise เหนือ graphify **ทดลองใช้ฟรีเร็วๆ นี้** [เข้าร่วมรายชื่อรอ →](https://safishamsi.github.io/penpax.ai)
+[**Penpax**](https://safishamsi.github.io/penpax.ai) คือชั้น enterprise เหนือ map.mmd **ทดลองใช้ฟรีเร็วๆ นี้** [เข้าร่วมรายชื่อรอ →](https://safishamsi.github.io/penpax.ai)
 
-[![Star History Chart](https://api.star-history.com/svg?repos=safishamsi/graphify&type=Date)](https://star-history.com/#safishamsi/graphify&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=getwinharris/map.mmd&type=Date)](https://star-history.com/#getwinharris/map.mmd&Date)
