@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from graphify import llm
+from map_mmd import llm
 
 _ENVELOPE = {
     "type": "result",
@@ -195,37 +195,37 @@ def test_non_windows_uses_bare_claude(monkeypatch):
     assert argv[0] == "claude"
 
 
-# ---------- GRAPHIFY_API_TIMEOUT honoured by all backends ----------
+# ---------- MAP_MMD_API_TIMEOUT honoured by all backends ----------
 
 
 def test_resolve_api_timeout_default(monkeypatch):
-    monkeypatch.delenv("GRAPHIFY_API_TIMEOUT", raising=False)
+    monkeypatch.delenv("MAP_MMD_API_TIMEOUT", raising=False)
     assert llm._resolve_api_timeout() == 600.0
 
 
 def test_resolve_api_timeout_env_override(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "45")
+    monkeypatch.setenv("MAP_MMD_API_TIMEOUT", "45")
     assert llm._resolve_api_timeout() == 45.0
 
 
 def test_resolve_api_timeout_ignores_invalid(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "not-a-number")
+    monkeypatch.setenv("MAP_MMD_API_TIMEOUT", "not-a-number")
     assert llm._resolve_api_timeout() == 600.0
 
 
 def test_resolve_api_timeout_ignores_nonpositive(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "0")
+    monkeypatch.setenv("MAP_MMD_API_TIMEOUT", "0")
     assert llm._resolve_api_timeout() == 600.0
 
 
 def test_claude_cli_extraction_honours_timeout(monkeypatch, fake_claude):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "30")
+    monkeypatch.setenv("MAP_MMD_API_TIMEOUT", "30")
     llm._call_claude_cli("dummy", max_tokens=8192)
     assert fake_claude.call_args.kwargs["timeout"] == 30.0
 
 
 def test_call_llm_claude_cli_branch_honours_timeout(monkeypatch, fake_claude):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "30")
+    monkeypatch.setenv("MAP_MMD_API_TIMEOUT", "30")
     llm._call_llm(prompt="x", backend="claude-cli", max_tokens=10)
     assert fake_claude.call_args.kwargs["timeout"] == 30.0
 

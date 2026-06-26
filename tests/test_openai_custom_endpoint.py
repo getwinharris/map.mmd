@@ -6,7 +6,7 @@ These env vars point `--backend openai` at any OpenAI-compatible server
 
 import importlib
 
-from graphify import llm
+from map_mmd import llm
 
 
 def test_openai_defaults_without_env(monkeypatch):
@@ -33,14 +33,14 @@ def test_openai_base_url_and_model_env_override(monkeypatch):
         importlib.reload(llm)
 
 
-def test_graphify_openai_model_wins_over_openai_model(monkeypatch):
-    # model_env_key (GRAPHIFY_OPENAI_MODEL) is resolved at call time and takes
+def test_map_mmd_openai_model_wins_over_openai_model(monkeypatch):
+    # model_env_key (MAP_MMD_OPENAI_MODEL) is resolved at call time and takes
     # precedence over the import-time OPENAI_MODEL default.
     monkeypatch.setenv("OPENAI_MODEL", "env-default-model")
-    monkeypatch.setenv("GRAPHIFY_OPENAI_MODEL", "graphify-override-model")
+    monkeypatch.setenv("MAP_MMD_OPENAI_MODEL", "map_mmd-override-model")
     reloaded = importlib.reload(llm)
     try:
-        assert reloaded._default_model_for_backend("openai") == "graphify-override-model"
+        assert reloaded._default_model_for_backend("openai") == "map_mmd-override-model"
     finally:
         monkeypatch.undo()
         importlib.reload(llm)

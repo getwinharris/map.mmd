@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add semantic cache + incremental graph updates to `graphify extract`, and add a new `graphify/dedup.py` module that runs MinHash/LSH + Jaro-Winkler entity deduplication before clustering on every run.
+**Goal:** Add semantic cache + incremental graph updates to `map.mmd extract`, and add a new `map.mmd/dedup.py` module that runs MinHash/LSH + Jaro-Winkler entity deduplication before clustering on every run.
 
-**Architecture:** Two independent features wired into the same pipeline: (1) `__main__.py` extract block uses `check_semantic_cache`/`save_semantic_cache` + `detect_incremental` + `build_merge` for incremental runs; (2) new `graphify/dedup.py` implements the full dedup pipeline called from `build.py` after graph construction and before `cluster()`.
+**Architecture:** Two independent features wired into the same pipeline: (1) `__main__.py` extract block uses `check_semantic_cache`/`save_semantic_cache` + `detect_incremental` + `build_merge` for incremental runs; (2) new `map.mmd/dedup.py` implements the full dedup pipeline called from `build.py` after graph construction and before `cluster()`.
 
-**Tech Stack:** Python 3.10+, `datasketch` (MinHash/LSH), `rapidfuzz` (Jaro-Winkler), `networkx` (union-find via `nx.utils.UnionFind`), existing `graphify.cache`, `graphify.detect`, `graphify.build`.
+**Tech Stack:** Python 3.10+, `datasketch` (MinHash/LSH), `rapidfuzz` (Jaro-Winkler), `networkx` (union-find via `nx.utils.UnionFind`), existing `map.mmd.cache`, `map.mmd.detect`, `map.mmd.build`.
 
 ---
 
@@ -14,9 +14,9 @@
 
 | File | Action | Responsibility |
 |---|---|---|
-| `graphify/dedup.py` | **Create** | Full dedup pipeline: entropy gate → MinHash/LSH → Jaro-Winkler → community boost → union-find merge |
-| `graphify/build.py` | **Modify** | Call `deduplicate_entities()` from `build()` and `build_merge()`; wire dormant `deduplicate_by_label` |
-| `graphify/__main__.py` | **Modify** | Semantic cache wrapping, incremental mode auto-detection, `build_merge` swap, manifest save, `--dedup-llm` flag |
+| `map.mmd/dedup.py` | **Create** | Full dedup pipeline: entropy gate → MinHash/LSH → Jaro-Winkler → community boost → union-find merge |
+| `map.mmd/build.py` | **Modify** | Call `deduplicate_entities()` from `build()` and `build_merge()`; wire dormant `deduplicate_by_label` |
+| `map.mmd/__main__.py` | **Modify** | Semantic cache wrapping, incremental mode auto-detection, `build_merge` swap, manifest save, `--dedup-llm` flag |
 | `pyproject.toml` | **Modify** | Add `datasketch`, `rapidfuzz` to base dependencies |
 | `tests/test_dedup.py` | **Create** | Unit + integration tests for dedup pipeline |
 | `tests/test_incremental.py` | **Create** | Integration tests for incremental extract (cache hits, manifest, prune) |
@@ -45,7 +45,7 @@ dependencies = [
 - [ ] **Step 2: Install into venv**
 
 ```bash
-cd /home/safi/graphify
+cd /home/safi/map.mmd
 venv/bin/pip install datasketch rapidfuzz -q
 ```
 
@@ -68,10 +68,10 @@ git commit -m "Add datasketch and rapidfuzz as base dependencies"
 
 ---
 
-## Task 2: Create `graphify/dedup.py` — entropy gate + MinHash/LSH + Jaro-Winkler
+## Task 2: Create `map.mmd/dedup.py` — entropy gate + MinHash/LSH + Jaro-Winkler
 
 **Files:**
-- Create: `graphify/dedup.py`
+- Create: `map.mmd/dedup.py`
 - Create: `tests/test_dedup.py`
 
 - [ ] **Step 1: Write failing tests**
@@ -79,10 +79,10 @@ git commit -m "Add datasketch and rapidfuzz as base dependencies"
 Create `tests/test_dedup.py`:
 
 ```python
-"""Tests for graphify/dedup.py entity deduplication pipeline."""
+"""Tests for map.mmd/dedup.py entity deduplication pipeline."""
 from __future__ import annotations
 import pytest
-from graphify.dedup import deduplicate_entities, _entropy, _shingles
+from map.mmd.dedup import deduplicate_entities, _entropy, _shingles
 
 
 # ── entropy gate ─────────────────────────────────────────────────────────────
@@ -200,16 +200,16 @@ def test_single_node_no_crash():
 - [ ] **Step 2: Run tests — verify they all fail**
 
 ```bash
-cd /home/safi/graphify
+cd /home/safi/map.mmd
 venv/bin/python -m pytest tests/test_dedup.py -v --tb=short 2>&1 | tail -20
 ```
 
-Expected: all fail with `ModuleNotFoundError: No module named 'graphify.dedup'`
+Expected: all fail with `ModuleNotFoundError: No module named 'map.mmd.dedup'`
 
-- [ ] **Step 3: Create `graphify/dedup.py`**
+- [ ] **Step 3: Create `map.mmd/dedup.py`**
 
 ```python
-"""Entity deduplication pipeline for graphify knowledge graphs.
+"""Entity deduplication pipeline for map.mmd knowledge graphs.
 
 Pipeline: exact normalization → entropy gate → MinHash/LSH blocking →
 Jaro-Winkler verification → same-community boost → union-find merge.
@@ -410,7 +410,7 @@ def deduplicate_entities(
         return nodes, edges
 
     total = len(remap)
-    msg = f"[graphify] Deduplicated {total} node(s)"
+    msg = f"[map.mmd] Deduplicated {total} node(s)"
     if exact_merges:
         msg += f" ({exact_merges} exact"
         if fuzzy_merges:
@@ -443,7 +443,7 @@ def _pick_winner(nodes: list[dict]) -> dict:
 - [ ] **Step 4: Run tests — verify they pass**
 
 ```bash
-cd /home/safi/graphify
+cd /home/safi/map.mmd
 venv/bin/python -m pytest tests/test_dedup.py -v --tb=short 2>&1 | tail -30
 ```
 
@@ -460,8 +460,8 @@ Expected: same pass count as before (532 passed, 5 failed SQL).
 - [ ] **Step 6: Commit**
 
 ```bash
-git add graphify/dedup.py tests/test_dedup.py
-git commit -m "Add graphify/dedup.py: entropy gate + MinHash/LSH + Jaro-Winkler entity deduplication"
+git add map.mmd/dedup.py tests/test_dedup.py
+git commit -m "Add map.mmd/dedup.py: entropy gate + MinHash/LSH + Jaro-Winkler entity deduplication"
 ```
 
 ---
@@ -469,7 +469,7 @@ git commit -m "Add graphify/dedup.py: entropy gate + MinHash/LSH + Jaro-Winkler 
 ## Task 3: Wire dedup into `build.py`
 
 **Files:**
-- Modify: `graphify/build.py` (lines 119-137 `build()`, lines 191-244 `build_merge()`)
+- Modify: `map.mmd/build.py` (lines 119-137 `build()`, lines 191-244 `build_merge()`)
 
 - [ ] **Step 1: Write failing test**
 
@@ -478,7 +478,7 @@ Add to `tests/test_dedup.py`:
 ```python
 def test_build_calls_dedup():
     """build() should deduplicate near-identical nodes across extractions."""
-    from graphify.build import build
+    from map.mmd.build import build
     chunk1 = {
         "nodes": [{"id": "graphextractor", "label": "GraphExtractor", "source_file": "a.py"}],
         "edges": [],
@@ -526,7 +526,7 @@ def build(extractions: list[dict], *, directed: bool = False, dedup: bool = True
     directed=True produces a DiGraph. dedup=True (default) runs entity
     deduplication before building the NetworkX graph.
     """
-    from graphify.dedup import deduplicate_entities
+    from map.mmd.dedup import deduplicate_entities
     combined: dict = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 0, "output_tokens": 0}
     for ext in extractions:
         combined["nodes"].extend(ext.get("nodes", []))
@@ -548,7 +548,7 @@ Find `build_merge()` at line 191. Update signature and the internal `build()` ca
 ```python
 def build_merge(
     new_chunks: list[dict],
-    graph_path: str | Path = "graphify-out/graph.json",
+    graph_path: str | Path = "map.mmd-out/graph.json",
     prune_sources: list[str] | None = None,
     *,
     directed: bool = False,
@@ -570,7 +570,7 @@ Also update the safety-check block (around lines 235-242). When `dedup=True` or 
         new_n = G.number_of_nodes()
         if new_n < existing_n:
             raise ValueError(
-                f"graphify: build_merge would shrink graph from {existing_n} → {new_n} nodes. "
+                f"map.mmd: build_merge would shrink graph from {existing_n} → {new_n} nodes. "
                 f"Pass prune_sources explicitly if you intend to remove nodes."
             )
 ```
@@ -594,7 +594,7 @@ Expected: 532 passed, 5 failed (same pre-existing SQL failures).
 - [ ] **Step 7: Commit**
 
 ```bash
-git add graphify/build.py
+git add map.mmd/build.py
 git commit -m "Wire deduplicate_entities into build() and build_merge()"
 ```
 
@@ -603,7 +603,7 @@ git commit -m "Wire deduplicate_entities into build() and build_merge()"
 ## Task 4: Incremental updates — semantic cache + manifest in `__main__.py`
 
 **Files:**
-- Modify: `graphify/__main__.py` (lines 1971–2117, the extract block)
+- Modify: `map.mmd/__main__.py` (lines 1971–2117, the extract block)
 - Create: `tests/test_incremental.py`
 
 - [ ] **Step 1: Write failing tests**
@@ -611,7 +611,7 @@ git commit -m "Wire deduplicate_entities into build() and build_merge()"
 Create `tests/test_incremental.py`:
 
 ```python
-"""Integration tests for incremental graphify extract behavior."""
+"""Integration tests for incremental map.mmd extract behavior."""
 from __future__ import annotations
 import json
 import subprocess
@@ -626,7 +626,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 def _run(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [PYTHON, "-m", "graphify"] + args,
+        [PYTHON, "-m", "map.mmd"] + args,
         cwd=cwd,
         capture_output=True,
         text=True,
@@ -652,14 +652,14 @@ def test_manifest_written_after_extract(tmp_path):
     # Should fail with no API key — but NOT with a path error
     assert "no LLM API key" in r.stderr or r.returncode != 0
     # manifest should NOT exist (run failed before writing)
-    manifest = docs / "graphify-out" / "manifest.json"
+    manifest = docs / "map.mmd-out" / "manifest.json"
     assert not manifest.exists()
 
 
 def test_incremental_mode_detected_via_manifest(tmp_path):
     """If manifest.json + graph.json exist, incremental mode message is shown."""
     docs = _make_docs_corpus(tmp_path)
-    out = docs / "graphify-out"
+    out = docs / "map.mmd-out"
     out.mkdir()
     # Fake a prior successful run
     (out / "graph.json").write_text(json.dumps({"nodes": [], "links": []}))
@@ -687,23 +687,23 @@ Note current behavior before changes.
 
 - [ ] **Step 3: Update the `elif cmd == "extract":` block in `__main__.py`**
 
-Find line 1971 (the `from graphify.detect import detect as _detect` line). Replace the detect + file-list block (lines 1971–1984) with:
+Find line 1971 (the `from map.mmd.detect import detect as _detect` line). Replace the detect + file-list block (lines 1971–1984) with:
 
 ```python
-        from graphify.detect import (
+        from map.mmd.detect import (
             detect as _detect,
             detect_incremental as _detect_incremental,
             save_manifest as _save_manifest,
         )
-        manifest_path = graphify_out / "manifest.json"
-        existing_graph_path = graphify_out / "graph.json"
+        manifest_path = map.mmd_out / "manifest.json"
+        existing_graph_path = map.mmd_out / "graph.json"
         incremental_mode = manifest_path.exists() and existing_graph_path.exists()
 
         if incremental_mode:
-            print(f"[graphify extract] incremental scan of {target}")
+            print(f"[map.mmd extract] incremental scan of {target}")
             detection = _detect_incremental(target, manifest_path=str(manifest_path))
         else:
-            print(f"[graphify extract] scanning {target}")
+            print(f"[map.mmd extract] scanning {target}")
             detection = _detect(target)
 
         files_by_type = detection.get("files", {})
@@ -726,13 +726,13 @@ Find line 1971 (the `from graphify.detect import detect as _detect` line). Repla
         semantic_files = doc_files + paper_files + image_files
         if incremental_mode:
             print(
-                f"[graphify extract] {len(code_files)} code, {len(doc_files)} docs, "
+                f"[map.mmd extract] {len(code_files)} code, {len(doc_files)} docs, "
                 f"{len(paper_files)} papers, {len(image_files)} images changed; "
                 f"{unchanged_total} unchanged; {len(deleted_files)} deleted"
             )
         else:
             print(
-                f"[graphify extract] found {len(code_files)} code, "
+                f"[map.mmd extract] found {len(code_files)} code, "
                 f"{len(doc_files)} docs, {len(paper_files)} papers, "
                 f"{len(image_files)} images"
             )
@@ -743,7 +743,7 @@ Find line 1971 (the `from graphify.detect import detect as _detect` line). Repla
 Find the semantic extraction block (lines 1998–2024). Replace with:
 
 ```python
-        from graphify.cache import (
+        from map.mmd.cache import (
             check_semantic_cache as _check_semantic_cache,
             save_semantic_cache as _save_semantic_cache,
         )
@@ -764,10 +764,10 @@ Find the semantic extraction block (lines 1998–2024). Replace with:
             sem_result["edges"].extend(cached_edges)
             sem_result["hyperedges"].extend(cached_hyperedges)
             if sem_cache_hits:
-                print(f"[graphify extract] semantic cache: {sem_cache_hits} hit / {sem_cache_misses} miss")
+                print(f"[map.mmd extract] semantic cache: {sem_cache_hits} hit / {sem_cache_misses} miss")
 
             if uncached_paths:
-                print(f"[graphify extract] semantic extraction on {len(uncached_paths)} files via {backend}...")
+                print(f"[map.mmd extract] semantic extraction on {len(uncached_paths)} files via {backend}...")
                 try:
                     fresh = _extract_corpus_parallel(
                         [Path(p) for p in uncached_paths],
@@ -778,7 +778,7 @@ Find the semantic extraction block (lines 1998–2024). Replace with:
                     print(f"error: {exc}", file=sys.stderr)
                     sys.exit(1)
                 except Exception as exc:
-                    print(f"[graphify extract] semantic extraction failed: {exc}", file=sys.stderr)
+                    print(f"[map.mmd extract] semantic extraction failed: {exc}", file=sys.stderr)
                     fresh = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 0, "output_tokens": 0}
                 try:
                     _save_semantic_cache(
@@ -788,7 +788,7 @@ Find the semantic extraction block (lines 1998–2024). Replace with:
                         root=target,
                     )
                 except Exception as exc:
-                    print(f"[graphify extract] warning: could not write semantic cache: {exc}", file=sys.stderr)
+                    print(f"[map.mmd extract] warning: could not write semantic cache: {exc}", file=sys.stderr)
                 sem_result["nodes"].extend(fresh.get("nodes", []))
                 sem_result["edges"].extend(fresh.get("edges", []))
                 sem_result["hyperedges"].extend(fresh.get("hyperedges", []))
@@ -801,7 +801,7 @@ Find the semantic extraction block (lines 1998–2024). Replace with:
 Find the build block starting around line 2063. Replace:
 
 ```python
-        from graphify.build import build_from_json as _build_from_json
+        from map.mmd.build import build_from_json as _build_from_json
         ...
         G = _build_from_json(merged)
 ```
@@ -809,13 +809,13 @@ Find the build block starting around line 2063. Replace:
 With:
 
 ```python
-        from graphify.build import (
+        from map.mmd.build import (
             build_from_json as _build_from_json,
             build_merge as _build_merge,
         )
-        from graphify.cluster import cluster as _cluster, score_all as _score_all
-        from graphify.export import to_json as _to_json
-        from graphify.analyze import god_nodes as _god_nodes, surprising_connections as _surprising
+        from map.mmd.cluster import cluster as _cluster, score_all as _score_all
+        from map.mmd.export import to_json as _to_json
+        from map.mmd.analyze import god_nodes as _god_nodes, surprising_connections as _surprising
 
         if incremental_mode:
             G = _build_merge(
@@ -839,7 +839,7 @@ Find the `analysis_path.write_text(...)` line (around line 2101). After it, add:
                 manifest_path=str(manifest_path),
             )
         except Exception as exc:
-            print(f"[graphify extract] warning: could not write manifest: {exc}", file=sys.stderr)
+            print(f"[map.mmd extract] warning: could not write manifest: {exc}", file=sys.stderr)
 ```
 
 Also add the same block in the `--no-cluster` path after `graph_json_path.write_text(...)` (around line 2043).
@@ -861,23 +861,23 @@ Replace the final summary lines (around 2104–2116) with:
 
 ```python
         print(
-            f"[graphify extract] wrote {graph_json_path}: "
+            f"[map.mmd extract] wrote {graph_json_path}: "
             f"{G.number_of_nodes()} nodes, {G.number_of_edges()} edges, "
             f"{len(communities)} communities"
         )
-        print(f"[graphify extract] wrote {analysis_path}")
+        print(f"[map.mmd extract] wrote {analysis_path}")
         if incremental_mode:
             print(
-                f"[graphify extract] incremental summary: "
+                f"[map.mmd extract] incremental summary: "
                 f"{sem_cache_hits + unchanged_total} files cached/unchanged, "
                 f"{len(code_files) + sem_cache_misses} re-extracted, "
                 f"{len(deleted_files)} deleted"
             )
         elif sem_cache_hits:
-            print(f"[graphify extract] semantic cache: {sem_cache_hits} cached, {sem_cache_misses} re-extracted")
+            print(f"[map.mmd extract] semantic cache: {sem_cache_hits} cached, {sem_cache_misses} re-extracted")
         if merged["input_tokens"] or merged["output_tokens"]:
             print(
-                f"[graphify extract] tokens: "
+                f"[map.mmd extract] tokens: "
                 f"{merged['input_tokens']:,} in / "
                 f"{merged['output_tokens']:,} out, "
                 f"est. cost (~{backend}): ${cost:.4f}"
@@ -903,8 +903,8 @@ Expected: 532+ passed, 5 failed (pre-existing SQL).
 - [ ] **Step 11: Commit**
 
 ```bash
-git add graphify/__main__.py tests/test_incremental.py
-git commit -m "Add incremental updates to graphify extract: semantic cache + build_merge + manifest"
+git add map.mmd/__main__.py tests/test_incremental.py
+git commit -m "Add incremental updates to map.mmd extract: semantic cache + build_merge + manifest"
 ```
 
 ---
@@ -912,7 +912,7 @@ git commit -m "Add incremental updates to graphify extract: semantic cache + bui
 ## Task 5: Add `--dedup-llm` tiebreaker to `dedup.py`
 
 **Files:**
-- Modify: `graphify/dedup.py`
+- Modify: `map.mmd/dedup.py`
 
 - [ ] **Step 1: Write failing test**
 
@@ -938,7 +938,7 @@ Expected: FAIL — `deduplicate_entities` does not accept `dedup_llm_backend` kw
 
 - [ ] **Step 3: Add `dedup_llm_backend` param to `deduplicate_entities`**
 
-Update the signature in `graphify/dedup.py`:
+Update the signature in `map.mmd/dedup.py`:
 
 ```python
 def deduplicate_entities(
@@ -973,12 +973,12 @@ def _llm_tiebreak(
 ) -> None:
     """Batch-resolve ambiguous pairs (score in [low, high)) via LLM."""
     try:
-        from graphify.llm import extract_corpus_parallel as _llm  # noqa: F401
+        from map.mmd.llm import extract_corpus_parallel as _llm  # noqa: F401
         import os
-        from graphify.llm import BACKENDS
+        from map.mmd.llm import BACKENDS
         env_key = BACKENDS.get(backend, {}).get("env_key", "")
         if not os.environ.get(env_key):
-            print(f"[graphify] --dedup-llm: {env_key} not set, skipping LLM tiebreaker.", flush=True)
+            print(f"[map.mmd] --dedup-llm: {env_key} not set, skipping LLM tiebreaker.", flush=True)
             return
     except ImportError:
         return
@@ -1005,7 +1005,7 @@ def _llm_tiebreak(
 
     # Batch into groups of batch_size and call LLM
     try:
-        from graphify.llm import _call_llm
+        from map.mmd.llm import _call_llm
     except ImportError:
         return
 
@@ -1042,7 +1042,7 @@ def _llm_tiebreak(
                         uf.union(winner["id"], a["id"])
                         uf.union(winner["id"], b["id"])
         except Exception as exc:
-            print(f"[graphify] --dedup-llm batch failed: {exc}", flush=True)
+            print(f"[map.mmd] --dedup-llm batch failed: {exc}", flush=True)
 ```
 
 - [ ] **Step 4: Run tests**
@@ -1064,7 +1064,7 @@ Expected: 532+ passed, 5 failed.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add graphify/dedup.py tests/test_dedup.py
+git add map.mmd/dedup.py tests/test_dedup.py
 git commit -m "Add --dedup-llm LLM tiebreaker to dedup pipeline"
 ```
 
@@ -1083,9 +1083,9 @@ Add at the top of `CHANGELOG.md`:
 ```markdown
 ## 0.7.5 (2026-05-04)
 
-- Feat: `graphify extract` now runs incrementally — auto-detects prior `manifest.json` and re-extracts only changed/new files; semantic results cached by content hash so unchanged docs cost zero LLM tokens on repeat runs (#698)
+- Feat: `map.mmd extract` now runs incrementally — auto-detects prior `manifest.json` and re-extracts only changed/new files; semantic results cached by content hash so unchanged docs cost zero LLM tokens on repeat runs (#698)
 - Feat: Entity deduplication pipeline runs on every build — entropy gate + MinHash/LSH blocking + Jaro-Winkler verification + same-community boost collapses near-duplicate entities (typos, spacing, plurals) before clustering
-- Feat: `--dedup-llm` flag for `graphify extract` — optional LLM tiebreaker for ambiguous entity pairs (~$0.01 for 10k-node graphs), off by default
+- Feat: `--dedup-llm` flag for `map.mmd extract` — optional LLM tiebreaker for ambiguous entity pairs (~$0.01 for 10k-node graphs), off by default
 - Deps: `datasketch` and `rapidfuzz` added as base dependencies
 ```
 

@@ -1,8 +1,8 @@
-"""skillgen: render graphify's committed skill artifacts from edited fragments.
+"""skillgen: render map_mmd's committed skill artifacts from edited fragments.
 
 Build-time only. Nothing here ships in the wheel. Fragments under
 ``tools/skillgen/fragments/`` are the single source of truth a human edits; the
-files under ``graphify/skill*.md`` and ``graphify/skills/<platform>/references/``
+files under ``map_mmd/skill*.md`` and ``map_mmd/skills/<platform>/references/``
 are generated, committed artifacts. This module renders those artifacts and
 guards them against drift.
 
@@ -30,7 +30,7 @@ import sys
 from collections import Counter
 try:
     import tomllib  # Python 3.11+ stdlib
-except ModuleNotFoundError:  # Python 3.10 - graphify supports >=3.10
+except ModuleNotFoundError:  # Python 3.10 - map_mmd supports >=3.10
     import tomli as tomllib  # type: ignore[no-redef]
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -44,8 +44,8 @@ PLATFORMS_TOML = SKILLGEN_DIR / "platforms.toml"
 
 # Immutable coverage baseline for --audit-coverage. The working-tree skill bodies
 # are being replaced by the lean core, so the audit reads each host's v8 body
-# straight from git instead of from disk. claude's v8 body is graphify/skill.md;
-# every other split host has its own graphify/skill-<host>.md. Auditing each host
+# straight from git instead of from disk. claude's v8 body is map_mmd/skill.md;
+# every other split host has its own map_mmd/skill-<host>.md. Auditing each host
 # against ITS OWN v8 body is the per-host guard: a drop that only hits one host
 # (e.g. trae losing its AGENTS.md integration section) is invisible when every
 # host is checked against claude's monolith, so the audit must be per-host.
@@ -60,27 +60,27 @@ _V8_BASELINE_SHA = "47042beb05d1f6dd2186c0c499ae2840ce604ead"
 def _v8_baseline_ref(platform_key: str) -> str:
     """The git ref for a split host's own pre-split skill body."""
     if platform_key == "claude":
-        return f"{_V8_BASELINE_SHA}:graphify/skill.md"
+        return f"{_V8_BASELINE_SHA}:map_mmd/skill.md"
     if platform_key == "agents":
         # `agents` is a post-v8 platform with no own v8 body — it re-homes amp's
         # agents-md body at the generic ~/.agents/skills location. Its render is
         # amp's modulo the install/uninstall command wording (prose, not headings),
         # so amp's v8 body is the correct per-host coverage baseline.
-        return f"{_V8_BASELINE_SHA}:graphify/skill-amp.md"
-    return f"{_V8_BASELINE_SHA}:graphify/skill-{platform_key}.md"
+        return f"{_V8_BASELINE_SHA}:map_mmd/skill-amp.md"
+    return f"{_V8_BASELINE_SHA}:map_mmd/skill-{platform_key}.md"
 
 # Immutable baseline for --always-on-roundtrip. The six always-on instruction
-# blocks used to be triple-quoted constants in graphify/__main__.py; they are now
-# packaged graphify/always_on/*.md files the module reads at load. This ref points
+# blocks used to be triple-quoted constants in map_mmd/__main__.py; they are now
+# packaged map_mmd/always_on/*.md files the module reads at load. This ref points
 # at the pre-extraction source (v8, before the extraction commit on this branch)
 # so the round-trip validator can prove each rendered file reproduces its former
 # constant byte for byte. It deliberately does NOT track HEAD: once the extraction
 # lands, HEAD's constants are _always_on(...) calls, not the literals the
 # validator needs to compare against.
-ALWAYS_ON_BASELINE_REF = f"{_V8_BASELINE_SHA}:graphify/__main__.py"
+ALWAYS_ON_BASELINE_REF = f"{_V8_BASELINE_SHA}:map_mmd/__main__.py"
 
 # The always-on instruction blocks: rendered-file basename -> the __main__.py
-# constant it must reproduce. Rendered to graphify/always_on/<basename>.md from
+# constant it must reproduce. Rendered to map_mmd/always_on/<basename>.md from
 # the matching fragment under fragments/always-on/. These are not platform-
 # specific, so they render once in a full run (not under --platform).
 ALWAYS_ON_BLOCKS = {
@@ -120,8 +120,8 @@ _EXTRACTION_SOURCE = {
 _QUERY_REFERENCE = "references/query/default.md"
 _QUERY_STUB = "query-stub/default.md"
 # The hooks reference is host-flavored. Most hosts read CLAUDE.md and wire
-# always-on via `graphify claude install` (the shared body). The agents-md hosts
-# (trae, trae-cn, amp) read AGENTS.md and wire it via `graphify <host> install`.
+# always-on via `map_mmd claude install` (the shared body). The agents-md hosts
+# (trae, trae-cn, amp) read AGENTS.md and wire it via `map_mmd <host> install`.
 # The agents-md fragment is a per-host template: the install/uninstall commands,
 # the host display name, the heading suffix, and the PreToolUse caveat are slots
 # filled from _AGENTS_MD_HOOKS per host. trae carries the v8 caveat that Trae does
@@ -141,32 +141,32 @@ _HOOKS_SOURCE = {
 _TRAE_PRETOOLUSE_NOTE = (
     "\n> **Note:** Unlike Claude Code, Trae does NOT support PreToolUse hooks. "
     "The AGENTS.md rules are the always-on mechanism — there is no automatic graph "
-    "rebuild on tool use. Run `/graphify --update` manually after code changes if "
+    "rebuild on tool use. Run `/map_mmd --update` manually after code changes if "
     "the graph needs refreshing.\n"
 )
 _AGENTS_MD_HOOKS: dict[str, dict[str, str]] = {
     "trae": {
         "heading_suffix": " (Trae)",
         "host_display": "Trae",
-        "install_block": "graphify trae install       # or: graphify trae-cn install",
-        "uninstall_block": "graphify trae uninstall     # or: graphify trae-cn uninstall   # remove the section",
+        "install_block": "map_mmd trae install       # or: map_mmd trae-cn install",
+        "uninstall_block": "map_mmd trae uninstall     # or: map_mmd trae-cn uninstall   # remove the section",
         "pretooluse_note": _TRAE_PRETOOLUSE_NOTE,
     },
     "amp": {
         "heading_suffix": "",
         "host_display": "Amp",
-        "install_block": "graphify amp install",
-        "uninstall_block": "graphify amp uninstall  # remove the section",
+        "install_block": "map_mmd amp install",
+        "uninstall_block": "map_mmd amp uninstall  # remove the section",
         "pretooluse_note": "",
     },
     "agents": {
         # The generic cross-framework Agent-Skills target. Mirrors amp's bare,
         # caveat-free agents-md section, worded for an unspecified host and
-        # pointing at `graphify agents install` (which wires AGENTS.md, like amp).
+        # pointing at `map_mmd agents install` (which wires AGENTS.md, like amp).
         "heading_suffix": "",
         "host_display": "your agent",
-        "install_block": "graphify agents install",
-        "uninstall_block": "graphify agents uninstall  # remove the section",
+        "install_block": "map_mmd agents install",
+        "uninstall_block": "map_mmd agents uninstall  # remove the section",
         "pretooluse_note": "",
     },
 }
@@ -183,7 +183,7 @@ _HOOKS_TARGET = {
 # are intentional consolidations, not content drops, and the audit must not flag
 # them. Two classes:
 #
-# 1. SHARED_INTRO_ALLOWLIST — the lean intro consolidation. "## What graphify is
+# 1. SHARED_INTRO_ALLOWLIST — the lean intro consolidation. "## What map_mmd is
 #    for" is the lean intro the core carries; the minimal v8 bodies (kilo, vscode)
 #    had verbose intro prose with no such heading, while the richer v8 bodies
 #    already had it. Listing it documents the wave-2/3 intro consolidation; it
@@ -204,7 +204,7 @@ _HOOKS_TARGET = {
 # Adding a heading here is a deliberate, reviewed act: it asserts "this v8
 # heading was consolidated on purpose and its content is covered elsewhere."
 SHARED_INTRO_ALLOWLIST: frozenset[str] = frozenset({
-    "## What graphify is for",  # lean intro; v8 hosts had verbose intro prose, no heading.
+    "## What map_mmd is for",  # lean intro; v8 hosts had verbose intro prose, no heading.
 })
 
 _CONSOLIDATION_ALLOWLIST: dict[str, frozenset[str]] = {
@@ -250,7 +250,7 @@ class Platform:
     # split-only template inputs
     core: str | None = None
     refs_dst: str | None = None
-    name: str = "graphify"
+    name: str = "map_mmd"
     description: str | None = None
     trigger: str | None = None  # removed — not part of Agent Skills spec (#1180)
     dispatch: str | None = None
@@ -288,7 +288,7 @@ def load_platforms() -> dict[str, Platform]:
             skill_dst=cfg["skill_dst"],
             core=cfg.get("core"),
             refs_dst=cfg.get("refs_dst"),
-            name=cfg.get("name", "graphify"),
+            name=cfg.get("name", "map_mmd"),
             description=cfg.get("description"),
             trigger=cfg.get("trigger"),
             dispatch=cfg.get("dispatch"),
@@ -435,7 +435,7 @@ def render(platform: Platform) -> list[RenderedArtifact]:
 
 
 def render_always_on() -> list[RenderedArtifact]:
-    """Render the six always-on instruction blocks to graphify/always_on/*.md.
+    """Render the six always-on instruction blocks to map_mmd/always_on/*.md.
 
     These are the blocks the installer injects into shared files (CLAUDE.md,
     AGENTS.md, GEMINI.md, .github/copilot-instructions.md, Antigravity rules,
@@ -447,7 +447,7 @@ def render_always_on() -> list[RenderedArtifact]:
     out: list[RenderedArtifact] = []
     for basename in sorted(ALWAYS_ON_BLOCKS):
         body = _read_fragment(f"always-on/{basename}.md")
-        out.append(RenderedArtifact(f"graphify/always_on/{basename}.md", body))
+        out.append(RenderedArtifact(f"map_mmd/always_on/{basename}.md", body))
     return out
 
 
@@ -588,8 +588,8 @@ def _v8_available() -> bool:
 def audit_coverage(platform: Platform) -> list[str]:
     """Assert every heading of THIS host's v8 body single-homes in its render.
 
-    The audit reads the host's OWN v8 skill body (graphify/skill.md for claude,
-    graphify/skill-<host>.md otherwise) and checks that every v8 heading lands in
+    The audit reads the host's OWN v8 skill body (map_mmd/skill.md for claude,
+    map_mmd/skill-<host>.md otherwise) and checks that every v8 heading lands in
     that host's generated core or in exactly one of its reference fragments. This
     is the per-host guard: a content drop that only hits one host (the trae native
     AGENTS.md integration regression that motivated this change) is invisible when
@@ -597,7 +597,7 @@ def audit_coverage(platform: Platform) -> list[str]:
     against itself.
 
     v8 headings are exempt and documented as deltas, not holes:
-      - waves 2-3 consolidations (the lean "## What graphify is for" intro and the
+      - waves 2-3 consolidations (the lean "## What map_mmd is for" intro and the
         per-host re-homed step/part headings on the minimal kilo/vscode bodies),
         tracked in the audit allowlist.
     Anything NOT exempt and NOT single-homed fails the audit.
@@ -708,7 +708,7 @@ def _is_enum_line(line: str) -> bool:
 def _is_frontmatter_description_line(line: str) -> bool:
     """Whether a line is a YAML frontmatter description field.
 
-    The unified description (graphify #1106) rewrites the frontmatter
+    The unified description (map_mmd #1106) rewrites the frontmatter
     ``description`` on every host, monoliths included. That line is now an
     allowed diff against v8 alongside the enum unification.
     """
@@ -718,20 +718,20 @@ def _is_frontmatter_description_line(line: str) -> bool:
 def _is_chunk_cleanup_line(line: str) -> bool:
     """Whether a line is the Step 9 chunk-file cleanup ``rm -f`` command.
 
-    The bare glob ``.graphify_chunk_*.json`` in the v8 cleanup line aborts the
+    The bare glob ``.map_mmd_chunk_*.json`` in the v8 cleanup line aborts the
     whole ``rm`` under fish/zsh when no chunk files exist (no-match is a hard
-    error there, unlike bash). The fix (graphify #1172) drops the glob from the
+    error there, unlike bash). The fix (map_mmd #1172) drops the glob from the
     ``rm`` and deletes the chunk files with ``find ... -delete`` instead. That
     rewrite touches the single cleanup line in place (no line added or removed),
     so it joins the enum and description unifications as an allowed monolith diff.
-    Both the v8 form (bare ``.graphify_chunk_*.json`` glob, removed) and the fixed
+    Both the v8 form (bare ``.map_mmd_chunk_*.json`` glob, removed) and the fixed
     form (``find ... -delete``, added) match here so the multiset diff classifies
     each side of the change.
     """
     s = line.lstrip()
     if not s.startswith("rm -f"):
         return False
-    return ".graphify_chunk_*.json" in line or ("find " in line and "-name '.graphify_chunk_" in line)
+    return ".map_mmd_chunk_*.json" in line or ("find " in line and "-name '.map_mmd_chunk_" in line)
 
 
 def _is_trigger_line(line: str) -> bool:
@@ -778,13 +778,13 @@ def _is_cache_unlink_fix_line(line: str) -> bool:
     """Whether a line is part of the stale-cache unlink fix (#1392).
 
     The cache file was written only on a hit, so a miss left a prior run's
-    ``.graphify_cached.json`` for Part C to merge. The miss branch now deletes it.
+    ``.map_mmd_cached.json`` for Part C to merge. The miss branch now deletes it.
     """
     return (
-        ".graphify_cached.json').unlink(missing_ok=True)" in line
+        ".map_mmd_cached.json').unlink(missing_ok=True)" in line
         or line.strip() == "else:"
         or "Always (re)write the cache file" in line
-        or "stale .graphify_cached.json" in line
+        or "stale .map_mmd_cached.json" in line
     )
 
 
@@ -805,7 +805,7 @@ def _is_zero_node_guard_fix_line(line: str) -> bool:
         or s == "raise SystemExit(1)"
         or "to_json(G, communities," in line
         or s == "if not wrote:"
-        or "refused to shrink graphify-out/graph.json" in line
+        or "refused to shrink map.mmd-out/graph.json" in line
         or "Guard BEFORE any write" in line
         or "GRAPH_REPORT.md / analysis sidecar" in line
         or "Persist the graph first" in line
@@ -821,9 +821,9 @@ def _is_manifest_root_fix_line(line: str) -> bool:
     ``root=``, so the manifest stored absolute path keys and a clone or move
     broke ``--update`` — every cached file missed and the whole corpus
     re-extracted. The call now threads ``root='INPUT_PATH'`` so keys are
-    relativized to the scan root, matching the native ``graphify update`` path.
+    relativized to the scan root, matching the native ``map_mmd update`` path.
     Both the old bare call (removed) and the new rooted call (added) match here;
-    the ``import`` guard avoids matching the ``from graphify.detect import
+    the ``import`` guard avoids matching the ``from map_mmd.detect import
     save_manifest`` line.
     """
     return "save_manifest(" in line and "import" not in line
@@ -833,13 +833,13 @@ def _is_no_api_key_fix_line(line: str) -> bool:
     """Whether a line is part of the "no API key required" clarity (#1461).
 
     The aider/devin monoliths described Step 3 semantic extraction without ever
-    stating that graphify needs no API key, and (like the subagent-host skills)
+    stating that map_mmd needs no API key, and (like the subagent-host skills)
     framed the no-key path only around dispatching subagents. Terminal hosts that
     run the CLI directly and can't dispatch subagents looped for minutes insisting
     on a missing key. A single blockquote added after the "two parts" line states
     that no key is ever required and gives a non-subagent fallback.
     """
-    return "graphify needs no API key" in line
+    return "map_mmd needs no API key" in line
 
 
 # Every line that may differ between a rendered monolith and its pristine v8
@@ -945,7 +945,7 @@ def always_on_roundtrip() -> list[str]:
     problems: list[str] = []
     rendered = {a.path: a.content for a in render_always_on()}
     for basename, const_name in sorted(ALWAYS_ON_BLOCKS.items()):
-        path = f"graphify/always_on/{basename}.md"
+        path = f"map_mmd/always_on/{basename}.md"
         if const_name not in baseline:
             problems.append(f"could not find constant {const_name} in {ALWAYS_ON_BASELINE_REF}")
             continue
@@ -960,7 +960,7 @@ def always_on_roundtrip() -> list[str]:
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="python -m tools.skillgen",
-        description="Render and guard graphify's committed skill artifacts.",
+        description="Render and guard map_mmd's committed skill artifacts.",
     )
     p.add_argument("--platform", help="render or check just this platform key")
     p.add_argument("--check", action="store_true", help="byte-diff render vs committed + expected/, exit 1 on drift")

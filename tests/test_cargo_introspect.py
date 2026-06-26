@@ -1,6 +1,6 @@
 import pytest
 
-from graphify.cargo_introspect import introspect_cargo
+from map_mmd.cargo_introspect import introspect_cargo
 
 
 def _write_manifest(path, content):

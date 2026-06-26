@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 
-namespace GraphifyDemo
+namespace MapMmdDemo
 {
     public interface IProcessor
     {

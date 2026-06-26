@@ -5,7 +5,7 @@ import json
 import networkx as nx
 from networkx.readwrite import json_graph
 
-import graphify.__main__ as mainmod
+import map_mmd.__main__ as mainmod
 
 
 def _write_graph(tmp_path):
@@ -28,7 +28,7 @@ def test_affected_cli_reverse_traverses_impact_edges(monkeypatch, tmp_path, caps
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "affected", "Foo", "--graph", str(graph_path)],
+        ["map_mmd", "affected", "Foo", "--graph", str(graph_path)],
     )
 
     mainmod.main()
@@ -49,7 +49,7 @@ def test_affected_cli_relation_filter_limits_reverse_traversal(monkeypatch, tmp_
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "affected", "Foo", "--relation", "calls", "--graph", str(graph_path)],
+        ["map_mmd", "affected", "Foo", "--relation", "calls", "--graph", str(graph_path)],
     )
 
     mainmod.main()
@@ -81,7 +81,7 @@ def test_affected_cli_forces_directed_on_undirected_graph(monkeypatch, tmp_path,
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "affected", "B", "--relation", "calls", "--graph", str(graph_path)],
+        ["map_mmd", "affected", "B", "--relation", "calls", "--graph", str(graph_path)],
     )
 
     mainmod.main()
@@ -95,7 +95,7 @@ def test_affected_cli_forces_directed_on_undirected_graph(monkeypatch, tmp_path,
 
 
 def test_affected_cli_loads_edges_keyed_graph(monkeypatch, tmp_path, capsys):
-    """graphify's `extract` writes graph.json with an "edges" key (not networkx's
+    """map_mmd's `extract` writes graph.json with an "edges" key (not networkx's
     default "links"). affected.load_graph must handle it; before the edges/links
     normalization it raised an uncaught KeyError: 'links' (same class as #1198)."""
     graph = nx.DiGraph()
@@ -103,7 +103,7 @@ def test_affected_cli_loads_edges_keyed_graph(monkeypatch, tmp_path, capsys):
     graph.add_node("caller", label="X()", source_file="app.py", source_location="L4")
     graph.add_edge("caller", "target", relation="calls", context="call", confidence="EXTRACTED")
 
-    # Emulate graphify extract output: top-level "edges" key instead of "links".
+    # Emulate map_mmd extract output: top-level "edges" key instead of "links".
     data = json_graph.node_link_data(graph, edges="links")
     data["edges"] = data.pop("links")
     graph_path = tmp_path / "graph.json"
@@ -113,7 +113,7 @@ def test_affected_cli_loads_edges_keyed_graph(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "affected", "Foo", "--graph", str(graph_path)],
+        ["map_mmd", "affected", "Foo", "--graph", str(graph_path)],
     )
 
     mainmod.main()
@@ -125,7 +125,7 @@ def test_affected_cli_loads_edges_keyed_graph(monkeypatch, tmp_path, capsys):
 
 
 def test_resolve_seed_bare_name_matches_callable_label():
-    from graphify.affected import resolve_seed
+    from map_mmd.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("a", label="classifyProperty()", source_file="pkg/entity.py")
@@ -136,7 +136,7 @@ def test_resolve_seed_bare_name_matches_callable_label():
 
 
 def test_resolve_seed_decorated_query_matches_bare_label():
-    from graphify.affected import resolve_seed
+    from map_mmd.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("a", label="Foo", source_file="pkg/foo.py")
@@ -148,7 +148,7 @@ def test_resolve_seed_decorated_query_matches_bare_label():
 def test_resolve_seed_matches_unicode_normalized_label():
     import unicodedata
 
-    from graphify.affected import resolve_seed
+    from map_mmd.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("a", label="Auditoría", source_file="pkg/auditoria.py")
@@ -157,7 +157,7 @@ def test_resolve_seed_matches_unicode_normalized_label():
 
 
 def test_resolve_seed_preserves_distinct_accents():
-    from graphify.affected import resolve_seed
+    from map_mmd.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("a", label="resume", source_file="pkg/resume.py")
@@ -167,7 +167,7 @@ def test_resolve_seed_preserves_distinct_accents():
 
 
 def test_resolve_seed_bare_name_tie_still_returns_none():
-    from graphify.affected import resolve_seed
+    from map_mmd.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("a", label="dup()", source_file="pkg/one.py")

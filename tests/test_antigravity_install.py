@@ -2,17 +2,17 @@
 
 Regression: project-scoped `install --project --platform antigravity` previously
 went through the skill-only branch (grouped with copilot/pi/kimi), so it copied
-the SKILL.md but never wrote `.agents/rules/graphify.md` or
-`.agents/workflows/graphify.md` - even though the uninstall path removes them.
+the SKILL.md but never wrote `.agents/rules/map_mmd.md` or
+`.agents/workflows/map_mmd.md` - even though the uninstall path removes them.
 """
-import graphify.__main__ as m
+import map_mmd.__main__ as m
 
 
 def test_antigravity_project_install_writes_rules_and_workflows(tmp_path):
     m._project_install("antigravity", tmp_path)
-    skill = tmp_path / ".agents" / "skills" / "graphify" / "SKILL.md"
-    rules = tmp_path / ".agents" / "rules" / "graphify.md"
-    workflow = tmp_path / ".agents" / "workflows" / "graphify.md"
+    skill = tmp_path / ".agents" / "skills" / "map_mmd" / "SKILL.md"
+    rules = tmp_path / ".agents" / "rules" / "map_mmd.md"
+    workflow = tmp_path / ".agents" / "workflows" / "map_mmd.md"
     assert skill.exists(), "skill should be installed under .agents/skills/"
     assert rules.exists(), "antigravity rules (always-on) must be written"
     assert workflow.exists(), "antigravity workflow must be written"
@@ -23,6 +23,6 @@ def test_antigravity_project_install_writes_rules_and_workflows(tmp_path):
 def test_antigravity_project_uninstall_clears_rules_and_workflows(tmp_path):
     m._project_install("antigravity", tmp_path)
     m._project_uninstall("antigravity", tmp_path)
-    assert not (tmp_path / ".agents" / "rules" / "graphify.md").exists()
-    assert not (tmp_path / ".agents" / "workflows" / "graphify.md").exists()
-    assert not (tmp_path / ".agents" / "skills" / "graphify" / "SKILL.md").exists()
+    assert not (tmp_path / ".agents" / "rules" / "map_mmd.md").exists()
+    assert not (tmp_path / ".agents" / "workflows" / "map_mmd.md").exists()
+    assert not (tmp_path / ".agents" / "skills" / "map_mmd" / "SKILL.md").exists()

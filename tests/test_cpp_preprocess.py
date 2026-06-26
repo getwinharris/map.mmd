@@ -4,7 +4,7 @@ A corpus file is attacker-named; cpp does not accept a "--" end-of-options
 terminator, so _cpp_preprocess passes an absolute path which can never be parsed
 as a cpp option.
 """
-from graphify import extract
+from map_mmd import extract
 
 
 def test_cpp_preprocess_passes_absolute_path(tmp_path, monkeypatch):

@@ -1,7 +1,7 @@
-"""Tests for graphify/dedup.py entity deduplication pipeline."""
+"""Tests for map_mmd/dedup.py entity deduplication pipeline."""
 from __future__ import annotations
 import pytest
-from graphify.dedup import deduplicate_entities, _entropy, _shingles
+from map_mmd.dedup import deduplicate_entities, _entropy, _shingles
 
 
 # ── entropy gate ─────────────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ def test_dedup_llm_flag_accepted():
 
 def test_build_calls_dedup():
     """build() should deduplicate near-identical nodes across extractions."""
-    from graphify.build import build
+    from map_mmd.build import build
     chunk1 = {
         "nodes": [{"id": "graphextractor", "label": "GraphExtractor", "source_file": "a.py"}],
         "edges": [],
@@ -162,7 +162,7 @@ def test_dedup_does_not_merge_model_with_suffix(tmp_path):
 
 def test_dedup_still_merges_real_typos():
     """Genuine same-length single-char typos should still merge (#878 non-regression)."""
-    from graphify.dedup import _is_variant_pair, _short_label_blocked
+    from map_mmd.dedup import _is_variant_pair, _short_label_blocked
     from rapidfuzz.distance import JaroWinkler
     a, b = "graphextractor", "graphextractar"
     score = JaroWinkler.normalized_similarity(a, b) * 100
@@ -172,7 +172,7 @@ def test_dedup_still_merges_real_typos():
 
 def test_variant_pair_helper():
     """_is_variant_pair correctly identifies chip-model variant pairs (#878)."""
-    from graphify.dedup import _is_variant_pair
+    from map_mmd.dedup import _is_variant_pair
     assert _is_variant_pair("asr1603", "asr1605")
     assert _is_variant_pair("cortex a55", "cortex a55x")
     assert not _is_variant_pair("graphextractor", "graphextracter")
@@ -184,7 +184,7 @@ def test_prefix_extension_symbols_not_merged():
     be merged (#1201). getActiveSession / getActiveSessions score ~98.82 JW but are
     different functions; parseConfig / parseConfigFile likewise."""
     import networkx as nx
-    from graphify.dedup import deduplicate_entities
+    from map_mmd.dedup import deduplicate_entities
 
     pairs = [
         ("getActiveSession", "getActiveSessions"),
@@ -243,7 +243,7 @@ def test_prefix_guard_does_not_block_same_length_typos():
     prefix-extensions (one is a substring of the other) should be blocked (#1201).
     graphextractor / graphextractar have the same length, so neither starts-with the
     other, and the guard must not fire."""
-    from graphify.dedup import _norm
+    from map_mmd.dedup import _norm
     a = _norm("GraphExtractor")   # "graphextractor" — 14 chars
     b = _norm("GraphExtractar")   # "graphextractar" — 14 chars
     lo, hi = sorted((a, b), key=len)
@@ -256,7 +256,7 @@ def test_prefix_guard_does_not_block_same_length_typos():
 def test_prefix_guard_fires_for_extension_pairs():
     """The prefix-extension guard must fire for pairs where one is a strict prefix
     of the other, preventing false merges (#1201)."""
-    from graphify.dedup import _norm
+    from map_mmd.dedup import _norm
     pairs = [
         ("getActiveSession", "getActiveSessions"),
         ("parseConfig", "parseConfigFile"),
@@ -275,7 +275,7 @@ def test_prefix_guard_fires_for_extension_pairs():
 def test_numeric_tokens_differ_helper():
     """_numeric_tokens_differ compares digit runs as zero-padding-insensitive
     multisets (#1284)."""
-    from graphify.dedup import _numeric_tokens_differ
+    from map_mmd.dedup import _numeric_tokens_differ
     assert _numeric_tokens_differ("adr 0011 d5 pipeline placement", "adr 0013 d4 pipeline placement")
     assert _numeric_tokens_differ("3 1 product goals", "1 1 product goals")
     assert _numeric_tokens_differ("code block3", "code block13")

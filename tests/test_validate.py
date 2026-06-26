@@ -1,5 +1,5 @@
 import pytest
-from graphify.validate import validate_extraction, assert_valid
+from map_mmd.validate import validate_extraction, assert_valid
 
 VALID = {
     "nodes": [

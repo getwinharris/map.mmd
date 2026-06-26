@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.build import build_from_json
-from graphify.detect import FileType, classify_file
-from graphify.extract import extract
-from graphify.manifest_ingest import (
+from map_mmd.build import build_from_json
+from map_mmd.detect import FileType, classify_file
+from map_mmd.extract import extract
+from map_mmd.manifest_ingest import (
     extract_package_manifest,
     is_package_manifest_path,
 )

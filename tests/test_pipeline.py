@@ -9,13 +9,13 @@ from pathlib import Path
 
 import pytest
 
-from graphify.detect import detect
-from graphify.extract import collect_files, extract
-from graphify.build import build_from_json
-from graphify.cluster import cluster, score_all
-from graphify.analyze import god_nodes, surprising_connections, suggest_questions
-from graphify.report import generate
-from graphify.export import to_json, to_html, to_obsidian
+from map_mmd.detect import detect
+from map_mmd.extract import collect_files, extract
+from map_mmd.build import build_from_json
+from map_mmd.cluster import cluster, score_all
+from map_mmd.analyze import god_nodes, surprising_connections, suggest_questions
+from map_mmd.report import generate
+from map_mmd.export import to_json, to_html, to_obsidian
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

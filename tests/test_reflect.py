@@ -1,8 +1,8 @@
-"""Tests for `graphify reflect` and the work-memory reflection layer.
+"""Tests for `map_mmd reflect` and the work-memory reflection layer.
 
-`graphify reflect` reads the outcome-tagged Q&A docs that `graphify save-result`
-files into graphify-out/memory/ and writes a deterministic lessons artifact
-(graphify-out/reflections/LESSONS.md) an agent can load next session: preferred
+`map_mmd reflect` reads the outcome-tagged Q&A docs that `map_mmd save-result`
+files into map.mmd-out/memory/ and writes a deterministic lessons artifact
+(map.mmd-out/reflections/LESSONS.md) an agent can load next session: preferred
 sources, known dead ends, and corrections — optionally grouped by community.
 
 Covers the pure aggregation/rendering helpers (deterministic, no LLM, no graph
@@ -19,8 +19,8 @@ from pathlib import Path
 
 import pytest
 
-from graphify.ingest import save_query_result
-from graphify.reflect import (
+from map_mmd.ingest import save_query_result
+from map_mmd.reflect import (
     aggregate_lessons,
     lessons_fresh,
     load_memory_docs,
@@ -42,7 +42,7 @@ def _days_before(n: int) -> str:
 
 def _run(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [PYTHON, "-m", "graphify"] + args,
+        [PYTHON, "-m", "map_mmd"] + args,
         cwd=cwd, capture_output=True, text=True,
     )
 
@@ -117,7 +117,7 @@ def _write_raw_doc(mem: Path, filename: str, date: str, *, outcome="dead_end",
     mem.mkdir(parents=True, exist_ok=True)
     nodes = nodes or []
     lines = ["---", 'type: "query"', f'date: "{date}"', f'question: "{question}"',
-             'contributor: "graphify"', f'outcome: "{outcome}"']
+             'contributor: "map_mmd"', f'outcome: "{outcome}"']
     if nodes:
         lines.append("source_nodes: [" + ", ".join(f'"{n}"' for n in nodes) + "]")
     lines += ["---", "", f"# Q: {question}", ""]
@@ -433,7 +433,7 @@ def test_reflect_writes_lessons_file(tmp_path):
 def test_second_session_benefits_from_the_first(tmp_path):
     """The issue's worked example: session 1 records a win and a dead end; session 2
     loads LESSONS.md and sees both."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     mem = out / "memory"
 
     # Session 1: one useful answer, one dead end.
@@ -465,7 +465,7 @@ def test_cli_reflect_end_to_end(tmp_path):
     r2 = _run(["reflect"], cwd)
     assert r2.returncode == 0, r2.stderr
     assert "Reflected 1 memories" in r2.stdout
-    lessons = cwd / "graphify-out" / "reflections" / "LESSONS.md"
+    lessons = cwd / "map.mmd-out" / "reflections" / "LESSONS.md"
     assert lessons.exists()
     assert "`AuthMiddleware`" in lessons.read_text(encoding="utf-8")
 
@@ -479,11 +479,11 @@ def test_cli_save_result_rejects_bad_outcome(tmp_path):
 
 
 def test_cli_reflect_cold_start_writes_empty_lessons(tmp_path):
-    """First run with no graphify-out/memory/ still succeeds and writes a valid doc."""
+    """First run with no map.mmd-out/memory/ still succeeds and writes a valid doc."""
     r = _run(["reflect"], tmp_path)
     assert r.returncode == 0, r.stderr
     assert "Reflected 0 memories" in r.stdout
-    lessons = tmp_path / "graphify-out" / "reflections" / "LESSONS.md"
+    lessons = tmp_path / "map.mmd-out" / "reflections" / "LESSONS.md"
     assert lessons.exists()
     assert "from 0 session memories" in lessons.read_text(encoding="utf-8")
 
@@ -537,18 +537,18 @@ def test_cli_node_existence_gate_drops_stale_node_end_to_end(tmp_path):
 
 
 def _make_graph(tmp_path: Path) -> Path:
-    """Build a minimal graph.json + analysis/labels in tmp_path/graphify-out/.
+    """Build a minimal graph.json + analysis/labels in tmp_path/map.mmd-out/.
 
     Mirrors tests/test_cli_export.py::_make_graph so reflect can be exercised with a
     real community structure.
     """
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     out.mkdir()
     extraction = json.loads((FIXTURES / "extraction.json").read_text())
-    from graphify.build import build_from_json
-    from graphify.cluster import cluster, score_all
-    from graphify.analyze import god_nodes, surprising_connections
-    from graphify.export import to_json
+    from map_mmd.build import build_from_json
+    from map_mmd.cluster import cluster, score_all
+    from map_mmd.analyze import god_nodes, surprising_connections
+    from map_mmd.export import to_json
 
     G = build_from_json(extraction)
     communities = cluster(G)
@@ -556,12 +556,12 @@ def _make_graph(tmp_path: Path) -> Path:
     gods = god_nodes(G)
     surprises = surprising_connections(G, communities)
     to_json(G, communities, str(out / "graph.json"))
-    (out / ".graphify_analysis.json").write_text(json.dumps({
+    (out / ".map_mmd_analysis.json").write_text(json.dumps({
         "communities": {str(k): v for k, v in communities.items()},
         "cohesion": {str(k): v for k, v in cohesion.items()},
         "gods": gods, "surprises": surprises,
     }))
-    (out / ".graphify_labels.json").write_text(
+    (out / ".map_mmd_labels.json").write_text(
         json.dumps({str(cid): f"Community {cid}" for cid in communities})
     )
     return out

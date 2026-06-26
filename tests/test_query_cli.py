@@ -1,4 +1,4 @@
-"""Tests for graphify query CLI context filtering."""
+"""Tests for map_mmd query CLI context filtering."""
 from __future__ import annotations
 
 import json
@@ -6,7 +6,7 @@ import json
 import networkx as nx
 from networkx.readwrite import json_graph
 
-import graphify.__main__ as mainmod
+import map_mmd.__main__ as mainmod
 
 
 def _write_graph(tmp_path):
@@ -27,7 +27,7 @@ def test_query_cli_explicit_context_filter(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "query", "extract", "--context", "call", "--graph", str(graph_path)],
+        ["map_mmd", "query", "extract", "--context", "call", "--graph", str(graph_path)],
     )
     mainmod.main()
     out = capsys.readouterr().out
@@ -42,7 +42,7 @@ def test_query_cli_heuristic_context_filter(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "query", "who calls extract", "--graph", str(graph_path)],
+        ["map_mmd", "query", "who calls extract", "--graph", str(graph_path)],
     )
     mainmod.main()
     out = capsys.readouterr().out
@@ -57,11 +57,11 @@ def test_query_cli_rejects_oversized_graph(monkeypatch, tmp_path, capsys):
 
     graph_path = _write_graph(tmp_path)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 16)
+    monkeypatch.setattr("map_mmd.security._MAX_GRAPH_FILE_BYTES", 16)
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "query", "extract", "--graph", str(graph_path)],
+        ["map_mmd", "query", "extract", "--graph", str(graph_path)],
     )
     with pytest.raises(SystemExit):
         mainmod.main()

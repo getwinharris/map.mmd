@@ -1,7 +1,7 @@
 """Packaging guard (#1121 follow-up): the 5 skillgen guards check the *repo tree*,
 not the *built wheel*. A host whose references bundle or always-on block fails to
 match the `package-data` globs would pass `--check`/`--audit-coverage` yet make
-`graphify install` hard-exit with "not found in package" for real users.
+`map_mmd install` hard-exit with "not found in package" for real users.
 
 This builds the wheel once and asserts every committed skill artifact ships in it.
 """
@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-PKG = REPO / "graphify"
+PKG = REPO / "map_mmd"
 
 
 def _has_build() -> bool:
@@ -31,10 +31,10 @@ def _has_build() -> bool:
 
 def _skill_bodies() -> list[Path]:
     """Every distinct skill body a platform installs (the SKILL.md is copied from
-    one of these). A body missing from the wheel makes `graphify install
+    one of these). A body missing from the wheel makes `map_mmd install
     --platform <host>` hard-exit "not found in package" — the exact failure that
     motivated adding the agents platform's skill-agents.md to package-data."""
-    from graphify.__main__ import _PLATFORM_CONFIG
+    from map_mmd.__main__ import _PLATFORM_CONFIG
 
     names = {cfg["skill_file"] for cfg in _PLATFORM_CONFIG.values()}
     return sorted({PKG / name for name in names})
@@ -64,7 +64,7 @@ def wheel_namelist(tmp_path_factory) -> set[str]:
     )
     if proc.returncode != 0:
         pytest.skip(f"wheel build failed in this env:\n{proc.stderr[-800:]}")
-    wheels = list(out.glob("graphifyy-*.whl"))
+    wheels = list(out.glob("map-mmd-*.whl"))
     assert wheels, "no wheel produced"
     with zipfile.ZipFile(max(wheels, key=lambda p: p.stat().st_mtime)) as z:
         return set(z.namelist())
@@ -76,9 +76,9 @@ def wheel_namelist(tmp_path_factory) -> set[str]:
     ids=lambda p: str(p.relative_to(PKG)),
 )
 def test_skill_artifact_ships_in_wheel(artifact: Path, wheel_namelist: set[str]) -> None:
-    rel = "graphify/" + artifact.relative_to(PKG).as_posix()
+    rel = "map_mmd/" + artifact.relative_to(PKG).as_posix()
     assert rel in wheel_namelist, (
         f"{rel} is committed in the repo but NOT in the built wheel — "
-        f"`graphify install` would hard-exit for this host. Check the "
+        f"`map_mmd install` would hard-exit for this host. Check the "
         f"[tool.setuptools.package-data] globs in pyproject.toml."
     )

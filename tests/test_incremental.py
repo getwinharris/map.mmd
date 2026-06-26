@@ -1,4 +1,4 @@
-"""Integration tests for incremental graphify extract behavior."""
+"""Integration tests for incremental map_mmd extract behavior."""
 from __future__ import annotations
 import json
 import os
@@ -24,7 +24,7 @@ _LLM_ENV_KEYS = (
 def _run(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
     env = {k: v for k, v in os.environ.items() if k not in _LLM_ENV_KEYS}
     return subprocess.run(
-        [PYTHON, "-m", "graphify"] + args,
+        [PYTHON, "-m", "map_mmd"] + args,
         cwd=cwd,
         capture_output=True,
         text=True,
@@ -47,14 +47,14 @@ def test_manifest_written_after_extract(tmp_path):
     # Should fail with no API key — but NOT with a path error
     assert "no LLM API key" in r.stderr or r.returncode != 0
     # manifest should NOT exist (run failed before writing)
-    manifest = docs / "graphify-out" / "manifest.json"
+    manifest = docs / "map.mmd-out" / "manifest.json"
     assert not manifest.exists()
 
 
 def test_incremental_mode_detected_via_manifest(tmp_path):
     """If manifest.json + graph.json exist, incremental mode message is shown."""
     docs = _make_docs_corpus(tmp_path)
-    out = docs / "graphify-out"
+    out = docs / "map.mmd-out"
     out.mkdir()
     (out / "graph.json").write_text(json.dumps({"nodes": [], "links": []}))
     (out / "manifest.json").write_text(json.dumps({"document": [str(docs / "intro.md")]}))
@@ -84,7 +84,7 @@ def test_extract_no_cluster_incremental_noop_preserves_existing_graph(tmp_path):
 
     first = _run(["extract", str(project), "--no-cluster"], tmp_path)
     assert first.returncode == 0, first.stderr
-    graph_path = project / "graphify-out" / "graph.json"
+    graph_path = project / "map.mmd-out" / "graph.json"
     before_text = graph_path.read_text(encoding="utf-8")
     before = json.loads(before_text)
     assert before.get("nodes"), "first run should produce a non-empty code graph"

@@ -4,7 +4,7 @@ import subprocess
 from types import SimpleNamespace
 from pathlib import Path
 import pytest
-from graphify.hooks import install, uninstall, status, _hooks_dir, _HOOK_MARKER, _CHECKOUT_MARKER
+from map_mmd.hooks import install, uninstall, status, _hooks_dir, _HOOK_MARKER, _CHECKOUT_MARKER
 
 
 def _make_git_repo(tmp_path: Path) -> Path:
@@ -157,19 +157,19 @@ def test_hooks_dir_accepts_absolute_git_hooks_path(tmp_path, monkeypatch):
 
 def test_hook_skips_head_on_exe():
     """Hook script must skip shebang extraction for .exe binaries (Windows)."""
-    from graphify.hooks import _PYTHON_DETECT
+    from map_mmd.hooks import _PYTHON_DETECT
     assert "*.exe) _SHEBANG=" in _PYTHON_DETECT or '*.exe)' in _PYTHON_DETECT
 
 
 def test_install_embeds_pinned_interpreter(tmp_path):
     """Hook scripts must embed sys.executable so the hook works without the
-    graphify launcher on PATH (uv tool / pipx isolation, #1127).
+    map_mmd launcher on PATH (uv tool / pipx isolation, #1127).
 
-    When graphify is installed via `uv tool install graphifyy` or `pipx install
-    graphifyy`, the interpreter lives in an isolated venv and the launcher is in
+    When map_mmd is installed via `uv tool install map-mmd` or `pipx install
+    map-mmd`, the interpreter lives in an isolated venv and the launcher is in
     ~/.local/bin.  GUI git clients and CI runners often run with a minimal PATH
-    that omits that directory, so `command -v graphify` fails, the python3/python
-    fallbacks cannot import graphify (wrong venv), and the hook silently exits 0.
+    that omits that directory, so `command -v map_mmd` fails, the python3/python
+    fallbacks cannot import map_mmd (wrong venv), and the hook silently exits 0.
     Pinning sys.executable at install time makes the hook work regardless of PATH.
     """
     import re, sys
@@ -193,21 +193,21 @@ def test_install_fallback_is_loud_not_silent(tmp_path):
     A silent no-op (the pre-fix behaviour) leaves the user with no indication
     that the hook ran but found nothing, making the bug extremely hard to diagnose.
     """
-    from graphify.hooks import _PYTHON_DETECT
+    from map_mmd.hooks import _PYTHON_DETECT
     assert "could not locate" in _PYTHON_DETECT, (
         "fallback branch must print a diagnostic message; bare 'exit 0' is silent and unhelpful"
     )
 
 
 def test_hook_check_no_additionalContext(tmp_path):
-    """graphify hook-check must not emit additionalContext — Codex Desktop rejects it."""
+    """map_mmd hook-check must not emit additionalContext — Codex Desktop rejects it."""
     import sys
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "map.mmd-out"
     out.mkdir()
     (out / "graph.json").write_text("{}", encoding="utf-8")
 
     result = subprocess.run(
-        [sys.executable, "-m", "graphify", "hook-check"],
+        [sys.executable, "-m", "map_mmd", "hook-check"],
         cwd=tmp_path,
         capture_output=True,
         text=True,
@@ -223,7 +223,7 @@ def test_hook_check_no_additionalContext(tmp_path):
 import ast  # noqa: E402
 import re  # noqa: E402
 
-from graphify.hooks import (  # noqa: E402
+from map_mmd.hooks import (  # noqa: E402
     _HOOK_SCRIPT,
     _CHECKOUT_SCRIPT,
     _REBUILD_BODY_COMMIT,
@@ -255,11 +255,11 @@ def test_hooks_use_cross_platform_detach(name, script):
 
 
 def _launcher_payload(script: str) -> str:
-    """Extract the `python -c "<payload>"` the hook hands to GRAPHIFY_PYTHON.
+    """Extract the `python -c "<payload>"` the hook hands to MAP_MMD_PYTHON.
 
     The launcher is the only `-c` invocation whose body begins with
     `import os, subprocess, sys` (the interpreter-detection probes in
-    _PYTHON_DETECT use `-c "import graphify"`)."""
+    _PYTHON_DETECT use `-c "import map_mmd"`)."""
     m = re.search(r'-c "(import os, subprocess, sys.*?)"\n', script, re.DOTALL)
     assert m, "launcher payload not found"
     return m.group(1)
@@ -299,32 +299,32 @@ def test_rebuild_bodies_are_shell_quote_safe():
     "name,body",
     [("post-commit", _REBUILD_BODY_COMMIT), ("post-checkout", _REBUILD_BODY_CHECKOUT)],
 )
-def test_rebuild_bodies_read_graphify_root(name, body):
+def test_rebuild_bodies_read_map_mmd_root(name, body):
     """The rebuild must honour the persisted scan root rather than hardcoding the
-    repo top (#1173). Both bodies read <output-dir>/.graphify_root and pass the
+    repo top (#1173). Both bodies read <output-dir>/.map_mmd_root and pass the
     recovered root to _rebuild_code instead of the bare Path('.')."""
-    assert ".graphify_root" in body, f"{name} ignores .graphify_root (#1173)"
-    # The output dir is resolved from GRAPHIFY_OUT at hook-run time, not hardcoded
-    # to graphify-out/, so a renamed output dir is still found (#1423).
-    assert "GRAPHIFY_OUT" in body, f"{name} ignores the GRAPHIFY_OUT override (#1423)"
+    assert ".map_mmd_root" in body, f"{name} ignores .map_mmd_root (#1173)"
+    # The output dir is resolved from MAP_MMD_OUT at hook-run time, not hardcoded
+    # to map.mmd-out/, so a renamed output dir is still found (#1423).
+    assert "MAP_MMD_OUT" in body, f"{name} ignores the MAP_MMD_OUT override (#1423)"
     # The recovered root is what gets rebuilt, not a hardcoded cwd.
     assert "_rebuild_code(_root" in body, f"{name} does not pass the recovered root"
     # Quote-safe inside the shell-double-quoted launcher: single quotes only.
     assert "read_text(encoding='utf-8')" in body, f"{name} root read is not single-quoted"
 
 
-def test_rebuild_bodies_with_graphify_root_are_valid_python():
-    """The .graphify_root snippet must parse so a quoting slip can't ship a hook
+def test_rebuild_bodies_with_map_mmd_root_are_valid_python():
+    """The .map_mmd_root snippet must parse so a quoting slip can't ship a hook
     that crashes the moment git fires it (#1173)."""
     for body in (_REBUILD_BODY_COMMIT, _REBUILD_BODY_CHECKOUT):
         ast.parse(body)
 
 
-def test_detached_launch_targets_graphify_python():
-    """The launcher must run via the resolved $GRAPHIFY_PYTHON, not a bare
+def test_detached_launch_targets_map_mmd_python():
+    """The launcher must run via the resolved $MAP_MMD_PYTHON, not a bare
     `python`, so it uses the same interpreter the detection block selected."""
     snippet = _detached_launch(_REBUILD_BODY_COMMIT)
-    assert snippet.startswith('"$GRAPHIFY_PYTHON" -c "')
+    assert snippet.startswith('"$MAP_MMD_PYTHON" -c "')
     assert "nohup" not in snippet
 
 
