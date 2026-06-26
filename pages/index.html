@@ -3,82 +3,185 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="mapmmd — turn any codebase into a queryable knowledge graph. Works with Claude Code, OpenCode, Cursor, and more.">
+  <meta property="og:title" content="mapmmd — knowledge graph for your codebase">
+  <meta property="og:description" content="Turn any folder of code, docs, papers, images, or videos into a queryable knowledge graph.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/getwinharris/map.mmd/main/docs/logo-icon.svg">
+  <meta name="theme-color" content="#0d1117">
   <title>mapmmd — knowledge graph for your codebase</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", sans-serif;
       background: #0d1117;
       color: #e6edf3;
       line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
-    .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
-    header { text-align: center; padding: 4rem 0 2rem; }
-    header h1 { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.02em; }
-    header h1 span { color: #58a6ff; }
-    header p { color: #8b949e; font-size: 1.1rem; margin-top: 0.5rem; }
-    .demo { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; margin: 2rem 0; }
-    .demo h2 { font-size: 1.1rem; margin-bottom: 0.75rem; color: #58a6ff; }
-    .demo pre { background: #0d1117; color: #8b949e; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.9rem; }
-    .demo code { color: #f0883e; }
-    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 2rem 0; }
-    .feature { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.25rem; }
-    .feature h3 { font-size: 1rem; color: #58a6ff; margin-bottom: 0.4rem; }
-    .feature p { font-size: 0.9rem; color: #8b949e; }
-    .install { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; margin: 2rem 0; }
-    .install h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
-    .install pre { background: #0d1117; padding: 1rem; border-radius: 6px; }
-    .install code { color: #7ee787; }
-    .btn {
-      display: inline-block; background: #238636; color: #fff; padding: 0.6rem 1.5rem;
-      border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 0.5rem;
+    .container { max-width: 880px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    header { text-align: center; padding: 3rem 0 1rem; }
+    .logo { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .logo svg { height: 48px; width: auto; }
+    header h1 { font-size: 2.75rem; font-weight: 800; letter-spacing: -0.03em; }
+    header h1 span.map { color: #58a6ff; }
+    header h1 span.mmd { color: #f0883e; }
+    header .subtitle { color: #8b949e; font-size: 1.15rem; margin-top: 0.5rem; max-width: 600px; margin-left: auto; margin-right: auto; }
+    .badges { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .badges img { height: 24px; }
+
+    .hero-cmd {
+      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+      padding: 2rem; margin: 2.5rem 0; text-align: center;
     }
-    .btn:hover { background: #2ea043; }
-    footer { text-align: center; color: #484f58; font-size: 0.85rem; padding: 3rem 0; }
-    @media (max-width: 640px) { .features { grid-template-columns: 1fr; } }
+    .hero-cmd .cmd {
+      background: #0d1117; display: inline-block; padding: 0.75rem 2rem;
+      border-radius: 8px; font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 1.3rem; color: #7ee787; border: 1px solid #30363d;
+      letter-spacing: -0.02em;
+    }
+    .hero-cmd .cmd::before { content: "$ "; color: #484f58; }
+    .hero-cmd p { color: #8b949e; margin-top: 1rem; font-size: 0.95rem; }
+
+    .section-title { font-size: 1.1rem; font-weight: 600; color: #e6edf3; margin: 2rem 0 1rem; }
+    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .feature {
+      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+      padding: 1.25rem; transition: border-color 0.2s;
+    }
+    .feature:hover { border-color: #58a6ff; }
+    .feature h3 { font-size: 0.95rem; color: #58a6ff; margin-bottom: 0.3rem; }
+    .feature p { font-size: 0.85rem; color: #8b949e; }
+    .feature .tag {
+      display: inline-block; background: #1c2128; color: #8b949e;
+      font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px;
+      margin-top: 0.4rem; font-weight: 500;
+    }
+
+    .supported {
+      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+      padding: 1.25rem 1.5rem; margin: 2rem 0;
+    }
+    .supported h3 { font-size: 0.9rem; color: #8b949e; margin-bottom: 0.6rem; }
+    .supported .platforms { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .supported .platforms span {
+      background: #0d1117; color: #e6edf3; padding: 0.25rem 0.6rem;
+      border-radius: 4px; font-size: 0.8rem; border: 1px solid #30363d;
+    }
+
+    .install-box {
+      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+      padding: 1.5rem 2rem; margin: 2rem 0; text-align: center;
+    }
+    .install-box h3 { font-size: 1rem; margin-bottom: 0.75rem; }
+    .install-box code {
+      background: #0d1117; padding: 0.5rem 1rem; border-radius: 6px;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 0.95rem;
+      color: #7ee787; border: 1px solid #30363d; display: inline-block;
+    }
+    .install-box .btn {
+      display: inline-block; background: #238636; color: #fff;
+      padding: 0.6rem 1.5rem; border-radius: 6px; text-decoration: none;
+      font-weight: 600; margin-top: 0.75rem; font-size: 0.9rem;
+    }
+    .install-box .btn:hover { background: #2ea043; }
+    .install-box .btn-secondary {
+      background: #21262d; margin-left: 0.5rem;
+    }
+    .install-box .btn-secondary:hover { background: #30363d; }
+
+    .out-dir { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+    .out-dir code { font-family: "SF Mono", "Fira Code", monospace; font-size: 0.85rem; color: #f0883e; }
+    .out-dir .file { color: #8b949e; }
+    .out-dir .arrow { color: #484f58; }
+
+    footer { text-align: center; color: #484f58; font-size: 0.82rem; padding: 3rem 0 2rem; }
+    footer a { color: #58a6ff; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .features { grid-template-columns: 1fr; }
+      header h1 { font-size: 2rem; }
+      .hero-cmd .cmd { font-size: 1rem; padding: 0.5rem 1.25rem; }
+      .logo svg { height: 36px; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1><span>map</span>mmd</h1>
-      <p>Turn any codebase into a queryable knowledge graph — without leaving your terminal.</p>
+      <div class="logo">
+        <img src="../docs/logo-icon.svg" alt="mapmmd" height="48">
+      </div>
+      <h1><span class="map">map</span><span class="mmd">mmd</span></h1>
+      <p class="subtitle">Turn any folder of code, docs, papers, images, or videos into a queryable knowledge graph.</p>
+      <div class="badges">
+        <a href="https://pypi.org/project/mapmmdy/"><img src="https://img.shields.io/pypi/v/mapmmdy" alt="PyPI"></a>
+        <a href="https://pepy.tech/project/mapmmdy"><img src="https://img.shields.io/pepy/dt/mapmmdy?color=blue&label=downloads" alt="Downloads"></a>
+        <a href="https://github.com/getwinharris/map.mmd"><img src="https://img.shields.io/github/stars/getwinharris/map.mmd?style=flat&logo=github" alt="Stars"></a>
+        <a href="https://github.com/getwinharris/map.mmd/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"></a>
+      </div>
     </header>
 
-    <div class="demo">
-      <h2>One command</h2>
-      <pre><code>/mapmmd .</code></pre>
-      <p style="margin-top: 0.5rem; color: #8b949e;">Scans, extracts, clusters, and generates a complete knowledge graph of your project.</p>
+    <div class="hero-cmd">
+      <div class="cmd">/mapmmd .</div>
+      <p>One command to extract, cluster, and visualize your entire project.</p>
     </div>
 
+    <div class="out-dir">
+      <code>mapmmd-out/</code><br>
+      <span class="file">├── <span class="arrow">graph.json</span> <span class="file">nodes, edges, communities, labels</span></span><br>
+      <span class="file">├── <span class="arrow">GRAPH_REPORT.md</span> <span class="file">god nodes, surprises, questions</span></span><br>
+      <span class="file">├── <span class="arrow">graph.html</span> <span class="file">interactive vis.js visualization</span></span><br>
+      <span class="file">└── <span class="arrow">manifest.json</span> <span class="file">file inventory</span></span>
+    </div>
+
+    <h2 class="section-title">How it works</h2>
     <div class="features">
       <div class="feature">
-        <h3>AST Extraction</h3>
-        <p>Parses code with tree-sitter — no LLM needed for structural understanding.</p>
+        <h3>Detect</h3>
+        <p>Scans your project and classifies every file — code, document, paper, image, video.</p>
+        <span class="tag">tree-sitter</span>
       </div>
       <div class="feature">
-        <h3>Community Detection</h3>
-        <p>Leiden clustering groups related symbols into meaningful communities.</p>
+        <h3>Extract</h3>
+        <p>Parses code with AST extractors and optionally uses LLMs for semantic understanding of docs and media.</p>
+        <span class="tag">AST + LLM</span>
       </div>
       <div class="feature">
-        <h3>Semantic Understanding</h3>
-        <p>Optional LLM-backed extraction for docs, PDFs, images, and videos.</p>
+        <h3>Build &amp; Cluster</h3>
+        <p>Merges all extractions into a NetworkX graph, then runs Leiden community detection.</p>
+        <span class="tag">Leiden</span>
       </div>
       <div class="feature">
-        <h3>Graph Visualization</h3>
-        <p>Interactive HTML graph with search, filter, and community colors.</p>
+        <h3>Analyze &amp; Export</h3>
+        <p>Identifies god nodes, surprising connections, import cycles, and generates interactive visualizations.</p>
+        <span class="tag">graph.json</span>
       </div>
     </div>
 
-    <div class="install">
-      <h2>Install</h2>
-      <pre><code>pipx install mapmmdy</code></pre>
-      <p style="margin-top: 0.5rem; color: #8b949e;">Then run <code>/mapmmd .</code> in Claude Code, OpenCode, Cursor, or any supported AI assistant.</p>
-      <a href="https://github.com/getwinharris/map.mmd" class="btn">View on GitHub</a>
+    <div class="supported">
+      <h3>Supported platforms</h3>
+      <div class="platforms">
+        <span>Claude Code</span><span>OpenCode</span><span>Cursor</span><span>Codex</span>
+        <span>Kilo Code</span><span>Gemini CLI</span><span>Copilot CLI</span><span>VS Code</span>
+        <span>Aider</span><span>Amp</span><span>Kiro</span><span>Pi</span><span>Devin CLI</span>
+        <span>OpenClaw</span><span>Droid</span><span>Trae</span><span>Antigravity</span>
+      </div>
+    </div>
+
+    <div class="install-box">
+      <h3>Install</h3>
+      <code>pipx install mapmmdy</code>
+      <p style="color: #8b949e; font-size: 0.85rem; margin-top: 0.5rem;">Then type <strong>/mapmmd .</strong> in your AI assistant.</p>
+      <div style="margin-top: 1rem;">
+        <a href="https://github.com/getwinharris/map.mmd" class="btn">View on GitHub</a>
+        <a href="install.sh" class="btn btn-secondary">Download install.sh</a>
+      </div>
     </div>
 
     <footer>
-      <p>mapmmd &mdash; MIT license</p>
+      <p><a href="https://github.com/getwinharris/map.mmd">mapmmd</a> &mdash; MIT license &mdash; <a href="https://github.com/getwinharris/map.mmd/issues">Report issue</a></p>
     </footer>
   </div>
 </body>
