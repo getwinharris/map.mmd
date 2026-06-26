@@ -83,6 +83,6 @@ rsl-siege-manager is structurally interesting for mapmmd evaluation because:
 
 ## Reference
 
-- mapmmd repo: <https://github.com/safishamsi/mapmmd>
+- mapmmd repo: <https://github.com/getwinharris/mapmmd>
 - mapmmd PyPI: <https://pypi.org/project/mapmmdy/>
 - rsl-siege-manager: <https://github.com/glitchwerks/rsl-siege-manager>

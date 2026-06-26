@@ -43,9 +43,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/safishamsi/mapmmd"
-Repository = "https://github.com/safishamsi/mapmmd"
-Issues = "https://github.com/safishamsi/mapmmd/issues"
+Homepage = "https://github.com/getwinharris/mapmmd"
+Repository = "https://github.com/getwinharris/mapmmd"
+Issues = "https://github.com/getwinharris/mapmmd/issues"
 
 [project.optional-dependencies]
 # starlette is pulled in transitively by mcp, but mapmmd/serve.py imports it

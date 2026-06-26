@@ -848,7 +848,7 @@ mmd complete. Outputs in PATH_TO_DIR/mapmmd-out/
   wiki/                 - agent-crawlable wiki, start at wiki/index.md (only if --wiki was given)
 ```
 
-If mapmmd saved you time, consider supporting it: <https://github.com/sponsors/safishamsi>
+If mapmmd saved you time, consider supporting it: <https://github.com/sponsors/getwinharris>
 
 Replace PATH_TO_DIR with the actual absolute path of the directory that was processed.
 

@@ -1,6 +1,6 @@
 # Changelog
 
-Full release notes with details on each version: [GitHub Releases](https://github.com/safishamsi/mapmmd/releases)
+Full release notes with details on each version: [GitHub Releases](https://github.com/getwinharris/mapmmd/releases)
 
 ## Unreleased
 
